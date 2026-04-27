@@ -1,47 +1,106 @@
 # automatick
 
-Tick-based simulation engine for React. The engine API lives at the package root; React components and hooks live under `automatick/react/*` subpaths.
+State-machine engine for tick-based simulations in React. You write the rules (`init`, `step`, params); automatick handles the loop, timing, status state machine, controls, and (optionally) running the simulation in a Web Worker.
 
-## Core concepts
+## Install
 
-- `initData(params) -> data`: creates the initial simulation dataset.
-- `updateData({ data, params, tick, cachedData }) -> UpdateResult`: computes the next dataset when the engine advances `tick`.
-- The engine runs a tick loop (play/pause) and calls `updateData` as needed.
-- Frames/renderers live outside the engine (typically in the React adapter) and read `data/tick/params` snapshots.
+```bash
+npm install automatick
+```
 
-## updateData contract
+React is an optional peer dependency — the engine has no React surface.
 
-When the engine advances from `tick = N` to `tick = N+1`:
+## Quick start
 
-1. It calls `updateData` with:
-   - `data`: current dataset at tick `N`
-   - `params`: current simulation parameters
-   - `tick`: the *target tick* after advancement (`N+1`)
-   - `cachedData`: read-only map of already-computed ticks to datasets
-2. `updateData` returns an `UpdateResult`:
-   - `{ status: 'continue', data }`: keep going (engine may keep playing)
-   - `{ status: 'pause', data }`: pause after applying `data` for that tick
-   - `{ status: 'stop', data }`: reset the simulation (re-run `initData`) after applying `data`
-   - `{ status: 'complete', data, result? }`: stop the simulation and optionally emit a completion `result`
+A simulation has three parts: a **sim module** (pure logic), a `<Simulation>` wrapper, and a render component reading state via `useSimulation()`.
 
-## Commands
+```ts
+// counterSim.ts
+import { defineSim } from 'automatick/sim';
 
-The engine exposes:
+export default defineSim<{ count: number }, { increment: number }>({
+  defaultParams: { increment: 1 },
+  init: () => ({ count: 0 }),
+  step: ({ data, params }) => ({ count: data.count + params.increment }),
+});
+```
 
-- `engine.play()`: start/continue running
-- `engine.pause()`: pause after the current snapshot
-- `engine.stop()`: reset tick to `minTime` (or `initialTick`) and re-run `initData`
-- `engine.seek(tick)`: compute state at `tick` and pause
-- `engine.stepOnce(count?)`: advance by `count` ticks (default `1`) while paused; does not start playback
-- `engine.setParams(nextParams, { reset?: boolean })`: merge params; optionally re-run `initData`
+```tsx
+// Counter.tsx
+import { Simulation } from 'automatick/react/simulation';
+import { useSimulation } from 'automatick/react/hooks';
+import { StandardControls } from 'automatick/react/controls';
+import counterSim from './counterSim';
 
-## Timing semantics
+function Display() {
+  const { data, tick } = useSimulation<typeof counterSim>();
+  return <p>Tick {tick}: count is {data.count}</p>;
+}
 
-The engine supports wall-clock timing via `engine.handleAnimationFrame(nowMs)`:
+export default function Counter() {
+  return (
+    <Simulation sim={counterSim}>
+      <Display />
+      <StandardControls />
+    </Simulation>
+  );
+}
+```
 
-- if `delayMs` is unset or `0`, the engine advances immediately when playing
-- otherwise, it advances only when `nowMs - lastUpdateMs >= delayMs`
-- each advance advances `ticksPerAnimation` ticks (default: `1`)
+`StandardControls` gives you play/pause, reset, step, seek, and parameter inputs out of the box. For finer control, individual primitives live at `automatick/react/control-primitives`.
 
-React adapters (and worker hosts) typically call `handleAnimationFrame` inside a `requestAnimationFrame` loop or an interval.
+## Web worker
 
+Same sim module, one prop change — the simulation now runs off the main thread:
+
+```tsx
+<Simulation worker={() => import('./counterSim')}>
+  <Display />
+  <StandardControls />
+</Simulation>
+```
+
+Useful when `step` is expensive (large grids, n-body simulations, fluid solvers) and you want the UI to stay responsive.
+
+## API at a glance
+
+`defineSim<Data, Params>({ init, step, shouldStop?, defaultParams })` declares a sim module.
+
+`step` receives `{ data, params, tick }` and returns the next `Data`.
+
+`shouldStop(data, params) => boolean` is an optional terminal predicate; the engine moves to `'stopped'` when it returns true.
+
+`useSimulation<typeof sim>()` returns the current snapshot and actions:
+
+| Field | Type | Description |
+|---|---|---|
+| `data` | `Data` | Current simulation state |
+| `params` | `Params` | Current parameters |
+| `tick` | `number` | Current tick (starts at 0) |
+| `status` | `'idle' \| 'playing' \| 'paused' \| 'stopped'` | Engine status |
+| `play()`, `pause()`, `stop()` | `() => void` | Lifecycle controls |
+| `seek(tick)` | `(n: number) => void` | Jump forward; pauses |
+| `advance(n?)` | `(n?: number) => void` | Step forward by `n` ticks (default 1) |
+| `setParams(patch)` | `(patch: Partial<Params>) => void` | Update params without reinit |
+| `resetWith(patch?)` | `(patch?: Partial<Params>) => void` | Re-run `init` with optional param patch |
+
+## Package entry points
+
+| Subpath | Exports |
+|---|---|
+| `automatick` | `createEngine`, engine + status types |
+| `automatick/sim` | `defineSim`, `SimModule`, `SimData`, `SimParams` |
+| `automatick/worker/runner` | Worker-side runtime |
+| `automatick/worker/create` | Worker host factory |
+| `automatick/worker/protocol` | Message protocol types |
+| `automatick/react/simulation` | `<Simulation>` |
+| `automatick/react/hooks` | `useSimulation()` |
+| `automatick/react/controls` | `<StandardControls>` |
+| `automatick/react/control-primitives` | Individual UI primitives |
+| `automatick/react/canvas` | `useSimulationCanvas()` |
+| `automatick/react/performance` | `<PerformanceOverlay>` |
+| `automatick/react/context` | `<SimulationContext>` |
+
+## License
+
+MIT

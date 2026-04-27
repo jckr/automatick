@@ -12,7 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "automatick": "0.2.0",
+    "automatick": "0.0.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.28.0",

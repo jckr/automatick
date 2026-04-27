@@ -1,23 +1,32 @@
 {
   "name": "automatick",
-  "version": "0.2.0",
+  "version": "0.0.1",
   "description": "State-machine engine for tick-based simulations in React",
   "author": "jckr",
   "license": "MIT",
-  "repository": "jckr/automatick",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jckr/automatick.git"
+  },
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "peerDependencies": {
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true },
-    "react-dom": { "optional": true }
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "scripts": {
     "build": "tsup src/engine.ts src/sim.ts src/worker/workerRunner.ts src/worker/createSimWorker.ts src/worker/protocol.ts src/react/Simulation.tsx src/react/hooks.ts src/react/useSimulationCanvas.ts src/react/PerformanceOverlay.tsx src/react/SimulationContext.tsx src/react/EngineContext.tsx src/react/SimulationControls.tsx src/react/controlPrimitives.tsx src/react/stableCallback.ts --format esm,cjs --dts --clean --external react --external react-dom --external react/jsx-runtime",
