@@ -1,27 +1,33 @@
 import React from 'react';
 import { Simulation } from 'automatick/react/simulation';
 import { useSimulationCanvas } from 'automatick/react/canvas';
-import { StandardControls } from 'automatick/react/controls';
 import { PerformanceOverlay } from 'automatick/react/performance';
+import {
+  DemoControlPanel,
+  DemoControlGroup,
+} from '../components/DemoControlPanel';
+import { DemoSplit } from '../components/DemoSplit';
 import activatorsSim from '../sims/activatorsSim';
 
 const CELL_PX = 10;
+const CSS_SIZE = 600;
 
 function ActivatorsCanvas() {
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const cssSize = 600;
 
   const canvasRef = useSimulationCanvas<typeof activatorsSim>((ctx, { data, params }) => {
-    const simW = params.width * CELL_PX;
-    const simH = params.height * CELL_PX;
-    const scale = (cssSize * dpr) / simW;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    const styles = getComputedStyle(document.documentElement);
+    const ink = styles.getPropertyValue('--fg1').trim() || '#0E1116';
+    const bg = styles.getPropertyValue('--bg3').trim() || '#E6E0D0';
 
-    ctx.clearRect(0, 0, simW, simH);
+    const simW = params.width * CELL_PX;
+    const scale = (CSS_SIZE * dpr) / simW;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.clearRect(0, 0, params.width * CELL_PX, params.height * CELL_PX);
 
     for (let row = 0; row < data.grid.length; row++) {
       for (let col = 0; col < data.grid[row].length; col++) {
-        ctx.fillStyle = data.grid[row][col] ? '#1a1a1a' : '#f3f3f3';
+        ctx.fillStyle = data.grid[row][col] ? ink : bg;
         ctx.fillRect(col * CELL_PX, row * CELL_PX, CELL_PX, CELL_PX);
       }
     }
@@ -30,72 +36,87 @@ function ActivatorsCanvas() {
   });
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={cssSize * dpr}
-      height={cssSize * dpr}
-      style={{ border: '1px solid rgba(0,0,0,0.2)', borderRadius: 6, width: '100%', height: 'auto' }}
-    />
+    <div
+      style={{
+        position: 'relative',
+        height: '100%',
+        minHeight: 540,
+        padding: 16,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        width={CSS_SIZE * dpr}
+        height={CSS_SIZE * dpr}
+        style={{
+          width: '100%',
+          maxWidth: CSS_SIZE,
+          height: 'auto',
+          display: 'block',
+        }}
+      />
+      <div style={{ position: 'absolute', top: 16, right: 16 }}>
+        <PerformanceOverlay />
+      </div>
+    </div>
   );
 }
 
-export function ActivatorsDemo() {
-  const [showPerf, setShowPerf] = React.useState(true);
+const ACTIVATORS_GROUPS: DemoControlGroup[] = [
+  {
+    label: 'Radii',
+    controls: [
+      {
+        type: 'range',
+        param: 'innerRadius',
+        label: 'Inner',
+        min: 1,
+        max: 10,
+        step: 1,
+      },
+      {
+        type: 'range',
+        param: 'outerRadius',
+        label: 'Outer',
+        min: 1,
+        max: 10,
+        step: 1,
+      },
+    ],
+  },
+  {
+    label: 'Field',
+    controls: [
+      {
+        type: 'range',
+        param: 'w',
+        label: 'Weight',
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
+      {
+        type: 'range',
+        param: 'density',
+        label: 'Density',
+        min: 0,
+        max: 1,
+        step: 0.1,
+      },
+    ],
+  },
+];
 
+export function ActivatorsDemo() {
   return (
     <Simulation sim={activatorsSim} maxTime={200} delayMs={100}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <StandardControls
-          maxTime={200}
-          showStepButton
-          controls={[
-            {
-              type: 'range',
-              param: 'innerRadius',
-              label: 'Inner Radius',
-              min: 1,
-              max: 10,
-              step: 1,
-            },
-            {
-              type: 'range',
-              param: 'outerRadius',
-              label: 'Outer Radius',
-              min: 1,
-              max: 10,
-              step: 1,
-            },
-            {
-              type: 'range',
-              param: 'w',
-              label: 'Weight',
-              min: 0,
-              max: 1,
-              step: 0.01,
-            },
-            {
-              type: 'range',
-              param: 'density',
-              label: 'Density',
-              min: 0,
-              max: 1,
-              step: 0.1,
-            },
-          ]}
-        />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, opacity: 0.7 }}>
-          <input type="checkbox" checked={showPerf} onChange={(e) => setShowPerf(e.target.checked)} />
-          Show performance
-        </label>
-        <div style={{ position: 'relative', lineHeight: 0 }}>
-          <ActivatorsCanvas />
-          {showPerf && (
-            <div style={{ position: 'absolute', top: 8, right: 8 }}>
-              <PerformanceOverlay />
-            </div>
-          )}
-        </div>
-      </div>
+      <DemoSplit
+        preview={<ActivatorsCanvas />}
+        controls={<DemoControlPanel groups={ACTIVATORS_GROUPS} showStep />}
+      />
     </Simulation>
   );
 }

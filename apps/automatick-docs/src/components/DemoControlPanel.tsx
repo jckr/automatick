@@ -38,6 +38,10 @@ type Props = {
   showTransport?: boolean;
   /** Show reset button in transport. Default true. */
   showReset?: boolean;
+  /** Show step-once button (advances one tick when paused). Default false. */
+  showStep?: boolean;
+  /** Extra content rendered after the standard groups (custom panels, bit toggles, etc.). */
+  extra?: React.ReactNode;
 };
 
 function pad(n: number, width: number) {
@@ -60,10 +64,33 @@ function ResetIcon() {
   );
 }
 
-function Transport({ showReset = true }: { showReset?: boolean }) {
-  const { status, play, pause, resetWith, tick } = useSimulation();
+function StepIcon() {
+  return (
+    <svg
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth={1.5}
+      strokeLinecap='round'
+      strokeLinejoin='round'
+    >
+      <polygon points='5 4 15 12 5 20 5 4' fill='currentColor' />
+      <line x1='19' x2='19' y1='5' y2='19' />
+    </svg>
+  );
+}
+
+function Transport({
+  showReset = true,
+  showStep = false,
+}: {
+  showReset?: boolean;
+  showStep?: boolean;
+}) {
+  const { status, play, pause, resetWith, advance, tick } = useSimulation();
   const isPlaying = status === 'playing';
   const canPlay = status === 'idle' || status === 'paused';
+  const canStep = status === 'idle' || status === 'paused';
 
   return (
     <div className='transport'>
@@ -76,6 +103,18 @@ function Transport({ showReset = true }: { showReset?: boolean }) {
       >
         {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </button>
+      {showStep ? (
+        <button
+          type='button'
+          className='icon-mini'
+          onClick={() => advance(1)}
+          disabled={!canStep}
+          aria-label='Step once'
+          title='Step once'
+        >
+          <StepIcon />
+        </button>
+      ) : null}
       {showReset ? (
         <button
           type='button'
@@ -189,10 +228,14 @@ export function DemoControlPanel({
   groups,
   showTransport = true,
   showReset = true,
+  showStep = false,
+  extra,
 }: Props) {
   return (
     <div className='pg-controls'>
-      {showTransport ? <Transport showReset={showReset} /> : null}
+      {showTransport ? (
+        <Transport showReset={showReset} showStep={showStep} />
+      ) : null}
       {groups.map((g, i) => (
         <div key={i} className='group'>
           {g.label ? <div className='g-lbl'>{g.label}</div> : null}
@@ -201,6 +244,7 @@ export function DemoControlPanel({
           ))}
         </div>
       ))}
+      {extra}
     </div>
   );
 }
