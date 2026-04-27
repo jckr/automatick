@@ -1,13 +1,17 @@
 import React from 'react';
 import { Simulation } from 'automatick/react/simulation';
 import { useSimulation } from 'automatick/react/hooks';
-import { StandardControls } from 'automatick/react/controls';
+import {
+  DemoControlPanel,
+  DemoControlGroup,
+} from '../components/DemoControlPanel';
+import { DemoSplit } from '../components/DemoSplit';
 import gameOfLifeSim from '../sims/gameOfLifeSim';
-
-const CELL_PX = 11;
 
 function LifeGrid() {
   const { data, params } = useSimulation<typeof gameOfLifeSim>();
+  // Compute cell size to fill a 520px-tall stage with the current grid.
+  const cellPx = Math.floor(520 / params.height);
 
   return (
     <div
@@ -15,11 +19,11 @@ function LifeGrid() {
       aria-label='Game of Life grid'
       style={{
         display: 'grid',
-        gridTemplateColumns: `repeat(${params.width}, ${CELL_PX}px)`,
-        width: params.width * CELL_PX,
-        border: '1px solid rgba(0,0,0,0.2)',
-        borderRadius: 6,
-        overflow: 'hidden',
+        gridTemplateColumns: `repeat(${params.width}, ${cellPx}px)`,
+        width: params.width * cellPx,
+        margin: '0 auto',
+        border: '1px solid var(--border)',
+        background: 'var(--bg3)',
       }}
     >
       {data.grid.map((row, y) =>
@@ -27,11 +31,12 @@ function LifeGrid() {
           <div
             key={`${x}-${y}`}
             style={{
-              width: CELL_PX,
-              height: CELL_PX,
+              width: cellPx,
+              height: cellPx,
               boxSizing: 'border-box',
-              background: alive ? '#1a1a1a' : '#f3f3f3',
-              border: '1px solid rgba(0,0,0,0.06)',
+              background: alive ? 'var(--fg1)' : 'transparent',
+              borderRight: '1px solid rgba(0,0,0,0.04)',
+              borderBottom: '1px solid rgba(0,0,0,0.04)',
             }}
           />
         ))
@@ -40,28 +45,43 @@ function LifeGrid() {
   );
 }
 
+const LIFE_GROUPS: DemoControlGroup[] = [
+  {
+    label: 'Seed',
+    controls: [
+      {
+        type: 'range',
+        param: 'density',
+        label: 'Density',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        format: (v) => `${Math.round(v * 100)}%`,
+      },
+    ],
+  },
+];
+
 export function GameOfLifeDemo() {
   return (
-    <Simulation
-      sim={gameOfLifeSim}
-      maxTime={2000}
-      delayMs={100}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <StandardControls
-          maxTime={2000}
-          showStepButton
-          controls={{
-            type: 'range',
-            param: 'density',
-            label: 'Grid density',
-            min: 0,
-            max: 1,
-            step: 0.01,
-          }}
-        />
-        <LifeGrid />
-      </div>
+    <Simulation sim={gameOfLifeSim} maxTime={2000} delayMs={100}>
+      <DemoSplit
+        preview={
+          <div
+            style={{
+              padding: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 520,
+              background: 'var(--bg2)',
+            }}
+          >
+            <LifeGrid />
+          </div>
+        }
+        controls={<DemoControlPanel groups={LIFE_GROUPS} />}
+      />
     </Simulation>
   );
 }

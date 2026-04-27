@@ -24,6 +24,9 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "markdown-table": "^3.0.4",
+    "rehype-pretty-code": "^0.14.3",
+    "shiki": "^1.29.2",
     "typescript": "^5.0.0",
     "vite": "^8.0.0"
   }

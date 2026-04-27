@@ -1,0 +1,72 @@
+/* ============================================================
+   rehype-pretty-code / Shiki theming
+   The plugin emits inline color styles per token via CSS vars
+   on each <span>, so we set --shiki-light / --shiki-dark on
+   the container and let the cascade handle theme switching.
+   ============================================================ */
+
+[data-rehype-pretty-code-figure] {
+  margin: 12px 0 20px;
+}
+
+[data-rehype-pretty-code-figure] pre {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+[data-rehype-pretty-code-figure] pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--fg1);
+  display: grid; /* preserve line numbers / ranges */
+}
+
+[data-rehype-pretty-code-figure] [data-line] {
+  padding: 0 2px;
+}
+
+[data-rehype-pretty-code-figure] [data-highlighted-line] {
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  margin-left: -18px;
+  padding-left: 16px;
+}
+
+[data-rehype-pretty-code-figure] [data-rehype-pretty-code-title] {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+  background: var(--bg2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg2);
+}
+[data-rehype-pretty-code-figure]:has([data-rehype-pretty-code-title]) pre {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* Light theme tokens come from the css var the plugin sets on each span. */
+:root {
+  color-scheme: light;
+}
+:root.dark {
+  color-scheme: dark;
+}
+:root.dark [data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-dark) !important;
+}
+:root:not(.dark) [data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-light) !important;
+}
