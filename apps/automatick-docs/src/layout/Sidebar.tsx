@@ -34,6 +34,7 @@ const GRID: Item[] = [
   { to: '/examples/game-of-life', label: 'Game of Life' },
   { to: '/examples/automata-1d', label: '1D automata' },
   { to: '/examples/percolation', label: 'Percolation' },
+  { to: '/examples/percolation-grid', label: 'Percolation grid' },
   { to: '/examples/activators', label: 'Activators' },
   { to: '/examples/langton-ant', label: "Langton's ant" },
   { to: '/examples/segregation', label: 'Segregation' },

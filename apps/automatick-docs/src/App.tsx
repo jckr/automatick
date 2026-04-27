@@ -33,6 +33,7 @@ import { SnakePage } from './pages/examples/SnakePage';
 import { MazePage } from './pages/examples/MazePage';
 import { ActivatorsPage } from './pages/examples/ActivatorsPage';
 import { PercolationPage } from './pages/examples/PercolationPage';
+import { PercolationGridPage } from './pages/examples/PercolationGridPage';
 import { GravityPage } from './pages/examples/GravityPage';
 import { GrayScottPage } from './pages/examples/GrayScottPage';
 import { StableFluidsPage } from './pages/examples/StableFluidsPage';
@@ -73,6 +74,7 @@ export function App() {
           <Route path='examples/simple-model' element={<SimpleModelPage />} />
           <Route path='examples/automata-1d' element={<Automata1dPage />} />
           <Route path='examples/percolation' element={<PercolationPage />} />
+          <Route path='examples/percolation-grid' element={<PercolationGridPage />} />
           <Route path='examples/activators' element={<ActivatorsPage />} />
           <Route path='examples/worker-canvas' element={<WorkerCanvasPage />} />
           <Route path='examples/chaos-game' element={<ChaosGamePage />} />

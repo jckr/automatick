@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ExamplePage } from '../../layout/ExamplePage';
 import { PercolationDemo } from '../../demos/PercolationDemo';
 
@@ -21,7 +22,9 @@ export function PercolationPage() {
               threshold
             </a>{' '}
             (around <em>0.59</em> for a 2D lattice), percolation is very
-            unlikely; above it, it becomes very likely.
+            unlikely; above it, it becomes very likely. To see the threshold
+            transition show up across many runs, see{' '}
+            <Link to='/examples/percolation-grid'>Percolation grid</Link>.
           </p>
         </>
       }

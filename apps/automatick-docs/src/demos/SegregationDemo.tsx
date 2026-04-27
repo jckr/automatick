@@ -1,14 +1,15 @@
 import React from 'react';
 import { Simulation } from 'automatick/react/simulation';
-import { useSimulation } from 'automatick/react/hooks';
 import { useSimulationCanvas } from 'automatick/react/canvas';
+import { PerformanceOverlay } from 'automatick/react/performance';
 import {
   DemoControlPanel,
   DemoControlGroup,
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
-import { CanvasStage } from '../components/CanvasStage';
+import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import segregationSim, { draw } from '../sims/segregationSim';
+import type { SegData } from '../sims/segregationSim';
 
 const CSS_SIZE = 600;
 
@@ -23,46 +24,59 @@ function SegregationCanvas() {
   });
 
   return (
-    <CanvasStage maxWidth={CSS_SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
-      />
-    </CanvasStage>
-  );
-}
-
-function SegregationStats() {
-  const { data } = useSimulation<typeof segregationSim>();
-  if (!data) return null;
-  return (
-    <div className='group'>
-      <div className='g-lbl'>Readouts</div>
+    <div
+      style={{
+        position: 'relative',
+        height: '100%',
+        minHeight: 540,
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+      }}
+    >
       <div
         style={{
+          flex: 1,
+          minHeight: 0,
+          position: 'relative',
           display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'var(--fg3)' }}>happiness</span>
-          <span style={{ color: 'var(--fg1)' }}>
-            {(data.happiness * 100).toFixed(1)}%
-          </span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'var(--fg3)' }}>total moves</span>
-          <span style={{ color: 'var(--fg1)' }}>{data.totalMoves}</span>
+        <canvas
+          ref={canvasRef}
+          width={CSS_SIZE * dpr}
+          height={CSS_SIZE * dpr}
+          style={{
+            width: '100%',
+            maxWidth: CSS_SIZE,
+            height: 'auto',
+            display: 'block',
+            borderRadius: 4,
+          }}
+        />
+        <div style={{ position: 'absolute', top: 0, right: 0 }}>
+          <PerformanceOverlay />
         </div>
       </div>
+      <TimeSeries<SegData>
+        mode='line'
+        height={100}
+        series={SEG_SERIES}
+      />
     </div>
   );
 }
+
+const SEG_SERIES: TimeSeriesEntry<SegData>[] = [
+  {
+    color: '#D7451E',
+    label: 'Happiness',
+    accessor: (d) => d.happiness * 100,
+  },
+];
 
 const SEG_GROUPS: DemoControlGroup[] = [
   {
@@ -111,13 +125,7 @@ export function SegregationDemo() {
     <Simulation sim={segregationSim} maxTime={500} delayMs={50}>
       <DemoSplit
         preview={<SegregationCanvas />}
-        controls={
-          <DemoControlPanel
-            groups={SEG_GROUPS}
-            extra={<SegregationStats />}
-            showStep
-          />
-        }
+        controls={<DemoControlPanel groups={SEG_GROUPS} showStep />}
       />
     </Simulation>
   );

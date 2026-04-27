@@ -69,7 +69,7 @@ export default defineSim<EpidemicData, EpidemicParams>({
     nbAgents: 220,
     nbSick: 18,
     contaminationRisk: 1,
-    deathRisk: 0.001,
+    deathRisk: 0.0002,
     maxSpeed: 7,
     recoveryTicks: 200,
     nbDistancing: 0,

@@ -8,9 +8,9 @@ import {
   DemoControlGroup,
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
+import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import epidemicSim from '../sims/epidemicSim';
-
-const CSS_SIZE = 600;
+import type { EpidemicData, EpidemicParams } from '../sims/epidemicSim';
 
 const STATUS_COLORS: Record<string, string> = {
   healthy: '#3D6B4B',
@@ -20,13 +20,16 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function EpidemicCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const { setParams, resetWith } = useSimulation<typeof epidemicSim>();
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const initializedRef = React.useRef(false);
 
   const canvasRef = useSimulationCanvas<typeof epidemicSim>((ctx, { data, params }) => {
     const styles = getComputedStyle(document.documentElement);
     const bg = styles.getPropertyValue('--bg3').trim() || '#E6E0D0';
-    const scale = (CSS_SIZE * dpr) / params.width;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    const dpr = window.devicePixelRatio || 1;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, params.width, params.height);
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, params.width, params.height);
@@ -40,95 +43,72 @@ function EpidemicCanvas() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   });
 
+  // Track the wrapper size; resize the canvas framebuffer and the sim's
+  // world bounds so agents bounce against the visible edges.
+  React.useEffect(() => {
+    const wrap = wrapperRef.current;
+    const canvas = canvasRef.current;
+    if (!wrap || !canvas) return;
+
+    const apply = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      if (w === 0 || h === 0) return;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        resetWith({ width: w, height: h } as Partial<EpidemicParams>);
+      } else {
+        setParams({ width: w, height: h } as Partial<EpidemicParams>);
+      }
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [canvasRef, setParams, resetWith]);
+
   return (
     <div
       style={{
         position: 'relative',
         height: '100%',
         minHeight: 540,
-        padding: 16,
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        flexDirection: 'column',
       }}
     >
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        style={{
-          width: '100%',
-          maxWidth: CSS_SIZE,
-          height: 'auto',
-          display: 'block',
-        }}
-      />
-      <div style={{ position: 'absolute', top: 16, right: 16 }}>
-        <PerformanceOverlay />
+      <div ref={wrapperRef} style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+        <canvas ref={canvasRef} style={{ display: 'block' }} />
+        <div style={{ position: 'absolute', top: 8, right: 8 }}>
+          <PerformanceOverlay />
+        </div>
+      </div>
+      <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
+        <TimeSeries<EpidemicData>
+          mode='area'
+          height={120}
+          series={EPIDEMIC_SERIES}
+        />
       </div>
     </div>
   );
 }
 
-function EpidemicStats() {
-  const { data } = useSimulation<typeof epidemicSim>();
-  if (!data) return null;
-  const counts = [
-    { label: 'Healthy', value: data.healthy, color: STATUS_COLORS.healthy },
-    { label: 'Sick', value: data.sick, color: STATUS_COLORS.sick },
-    { label: 'Recovered', value: data.recovered, color: STATUS_COLORS.recovered },
-    { label: 'Dead', value: data.dead, color: STATUS_COLORS.dead },
-  ];
-  const total = data.healthy + data.sick + data.recovered + data.dead;
-
-  return (
-    <div className='group'>
-      <div className='g-lbl'>Population</div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-        }}
-      >
-        {counts.map(({ label, value, color }) => (
-          <div
-            key={label}
-            style={{ display: 'flex', justifyContent: 'space-between' }}
-          >
-            <span style={{ color }}>{label.toLowerCase()}</span>
-            <span style={{ color: 'var(--fg1)' }}>{value}</span>
-          </div>
-        ))}
-        {total > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              height: 6,
-              borderRadius: 2,
-              overflow: 'hidden',
-              marginTop: 4,
-            }}
-          >
-            {counts.map(({ label, value, color }) =>
-              value > 0 ? (
-                <div
-                  key={label}
-                  style={{
-                    width: `${(value / total) * 100}%`,
-                    backgroundColor: color,
-                  }}
-                />
-              ) : null,
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+const EPIDEMIC_SERIES: TimeSeriesEntry<EpidemicData>[] = [
+  { color: STATUS_COLORS.healthy, label: 'Healthy', accessor: (d) => d.healthy },
+  { color: STATUS_COLORS.sick, label: 'Sick', accessor: (d) => d.sick },
+  {
+    color: STATUS_COLORS.recovered,
+    label: 'Recovered',
+    accessor: (d) => d.recovered,
+  },
+  { color: STATUS_COLORS.dead, label: 'Dead', accessor: (d) => d.dead },
+];
 
 const EPIDEMIC_GROUPS: DemoControlGroup[] = [
   {
@@ -176,8 +156,9 @@ const EPIDEMIC_GROUPS: DemoControlGroup[] = [
         param: 'deathRisk',
         label: 'Death risk',
         min: 0,
-        max: 0.05,
-        step: 0.001,
+        max: 0.01,
+        step: 0.0001,
+        format: (v) => v.toFixed(4),
       },
       {
         type: 'range',
@@ -209,9 +190,7 @@ export function EpidemicDemo() {
     <Simulation sim={epidemicSim} maxTime={5000} delayMs={50}>
       <DemoSplit
         preview={<EpidemicCanvas />}
-        controls={
-          <DemoControlPanel groups={EPIDEMIC_GROUPS} extra={<EpidemicStats />} />
-        }
+        controls={<DemoControlPanel groups={EPIDEMIC_GROUPS} />}
       />
     </Simulation>
   );
