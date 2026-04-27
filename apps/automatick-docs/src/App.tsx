@@ -43,7 +43,7 @@ import { TrafficPage } from './pages/examples/TrafficPage';
 
 export function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <Routes>
         <Route element={<DocsLayout />}>
           <Route index element={<HomePage />} />
