@@ -1,0 +1,126 @@
+# The Simulation component
+
+`<Simulation>` is the single entry point for mounting a simulation. It creates the engine, manages the animation loop, and provides state to child components via React context.
+
+## Basic usage
+
+```tsx
+import { Simulation } from 'automatick/react/simulation';
+import { StandardControls } from 'automatick/react/controls';
+import mySim from './mySim';
+
+<Simulation sim={mySim}>
+  <MyRenderer />
+  <StandardControls />
+</Simulation>
+```
+
+Children call `useSimulation()` to read state and actions. See [Using the hook](/guide/using-the-hook) for details.
+
+## Main-thread vs Worker mode
+
+The `<Simulation>` component supports two execution modes. The same sim module works in both — switching is a one-prop change.
+
+### Main-thread (`sim` prop)
+
+```tsx
+<Simulation sim={mySim}>
+```
+
+The simulation runs on the browser's main thread, driven by `requestAnimationFrame`. The engine is created synchronously on mount and ticks are computed inline with the render cycle.
+
+**Use this when:** the computation per tick is cheap (grid updates, counters, simple models). Most simulations fall here — if you're not sure, start with `sim`.
+
+### Worker mode (`worker` prop)
+
+```tsx
+<Simulation worker={() => import('./mySim')}>
+```
+
+The sim module is loaded asynchronously. Computation runs in a `setTimeout`-based tick loop decoupled from the browser's animation frame. The component renders `null` until the module is loaded, then subscribes to snapshot updates.
+
+**Use this when:** the computation per tick is expensive enough to block the UI (pathfinding, physics, large grids). The main thread stays responsive for rendering and user interaction.
+
+Both modes expose the same context — child components don't know and don't care which mode is active.
+
+**Note:** when using the `worker` prop, `useSimulation` cannot infer types from the module (it's loaded dynamically). Provide explicit type parameters:
+
+```tsx
+const { data } = useSimulation<MyData, MyParams>();
+```
+
+## Rendering patterns
+
+Children of `<Simulation>` consume data via `useSimulation()`. There are two common rendering approaches:
+
+### DOM rendering (React)
+
+Children render normal JSX. This is standard React — the hook provides `data`, the component returns elements.
+
+```tsx
+function LifeGrid() {
+  const { data, params } = useSimulation<typeof gameOfLifeSim>();
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${params.width}, 11px)` }}>
+      {data.grid.map((row, y) =>
+        row.map((cell, x) => (
+          <div key={`${x}-${y}`} style={{ width: 11, height: 11, background: cell ? '#1a1a1a' : '#f3f3f3' }} />
+        ))
+      )}
+    </div>
+  );
+}
+```
+
+Good for: grids with moderate cell counts, lists, text displays, SVG.
+
+### Canvas rendering (`useSimulationCanvas`)
+
+For canvas-based visualizations, use `useSimulationCanvas` instead of `useSimulation`. This hook subscribes to the engine directly and calls your draw function imperatively — it bypasses React's render cycle entirely. No `setState`, no reconciliation, no `useEffect` dependency comparison on every frame.
+
+```tsx
+import { useSimulationCanvas } from 'automatick/react/canvas';
+
+function BoidsCanvas() {
+  const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }) => {
+    ctx.clearRect(0, 0, params.width, params.height);
+    data.forEach((boid) => {
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath();
+      ctx.arc(boid.x, boid.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+  return <canvas ref={canvasRef} width={400} height={400} />;
+}
+```
+
+The hook returns a ref to attach to your `<canvas>` element. Your draw callback is called on every engine snapshot — directly from the subscription, not from a React effect. The library doesn't own the canvas; your component does.
+
+Good for: large grids, particle systems, continuous 2D simulations, anything where DOM nodes would be too slow.
+
+You can still use `useSimulation()` + `useEffect` for canvas if you prefer — `useSimulationCanvas` is an optional fast path. The standard hook approach works fine for moderate frame rates. Use `useSimulationCanvas` when you need every frame to be as fast as possible.
+
+**Note:** controls and status displays should still use `useSimulation()` with normal React re-renders. `useSimulationCanvas` is specifically for the canvas draw loop.
+
+## Lifecycle
+
+- **`sim`/`worker` and `defaultParams` are captured at mount.** To change the sim module, change the component's `key`.
+- **When the `params` prop changes**, the component calls `setParams(nextParams)` — a live update, not a re-init. The next tick sees the updated params.
+- **To reset the simulation**, call `resetWith()` from the `useSimulation` hook, or change the component's `key` for a full remount.
+
+```tsx
+// Force a new simulation when gridSize changes:
+<Simulation key={gridSize} sim={mySim} params={{ gridSize }}>
+```
+
+## Timing
+
+These props control how fast the simulation runs:
+
+- **`delayMs={0}`** (default): ticks run as fast as the animation loop allows (~60fps on main thread).
+- **`delayMs={100}`**: at least 100ms between tick batches. Good for visual simulations where you want to see each step.
+- **`ticksPerFrame={10}`**: advance 10 ticks per frame. Good for fast-forwarding or cheap simulations that need to accumulate quickly.
+- **`maxTime={500}`**: automatically stop when tick reaches 500.
+
+`delayMs` and `ticksPerFrame` combine: with `delayMs={50}` and `ticksPerFrame={5}`, the simulation advances 5 ticks every 50ms (100 ticks/sec).

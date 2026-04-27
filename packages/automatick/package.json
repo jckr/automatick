@@ -1,0 +1,93 @@
+{
+  "name": "automatick",
+  "version": "0.2.0",
+  "description": "State-machine engine for tick-based simulations in React",
+  "author": "jckr",
+  "license": "MIT",
+  "repository": "jckr/automatick",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true },
+    "react-dom": { "optional": true }
+  },
+  "scripts": {
+    "build": "tsup src/engine.ts src/sim.ts src/worker/workerRunner.ts src/worker/createSimWorker.ts src/worker/protocol.ts src/react/Simulation.tsx src/react/hooks.ts src/react/useSimulationCanvas.ts src/react/PerformanceOverlay.tsx src/react/SimulationContext.tsx src/react/EngineContext.tsx src/react/SimulationControls.tsx src/react/controlPrimitives.tsx src/react/stableCallback.ts --format esm,cjs --dts --clean --external react --external react-dom --external react/jsx-runtime",
+    "test": "vitest run"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/engine.d.ts",
+      "import": "./dist/engine.js",
+      "require": "./dist/engine.cjs"
+    },
+    "./sim": {
+      "types": "./dist/sim.d.ts",
+      "import": "./dist/sim.js",
+      "require": "./dist/sim.cjs"
+    },
+    "./worker/runner": {
+      "types": "./dist/worker/workerRunner.d.ts",
+      "import": "./dist/worker/workerRunner.js",
+      "require": "./dist/worker/workerRunner.cjs"
+    },
+    "./worker/create": {
+      "types": "./dist/worker/createSimWorker.d.ts",
+      "import": "./dist/worker/createSimWorker.js",
+      "require": "./dist/worker/createSimWorker.cjs"
+    },
+    "./worker/protocol": {
+      "types": "./dist/worker/protocol.d.ts",
+      "import": "./dist/worker/protocol.js",
+      "require": "./dist/worker/protocol.cjs"
+    },
+    "./react/simulation": {
+      "types": "./dist/react/Simulation.d.ts",
+      "import": "./dist/react/Simulation.js",
+      "require": "./dist/react/Simulation.cjs"
+    },
+    "./react/hooks": {
+      "types": "./dist/react/hooks.d.ts",
+      "import": "./dist/react/hooks.js",
+      "require": "./dist/react/hooks.cjs"
+    },
+    "./react/controls": {
+      "types": "./dist/react/SimulationControls.d.ts",
+      "import": "./dist/react/SimulationControls.js",
+      "require": "./dist/react/SimulationControls.cjs"
+    },
+    "./react/control-primitives": {
+      "types": "./dist/react/controlPrimitives.d.ts",
+      "import": "./dist/react/controlPrimitives.js",
+      "require": "./dist/react/controlPrimitives.cjs"
+    },
+    "./react/context": {
+      "types": "./dist/react/SimulationContext.d.ts",
+      "import": "./dist/react/SimulationContext.js",
+      "require": "./dist/react/SimulationContext.cjs"
+    },
+    "./react/performance": {
+      "types": "./dist/react/PerformanceOverlay.d.ts",
+      "import": "./dist/react/PerformanceOverlay.js",
+      "require": "./dist/react/PerformanceOverlay.cjs"
+    },
+    "./react/canvas": {
+      "types": "./dist/react/useSimulationCanvas.d.ts",
+      "import": "./dist/react/useSimulationCanvas.js",
+      "require": "./dist/react/useSimulationCanvas.cjs"
+    },
+    "./react/stable-callback": {
+      "types": "./dist/react/stableCallback.d.ts",
+      "import": "./dist/react/stableCallback.js",
+      "require": "./dist/react/stableCallback.cjs"
+    }
+  }
+}

@@ -1,0 +1,123 @@
+# Canvas rendering
+
+Many simulations are best rendered on a `<canvas>` — particle systems, large grids, continuous 2D worlds. automatick provides `useSimulationCanvas`, a hook that draws to a canvas directly from the engine subscription, bypassing React's render cycle.
+
+## Why a separate hook?
+
+With `useSimulation`, every engine snapshot triggers a React state update, which triggers reconciliation, which triggers a `useEffect` where you finally draw. That's fine for DOM rendering, but for canvas at 60fps it's unnecessary overhead — you're going through three layers of React machinery just to call `ctx.fillRect`.
+
+`useSimulationCanvas` skips all of that. It subscribes to the engine directly and calls your draw function imperatively on every snapshot. No `setState`, no reconciliation, no effect scheduling.
+
+## Basic usage
+
+```tsx
+import { useSimulationCanvas } from 'automatick/react/canvas';
+import mySim from './mySim';
+
+function MyCanvas() {
+  const canvasRef = useSimulationCanvas<typeof mySim>((ctx, { data, params, tick }) => {
+    ctx.clearRect(0, 0, 400, 400);
+    // draw your simulation state...
+  });
+
+  return <canvas ref={canvasRef} width={400} height={400} />;
+}
+```
+
+The hook returns a ref — attach it to a `<canvas>` element. Your draw callback receives the 2D rendering context and the current snapshot (`data`, `params`, `tick`).
+
+Place the canvas component inside `<Simulation>` like any other child:
+
+```tsx
+<Simulation sim={mySim} delayMs={16}>
+  <MyCanvas />
+  <StandardControls />
+</Simulation>
+```
+
+Controls still use `useSimulation()` with normal React rendering — that's fine for UI elements that update at control-interaction rates, not every frame.
+
+## Full redraw vs incremental drawing
+
+### Full redraw (most common)
+
+Clear the canvas and redraw everything from the current `data`. Simple and correct.
+
+```tsx
+const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }) => {
+  ctx.clearRect(0, 0, params.width, params.height);
+  data.forEach((boid) => {
+    ctx.beginPath();
+    ctx.arc(boid.x, boid.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+});
+```
+
+Use this when the entire visible state can be derived from the current `data`. Examples: Boids, Epidemic, Segregation, Langton's Ant.
+
+### Incremental drawing
+
+Some simulations accumulate visual state over time — each tick adds to what's already on the canvas rather than replacing it. For these, track what you've already drawn using a ref:
+
+```tsx
+function ChaosCanvas() {
+  const drawnCountRef = React.useRef(0);
+  const lastBgRef = React.useRef<string | null>(null);
+
+  const canvasRef = useSimulationCanvas<typeof chaosGameSim>((ctx, { data, params }) => {
+    const { points, background, attractors } = data;
+
+    // Detect reset: if background changed, clear and start fresh
+    if (background !== lastBgRef.current) {
+      drawnCountRef.current = 0;
+      lastBgRef.current = background;
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, params.width, params.height);
+    }
+
+    // Draw only the new points since last frame
+    ctx.fillStyle = data.color;
+    for (let i = drawnCountRef.current; i < points.length; i++) {
+      ctx.fillRect(points[i].x, points[i].y, 1, 1);
+    }
+    drawnCountRef.current = points.length;
+  });
+
+  return <canvas ref={canvasRef} width={332} height={332} />;
+}
+```
+
+Key pattern: use `React.useRef` for tracking state between draw calls (like `drawnCountRef`). These are regular React refs — they don't trigger re-renders — and they persist across draw callbacks since the component doesn't unmount between frames.
+
+Use incremental drawing when: each tick adds new elements (points, paths, rows) and redrawing from scratch would be expensive or would lose accumulated history. Examples: Chaos Game, Mazes, XOR ring.
+
+## Dynamic canvas size
+
+If the canvas size depends on params (e.g., grid dimensions), you have two options:
+
+**Option 1: Hardcode to defaults.** Simplest — set `width` and `height` on the `<canvas>` element to match `defaultParams`. Works when size doesn't change.
+
+**Option 2: Use `useSimulation` alongside.** Call `useSimulation` in the same component just to read `params` for the element attributes. This triggers React re-renders when params change (which is fine — params rarely change), while the draw callback still runs outside React:
+
+```tsx
+function ResizableCanvas() {
+  const { params } = useSimulation<typeof mySim>();
+  const canvasRef = useSimulationCanvas<typeof mySim>((ctx, { data, params }) => {
+    ctx.clearRect(0, 0, params.width, params.height);
+    // draw...
+  });
+
+  return <canvas ref={canvasRef} width={params.width} height={params.height} />;
+}
+```
+
+## When to use which hook
+
+| | `useSimulation` | `useSimulationCanvas` |
+|---|---|---|
+| **Rendering** | React JSX (divs, SVG, etc.) | Canvas 2D context |
+| **Update path** | React state → reconciliation → render | Engine subscription → draw callback |
+| **Good for** | DOM grids, text, controls, status | Particles, large grids, continuous 2D |
+| **Overhead** | React render per frame | ~zero (just the draw call) |
+| **Can use React state in render?** | Yes | No (draw callback is outside React) |
