@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { DocsLayout } from './layout/DocsLayout';
+import { ShellRoute } from './layout/ShellRoute';
 import { HomePage } from './pages/HomePage';
 import { GettingStartedPage } from './pages/GettingStartedPage';
 import { TutorialPage } from './pages/TutorialPage';
@@ -47,21 +48,23 @@ export function App() {
       <Routes>
         <Route element={<DocsLayout />}>
           <Route index element={<HomePage />} />
-          {/* Guide */}
-          <Route path='guide/getting-started' element={<GettingStartedPage />} />
-          <Route path='guide/tutorial' element={<TutorialPage />} />
-          <Route path='guide/defining-a-sim' element={<DefiningASimPage />} />
-          <Route path='guide/simulation-component' element={<SimulationComponentPage />} />
-          <Route path='guide/using-the-hook' element={<UsingTheHookPage />} />
-          <Route path='guide/controls' element={<ControlsGuidePage />} />
-          <Route path='guide/canvas-rendering' element={<CanvasRenderingPage />} />
-          {/* API Reference */}
-          <Route path='api/define-sim' element={<DefineSimApiPage />} />
-          <Route path='api/simulation' element={<SimulationApiPage />} />
-          <Route path='api/use-simulation' element={<UseSimulationApiPage />} />
-          <Route path='api/controls' element={<ControlsApiPage />} />
-          <Route path='api/create-engine' element={<CreateEngineApiPage />} />
-          {/* Examples */}
+          {/* Guide — full shell with TOC */}
+          <Route element={<ShellRoute variant='full' />}>
+            <Route path='guide/getting-started' element={<GettingStartedPage />} />
+            <Route path='guide/tutorial' element={<TutorialPage />} />
+            <Route path='guide/defining-a-sim' element={<DefiningASimPage />} />
+            <Route path='guide/simulation-component' element={<SimulationComponentPage />} />
+            <Route path='guide/using-the-hook' element={<UsingTheHookPage />} />
+            <Route path='guide/controls' element={<ControlsGuidePage />} />
+            <Route path='guide/canvas-rendering' element={<CanvasRenderingPage />} />
+            <Route path='api/define-sim' element={<DefineSimApiPage />} />
+            <Route path='api/simulation' element={<SimulationApiPage />} />
+            <Route path='api/use-simulation' element={<UseSimulationApiPage />} />
+            <Route path='api/controls' element={<ControlsApiPage />} />
+            <Route path='api/create-engine' element={<CreateEngineApiPage />} />
+          </Route>
+          {/* Examples — playground layout (sidebar + flush main, no TOC) */}
+          <Route element={<ShellRoute variant='playground' />}>
           <Route path='examples/counter' element={<CounterPage />} />
           <Route path='examples/fibonacci' element={<FibonacciPage />} />
           <Route path='examples/fibonacci-spiral' element={<FibonacciSpiralPage />} />
@@ -70,6 +73,7 @@ export function App() {
           <Route path='examples/simple-model' element={<SimpleModelPage />} />
           <Route path='examples/automata-1d' element={<Automata1dPage />} />
           <Route path='examples/percolation' element={<PercolationPage />} />
+          <Route path='examples/percolation-grid' element={<Navigate to='/examples/percolation' replace />} />
           <Route path='examples/activators' element={<ActivatorsPage />} />
           <Route path='examples/worker-canvas' element={<WorkerCanvasPage />} />
           <Route path='examples/chaos-game' element={<ChaosGamePage />} />
@@ -88,6 +92,7 @@ export function App() {
           <Route path='examples/ising' element={<IsingPage />} />
           <Route path='examples/ant-colony' element={<AntColonyPage />} />
           <Route path='examples/traffic' element={<TrafficPage />} />
+          </Route>
           {/* Old routes redirect */}
           <Route path='guide/basic-blocks' element={<Navigate to='/guide/getting-started' replace />} />
           <Route path='*' element={<Navigate to='/' replace />} />

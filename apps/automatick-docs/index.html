@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>automatick docs</title>
     <script>
+      // Restore the saved theme before the first paint to avoid a flash.
+      (function () {
+        try {
+          var saved = localStorage.getItem('automatick-theme');
+          if (saved === 'dark') document.documentElement.classList.add('dark');
+          else if (saved === 'light') document.documentElement.classList.add('light');
+        } catch (e) {}
+      })();
+    </script>
+    <script>
       // Restore the path captured by 404.html so the router can render it.
       // https://github.com/rafgraph/spa-github-pages
       (function (l) {

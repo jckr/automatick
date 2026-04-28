@@ -24,7 +24,7 @@ export type BoidsParams = {
   r: number;
   separationCoefficient: number;
   separationDistance: number;
-  showCircles: boolean;
+  showCircles: 'all' | 'few' | 'none';
   width: number;
 };
 
@@ -93,7 +93,7 @@ export default defineSim<BoidsData, BoidsParams>({
     r: 2,
     separationCoefficient: 1.5,
     separationDistance: 25,
-    showCircles: true,
+    showCircles: 'few',
     width: 332
   },
 

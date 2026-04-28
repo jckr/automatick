@@ -2,8 +2,12 @@ import React from 'react';
 import { Simulation } from 'automatick/react/simulation';
 import { useSimulation } from 'automatick/react/hooks';
 import { useSimulationCanvas } from 'automatick/react/canvas';
-import { StandardControls } from 'automatick/react/controls';
 import { PerformanceOverlay } from 'automatick/react/performance';
+import {
+  DemoControlPanel,
+  DemoControlGroup,
+} from '../components/DemoControlPanel';
+import { DemoSplit } from '../components/DemoSplit';
 import percolationSim, {
   ROCK,
   WATER_FROM_TOP,
@@ -12,32 +16,36 @@ import percolationSim, {
 } from '../sims/percolationSim';
 
 const CELL_PX = 6;
+const CSS_SIZE = 600;
 
 function cellColor(cell: number): string {
   if (cell === ROCK) return '#555';
-  if (cell === WATER_FROM_TOP || cell === WATER_FROM_LEFT || cell === WATER_FROM_RIGHT)
+  if (
+    cell === WATER_FROM_TOP ||
+    cell === WATER_FROM_LEFT ||
+    cell === WATER_FROM_RIGHT
+  ) {
     return '#38bdf8';
-  // EMPTY
+  }
   return '#f0ebe3';
 }
 
 function PercolationGrid() {
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const cssSize = 600;
   const { data } = useSimulation<typeof percolationSim>();
 
   const borderColor =
     data.result === 'success'
-      ? '#3366ee'
+      ? 'var(--info)'
       : data.result === 'failure'
-        ? '#777'
+        ? 'var(--fg3)'
         : 'transparent';
 
   const canvasRef = useSimulationCanvas<typeof percolationSim>((ctx, { data, params }) => {
     const simW = params.width * CELL_PX;
     const simH = params.height * CELL_PX;
-    const scaleX = (cssSize * dpr) / simW;
-    const scaleY = (cssSize * dpr) / simH;
+    const scaleX = (CSS_SIZE * dpr) / simW;
+    const scaleY = (CSS_SIZE * dpr) / simH;
     ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
 
     ctx.fillStyle = '#f0ebe3';
@@ -53,77 +61,83 @@ function PercolationGrid() {
         }
       }
     }
-
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   });
 
   return (
     <div
       style={{
-        border: `3px solid ${borderColor}`,
-        borderRadius: 4,
-        display: 'inline-block',
+        position: 'relative',
+        height: '100%',
+        minHeight: 540,
+        padding: 16,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <canvas
-        ref={canvasRef}
-        width={cssSize * dpr}
-        height={cssSize * dpr}
-        style={{ display: 'block', width: '100%', height: 'auto' }}
-      />
+      <div
+        style={{
+          width: '100%',
+          maxWidth: CSS_SIZE,
+          border: `3px solid ${borderColor}`,
+          borderRadius: 4,
+          lineHeight: 0,
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          width={CSS_SIZE * dpr}
+          height={CSS_SIZE * dpr}
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+        />
+      </div>
+      <div style={{ position: 'absolute', top: 16, right: 16 }}>
+        <PerformanceOverlay />
+      </div>
     </div>
   );
 }
 
-export function PercolationDemo() {
-  const [showPerf, setShowPerf] = React.useState(true);
+const PERC_GROUPS: DemoControlGroup[] = [
+  {
+    label: 'Lattice',
+    controls: [
+      {
+        type: 'range',
+        param: 'porosity',
+        label: 'Porosity',
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
+      {
+        type: 'range',
+        param: 'width',
+        label: 'Width',
+        min: 10,
+        max: 100,
+        step: 1,
+      },
+      {
+        type: 'range',
+        param: 'height',
+        label: 'Height',
+        min: 10,
+        max: 100,
+        step: 1,
+      },
+    ],
+  },
+];
 
+export function PercolationDemo() {
   return (
     <Simulation sim={percolationSim} maxTime={Infinity} delayMs={30}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <StandardControls
-          maxTime={10000}
-          showStepButton
-          controls={[
-            {
-              type: 'range',
-              param: 'porosity',
-              label: 'Porosity',
-              min: 0,
-              max: 1,
-              step: 0.01,
-            },
-            {
-              type: 'range',
-              param: 'width',
-              label: 'Grid width',
-              min: 10,
-              max: 100,
-              step: 1,
-            },
-            {
-              type: 'range',
-              param: 'height',
-              label: 'Grid height',
-              min: 10,
-              max: 100,
-              step: 1,
-            },
-          ]}
-        />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, opacity: 0.7 }}>
-          <input type="checkbox" checked={showPerf} onChange={(e) => setShowPerf(e.target.checked)} />
-          Show performance
-        </label>
-        <div style={{ position: 'relative', lineHeight: 0 }}>
-          <PercolationGrid />
-          {showPerf && (
-            <div style={{ position: 'absolute', top: 8, right: 8 }}>
-              <PerformanceOverlay />
-            </div>
-          )}
-        </div>
-      </div>
+      <DemoSplit
+        preview={<PercolationGrid />}
+        controls={<DemoControlPanel groups={PERC_GROUPS} showStep />}
+      />
     </Simulation>
   );
 }

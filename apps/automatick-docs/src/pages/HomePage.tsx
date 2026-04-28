@@ -1,112 +1,227 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GameOfLifeDemo } from '../demos/GameOfLifeDemo';
+import { CodeBlock } from '../components/CodeBlock';
+import { HeroBoids } from '../components/HeroBoids';
+import { ArrowIcon, CopyIcon, GithubIcon } from '../layout/icons';
 
-const p: React.CSSProperties = {
-  opacity: 0.85,
-  lineHeight: 1.6,
-  maxWidth: 720,
-  fontSize: 15,
-};
+const MODEL_TS = `import { defineSim } from 'automatick/sim';
+
+export default defineSim<{ count: number }, { increment: number }>({
+  defaultParams: { increment: 1 },
+  init: () => ({ count: 0 }),
+  step: ({ data, params }) => ({
+    count: data.count + params.increment,
+  }),
+});`;
+
+const COMPONENT_TSX = `import { Simulation } from 'automatick/react/simulation';
+import { useSimulation } from 'automatick/react/hooks';
+import counterSim from './counterSim';
+
+function CounterView() {
+  const { data } = useSimulation<typeof counterSim>();
+  return <pre>{data.count}</pre>;
+}
+
+export function Counter() {
+  return (
+    <Simulation sim={counterSim} delayMs={500}>
+      <CounterView />
+    </Simulation>
+  );
+}`;
+
+const FEATURES: Array<{ n: string; title: string; body: React.ReactNode }> = [
+  {
+    n: '01 / sim',
+    title: 'Define the sim, not the component',
+    body: (
+      <>
+        State lives in plain data. You write <code>init</code> and{' '}
+        <code>step</code>; the engine drives the loop.
+      </>
+    ),
+  },
+  {
+    n: '02 / mount',
+    title: '<Simulation> owns the clock',
+    body: (
+      <>
+        One component manages play, pause, seek, and tick progression. Children
+        read state through context.
+      </>
+    ),
+  },
+  {
+    n: '03 / params',
+    title: 'Typed params, free controls',
+    body: (
+      <>
+        Declare your params; <code>StandardControls</code> wires sliders and
+        toggles to them by name.
+      </>
+    ),
+  },
+  {
+    n: '04 / render',
+    title: 'React or canvas. Your call.',
+    body: (
+      <>
+        Render with normal JSX, or use <code>useSimulationCanvas</code> to draw
+        to a canvas. Same engine.
+      </>
+    ),
+  },
+  {
+    n: '05 / workers',
+    title: 'Off the main thread, transparently',
+    body: (
+      <>
+        Swap the <code>sim</code> prop for <code>worker</code> and the same sim
+        runs in a Web Worker. No code changes.
+      </>
+    ),
+  },
+  {
+    n: '06 / nothing else',
+    title: 'Zero runtime dependencies',
+    body: (
+      <>
+        React is a peer. The engine ships pure TypeScript. Works with Vite,
+        Next, Remix.
+      </>
+    ),
+  },
+];
 
 export function HomePage() {
   return (
-    <div>
-      <h1 style={{ marginTop: 0, fontSize: 28 }}>automatick</h1>
-      <p style={{ ...p, fontSize: 17, opacity: 1 }}>
-        Build tick-based simulations in React by writing only the business
-        logic.
-      </p>
+    <>
+      <section className='hero'>
+        <div>
+          <div className='eyebrow'>open source · MIT</div>
+          <h1>
+            Build tick-based simulations in React,
+            <br />
+            <span className='accent'>one tick at a time.</span>
+          </h1>
+          <p className='lede'>
+            <span className='mono' style={{ fontSize: '0.9em', color: 'var(--fg1)' }}>
+              automatick
+            </span>{' '}
+            is a simulation engine for React. It gives you a clock, a state
+            machine, and controls — you write the rules.
+          </p>
+          <div className='cta-row'>
+            <Link to='/guide/getting-started' className='btn primary'>
+              Get started
+              <span className='kbd-inline'>
+                <ArrowIcon />
+              </span>
+            </Link>
+            <Link to='/examples/boids' className='btn'>
+              Live examples
+            </Link>
+            <a
+              className='btn ghost'
+              href='https://github.com/jckr/automatick'
+              target='_blank'
+              rel='noreferrer'
+            >
+              <GithubIcon />
+              Source
+            </a>
+          </div>
+          <div className='install-row'>
+            <span className='pfx'>$</span>
+            <span className='cmd'>npm install automatick</span>
+            <button
+              type='button'
+              title='Copy'
+              onClick={() => navigator.clipboard?.writeText('npm install automatick')}
+            >
+              <CopyIcon />
+            </button>
+          </div>
+        </div>
 
-      <p style={p}>
-        Building a simulation from scratch means solving problems that have
-        nothing to do with the simulation itself: managing animation loops,
-        coordinating play/pause/reset state, wiring up timing controls,
-        preventing unnecessary re-renders. These are all solved problems, but
-        solving them correctly every time is tedious and error-prone.
-      </p>
-      <p style={p}>
-        automatick handles all of that. You provide four things:
-      </p>
-      <ol style={{ ...p, paddingLeft: 24 }}>
-        <li>
-          <strong>init</strong> &mdash; how to create the initial state
-        </li>
-        <li>
-          <strong>step</strong> &mdash; how to advance the state by one tick
-        </li>
-        <li>
-          <strong>render</strong> &mdash; how to display the current state
-        </li>
-        <li>
-          <strong>params</strong> (optional) &mdash; what the user can
-          configure
-        </li>
-      </ol>
-      <p style={p}>
-        Everything else &mdash; the animation loop, the state machine, the
-        controls, the timing &mdash; is handled by the library.
-      </p>
+        <div>
+          <HeroBoids />
+        </div>
+      </section>
 
-      <h2 style={{ marginTop: 32, marginBottom: 12 }}>Two execution modes</h2>
-      <p style={p}>
-        <strong>Main-thread</strong> (<code>sim</code> prop): the simulation
-        runs in the browser on the main thread, driven by{' '}
-        <code>requestAnimationFrame</code>. Good for lightweight simulations
-        where computation is cheap.
-      </p>
-      <p style={p}>
-        <strong>Worker</strong> (<code>worker</code> prop): data computation
-        happens off the main thread, transparently. The same sim module works
-        in both modes &mdash; switching is a one-prop change. Good for
-        expensive simulations where you don{"'"}t want to block the UI.
-      </p>
+      <section className='section'>
+        <div className='eyebrow' style={{ color: 'var(--accent)', marginBottom: 16 }}>
+          — what it is
+        </div>
+        <h2>A clock. A state machine. A place for your rules.</h2>
+        <p className='section-lede'>
+          Building a simulation from scratch means solving problems that have
+          nothing to do with the simulation itself: animation loops, play/pause
+          state, controls wiring, off-main-thread execution. automatick handles
+          all of that. You write four things — <code>init</code>,{' '}
+          <code>step</code>, <code>render</code>, and your params — and the
+          library does the rest.
+        </p>
 
-      <h2 style={{ marginTop: 32, marginBottom: 12 }}>
-        Two rendering patterns
-      </h2>
-      <p style={p}>
-        <strong>React / DOM:</strong> the <code>&lt;Simulation&gt;</code>{' '}
-        component exposes data via context. Children call{' '}
-        <code>useSimulation()</code> and render normal JSX &mdash; divs, SVGs,
-        whatever React can render. This is the standard React data flow.
-      </p>
-      <p style={p}>
-        <strong>Canvas:</strong> children read data from the hook and
-        imperatively draw to a <code>&lt;canvas&gt;</code> using refs and
-        effects. The library doesn{"'"}t own the canvas &mdash; your render
-        component does. This is the right pattern for high-performance
-        visualizations.
-      </p>
+        <div className='feature-grid'>
+          {FEATURES.map((f) => (
+            <div key={f.n} className='feature'>
+              <div className='n'>{f.n}</div>
+              <h3>{f.title}</h3>
+              <p>{f.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <h2 style={{ marginTop: 32, marginBottom: 12 }}>See it in action</h2>
-      <p style={p}>
-        {"Conway's"} Game of Life, built with automatick. The entire simulation
-        logic is about 50 lines.
-      </p>
-      <div style={{ marginTop: 16, marginBottom: 32 }}>
-        <GameOfLifeDemo />
-      </div>
+      <section className='section'>
+        <div style={{ maxWidth: 760 }}>
+          <div
+            className='eyebrow'
+            style={{ color: 'var(--accent)', marginBottom: 16 }}
+          >
+            — what you'll write
+          </div>
+          <blockquote className='pullquote' style={{ margin: '0 0 32px' }}>
+            You give automatick a sim and a render. It gives you back a running
+            thing you can pause, scrub, and ship.
+          </blockquote>
+        </div>
 
-      <h2 style={{ marginTop: 32, marginBottom: 12 }}>Start here</h2>
-      <ul style={{ lineHeight: 2, fontSize: 15 }}>
-        <li>
-          <Link to="/guide/getting-started">Getting started</Link> &mdash;
-          install and build your first simulation in 60 seconds
-        </li>
-        <li>
-          <Link to="/guide/tutorial">Tutorial</Link> &mdash; build Game of
-          Life step by step
-        </li>
-        <li>
-          <Link to="/examples/counter">Examples</Link> &mdash; 18 interactive
-          demos from counters to pathfinding snakes
-        </li>
-        <li>
-          <Link to="/api/define-sim">API Reference</Link> &mdash; every
-          function, component, and prop
-        </li>
-      </ul>
-    </div>
+        <div className='grid grid-2'>
+          <CodeBlock code={MODEL_TS} file='counterSim.ts' lang='TS' />
+          <CodeBlock code={COMPONENT_TSX} file='Counter.tsx' lang='TSX' />
+        </div>
+      </section>
+
+      <section className='section' style={{ paddingBottom: 64 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 48,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <h2 style={{ margin: '0 0 8px' }}>Start with a counter.</h2>
+            <p style={{ margin: 0, color: 'var(--fg3)', fontSize: 15 }}>
+              Install the package, define a sim, mount it. The rest is the
+              simulation you wanted to build.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Link to='/guide/getting-started' className='btn primary'>
+              Read the guide
+            </Link>
+            <Link to='/api/define-sim' className='btn'>
+              API reference
+            </Link>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

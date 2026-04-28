@@ -1,48 +1,65 @@
 import React from 'react';
 import { Simulation } from 'automatick/react/simulation';
 import { useSimulation } from 'automatick/react/hooks';
-import { StandardControls } from 'automatick/react/controls';
+import {
+  DemoControlPanel,
+  DemoControlGroup,
+} from '../components/DemoControlPanel';
+import { DemoSplit } from '../components/DemoSplit';
 import counterSim from '../sims/counterSim';
 
-function CounterFrame() {
-  const { data, tick } = useSimulation<typeof counterSim>();
-
+function CounterView() {
+  const { data } = useSimulation<typeof counterSim>();
   return (
-    <div style={{ padding: 12, border: '1px solid rgba(0,0,0,0.15)', borderRadius: 8 }}>
-      <div style={{ fontFamily: 'monospace' }}>tick: {tick}</div>
-      <div style={{ fontFamily: 'monospace', fontSize: 24, marginTop: 6 }}>{data.value}</div>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        minHeight: 360,
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--font-serif)',
+          fontVariationSettings: '"opsz" 72',
+          fontSize: 96,
+          fontWeight: 500,
+          color: 'var(--fg1)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {data.value}
+      </div>
     </div>
   );
 }
 
+const COUNTER_GROUPS: DemoControlGroup[] = [
+  {
+    label: 'Step',
+    controls: [
+      {
+        type: 'range',
+        param: 'step',
+        label: 'Amount per tick',
+        min: 0,
+        max: 10,
+        step: 1,
+      },
+    ],
+  },
+];
+
 export function CounterDemo() {
   return (
-    <Simulation
-      sim={counterSim}
-      maxTime={50}
-      delayMs={0}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <p style={{ margin: 0, opacity: 0.85, fontSize: 14 }}>
-          Use <strong>Step</strong> to advance one tick while paused. Change <strong>Amount per tick</strong> without
-          resetting the run.
-        </p>
-        <StandardControls
-          maxTime={50}
-          showStepButton
-          controls={[
-            {
-              type: 'range',
-              param: 'step',
-              label: 'Amount per tick',
-              min: 0,
-              max: 10,
-              step: 1
-            }
-          ]}
-        />
-        <CounterFrame />
-      </div>
+    <Simulation sim={counterSim} maxTime={50} delayMs={0}>
+      <DemoSplit
+        preview={<CounterView />}
+        controls={<DemoControlPanel groups={COUNTER_GROUPS} showStep />}
+      />
     </Simulation>
   );
 }

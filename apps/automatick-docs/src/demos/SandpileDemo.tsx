@@ -1,9 +1,16 @@
 import React from 'react';
 import { Simulation } from 'automatick/react/simulation';
 import { useSimulationCanvas } from 'automatick/react/canvas';
-import { StandardControls } from 'automatick/react/controls';
-import { PerformanceOverlay } from 'automatick/react/performance';
-import sandpileSim, { SANDPILE_WIDTH, SANDPILE_HEIGHT } from '../sims/sandpileSim';
+import {
+  DemoControlPanel,
+  DemoControlGroup,
+} from '../components/DemoControlPanel';
+import { DemoSplit } from '../components/DemoSplit';
+import { CanvasStage } from '../components/CanvasStage';
+import sandpileSim, {
+  SANDPILE_WIDTH,
+  SANDPILE_HEIGHT,
+} from '../sims/sandpileSim';
 
 const CSS_SIZE = 600;
 
@@ -21,8 +28,7 @@ function SandpileCanvas() {
   const imageDataRef = React.useRef<ImageData | null>(null);
 
   const canvasRef = useSimulationCanvas<typeof sandpileSim>((ctx, { data }) => {
-    const scale = (CSS_SIZE * dpr) / CSS_SIZE;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const W = SANDPILE_WIDTH;
     const H = SANDPILE_HEIGHT;
@@ -63,52 +69,44 @@ function SandpileCanvas() {
     offCtx.putImageData(imageData, 0, 0);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(off, 0, 0, CSS_SIZE, CSS_SIZE);
-
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   });
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={CSS_SIZE * dpr}
-      height={CSS_SIZE * dpr}
-      style={{ borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', width: '100%', height: 'auto' }}
-    />
+    <CanvasStage maxWidth={CSS_SIZE}>
+      <canvas
+        ref={canvasRef}
+        width={CSS_SIZE * dpr}
+        height={CSS_SIZE * dpr}
+        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+      />
+    </CanvasStage>
   );
 }
 
-export function SandpileDemo() {
-  const [showPerf, setShowPerf] = React.useState(true);
+const SAND_GROUPS: DemoControlGroup[] = [
+  {
+    label: 'Drop',
+    controls: [
+      {
+        type: 'range',
+        param: 'grainsPerTick',
+        label: 'Grains / tick',
+        min: 1,
+        max: 100,
+        step: 1,
+      },
+    ],
+  },
+];
 
+export function SandpileDemo() {
   return (
     <Simulation sim={sandpileSim} delayMs={0} autoplay>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <StandardControls
-          showStepButton
-          controls={[
-            {
-              type: 'range',
-              param: 'grainsPerTick',
-              label: 'Grains per tick',
-              min: 1,
-              max: 100,
-              step: 1,
-            },
-          ]}
-        />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, opacity: 0.7 }}>
-          <input type="checkbox" checked={showPerf} onChange={(e) => setShowPerf(e.target.checked)} />
-          Show performance
-        </label>
-        <div style={{ position: 'relative', lineHeight: 0 }}>
-          <SandpileCanvas />
-          {showPerf && (
-            <div style={{ position: 'absolute', top: 8, right: 8 }}>
-              <PerformanceOverlay />
-            </div>
-          )}
-        </div>
-      </div>
+      <DemoSplit
+        preview={<SandpileCanvas />}
+        controls={<DemoControlPanel groups={SAND_GROUPS} showStep />}
+      />
     </Simulation>
   );
 }

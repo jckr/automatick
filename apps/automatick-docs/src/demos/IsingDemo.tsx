@@ -2,8 +2,12 @@ import React from 'react';
 import { Simulation } from 'automatick/react/simulation';
 import { useSimulation } from 'automatick/react/hooks';
 import { useSimulationCanvas } from 'automatick/react/canvas';
-import { StandardControls } from 'automatick/react/controls';
-import { PerformanceOverlay } from 'automatick/react/performance';
+import {
+  DemoControlPanel,
+  DemoControlGroup,
+} from '../components/DemoControlPanel';
+import { DemoSplit } from '../components/DemoSplit';
+import { CanvasStage } from '../components/CanvasStage';
 import isingSim from '../sims/isingSim';
 
 const GRID = 200;
@@ -15,8 +19,7 @@ function IsingCanvas() {
   const imageDataRef = React.useRef<ImageData | null>(null);
 
   const canvasRef = useSimulationCanvas<typeof isingSim>((ctx, { data }) => {
-    const scale = (CSS_SIZE * dpr) / CSS_SIZE;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     if (!offscreenRef.current) {
       const off = document.createElement('canvas');
@@ -30,7 +33,6 @@ function IsingCanvas() {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       return;
     }
-
     if (!imageDataRef.current) {
       imageDataRef.current = offCtx.createImageData(GRID, GRID);
     }
@@ -54,78 +56,98 @@ function IsingCanvas() {
     offCtx.putImageData(imageData, 0, 0);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(off, 0, 0, CSS_SIZE, CSS_SIZE);
-
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   });
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={CSS_SIZE * dpr}
-      height={CSS_SIZE * dpr}
-      style={{ borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', width: '100%', height: 'auto' }}
-    />
+    <CanvasStage maxWidth={CSS_SIZE}>
+      <canvas
+        ref={canvasRef}
+        width={CSS_SIZE * dpr}
+        height={CSS_SIZE * dpr}
+        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+      />
+    </CanvasStage>
   );
 }
 
 function IsingStats() {
   const { data } = useSimulation<typeof isingSim>();
   return (
-    <div style={{ fontSize: 13, opacity: 0.75, fontFamily: 'monospace' }}>
-      magnetization: {data.magnetization.toFixed(3)} &nbsp; energy: {data.energy.toFixed(3)}
+    <div className='group'>
+      <div className='g-lbl'>Readouts</div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'var(--fg3)' }}>magnetization</span>
+          <span style={{ color: 'var(--fg1)' }}>{data.magnetization.toFixed(3)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'var(--fg3)' }}>energy</span>
+          <span style={{ color: 'var(--fg1)' }}>{data.energy.toFixed(3)}</span>
+        </div>
+      </div>
     </div>
   );
 }
 
-export function IsingDemo() {
-  const [showPerf, setShowPerf] = React.useState(true);
+const ISING_GROUPS: DemoControlGroup[] = [
+  {
+    label: 'Field',
+    controls: [
+      {
+        type: 'range',
+        param: 'T',
+        label: 'Temperature',
+        min: 0.5,
+        max: 5,
+        step: 0.05,
+      },
+      {
+        type: 'range',
+        param: 'externalField',
+        label: 'External field',
+        min: -1,
+        max: 1,
+        step: 0.05,
+      },
+    ],
+  },
+  {
+    label: 'Compute',
+    controls: [
+      {
+        type: 'range',
+        param: 'sweepsPerTick',
+        label: 'Sweeps / tick',
+        min: 1,
+        max: 10,
+        step: 1,
+      },
+    ],
+  },
+];
 
+export function IsingDemo() {
   return (
     <Simulation sim={isingSim} delayMs={0} autoplay>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <StandardControls
-          showStepButton
-          controls={[
-            {
-              type: 'range',
-              param: 'T',
-              label: 'Temperature (T)',
-              min: 0.5,
-              max: 5,
-              step: 0.05,
-            },
-            {
-              type: 'range',
-              param: 'externalField',
-              label: 'External field (h)',
-              min: -1,
-              max: 1,
-              step: 0.05,
-            },
-            {
-              type: 'range',
-              param: 'sweepsPerTick',
-              label: 'Sweeps / tick',
-              min: 1,
-              max: 10,
-              step: 1,
-            },
-          ]}
-        />
-        <IsingStats />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, opacity: 0.7 }}>
-          <input type="checkbox" checked={showPerf} onChange={(e) => setShowPerf(e.target.checked)} />
-          Show performance
-        </label>
-        <div style={{ position: 'relative', lineHeight: 0 }}>
-          <IsingCanvas />
-          {showPerf && (
-            <div style={{ position: 'absolute', top: 8, right: 8 }}>
-              <PerformanceOverlay />
-            </div>
-          )}
-        </div>
-      </div>
+      <DemoSplit
+        preview={<IsingCanvas />}
+        controls={
+          <DemoControlPanel
+            groups={ISING_GROUPS}
+            extra={<IsingStats />}
+            showStep
+          />
+        }
+      />
     </Simulation>
   );
 }
