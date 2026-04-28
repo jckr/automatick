@@ -53,6 +53,7 @@ const CANVAS: Item[] = [
 
 const VIZ: Item[] = [
   { to: '/examples/automatick-hero', label: 'automatick — letter form', badge: 'new' },
+  { to: '/examples/automatick-bubbles', label: 'automatick — bubbles', badge: 'new' },
   { to: '/examples/world-spinner', label: 'World spinner', badge: 'new' },
 ];
 

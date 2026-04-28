@@ -44,6 +44,7 @@ import { AntColonyPage } from './pages/examples/AntColonyPage';
 import { TrafficPage } from './pages/examples/TrafficPage';
 import { AutomatickHeroPage } from './pages/examples/AutomatickHeroPage';
 import { WorldSpinnerPage } from './pages/examples/WorldSpinnerPage';
+import { AutomatickBubblesPage } from './pages/examples/AutomatickBubblesPage';
 
 export function App() {
   return (
@@ -97,6 +98,7 @@ export function App() {
           <Route path='examples/ant-colony' element={<AntColonyPage />} />
           <Route path='examples/traffic' element={<TrafficPage />} />
           <Route path='examples/automatick-hero' element={<AutomatickHeroPage />} />
+          <Route path='examples/automatick-bubbles' element={<AutomatickBubblesPage />} />
           <Route path='examples/world-spinner' element={<WorldSpinnerPage />} />
           </Route>
           {/* Old routes redirect */}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { CodeBlock } from '../components/CodeBlock';
-import { HeroAutomatick } from '../components/HeroAutomatick';
+import { HeroBubbles } from '../components/HeroBubbles';
 import { ArrowIcon, CopyIcon, GithubIcon } from '../layout/icons';
 
 const MODEL_TS = `import { defineSim } from 'automatick/sim';
@@ -98,21 +98,22 @@ export function HomePage() {
   return (
     <>
       <section
-        className='hero'
         style={{
-          gridTemplateColumns: '1fr',
-          paddingBottom: 32,
-          alignItems: 'stretch',
+          width: '100%',
+          minHeight: '50vh',
+          padding: 0,
+          margin: 0,
+          display: 'block',
         }}
       >
-        <HeroAutomatick />
+        <HeroBubbles />
       </section>
 
       <section
         className='hero'
         style={{
           gridTemplateColumns: '1fr',
-          paddingTop: 0,
+          paddingTop: 48,
         }}
       >
         <div>
