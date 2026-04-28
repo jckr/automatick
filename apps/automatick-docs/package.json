@@ -12,17 +12,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/fiber": "^8.17.0",
     "automatick": "0.0.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.28.0",
-    "remark-gfm": "^3.0.1"
+    "remark-gfm": "^3.0.1",
+    "three": "^0.166.0"
   },
   "devDependencies": {
     "@mdx-js/react": "^2.1.1",
     "@mdx-js/rollup": "^2.1.1",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@types/three": "^0.166.0",
     "@vitejs/plugin-react": "^5.0.0",
     "markdown-table": "^3.0.4",
     "rehype-pretty-code": "^0.14.3",

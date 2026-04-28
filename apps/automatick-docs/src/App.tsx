@@ -10,6 +10,7 @@ import { SimulationComponentPage } from './pages/SimulationComponentPage';
 import { UsingTheHookPage } from './pages/UsingTheHookPage';
 import { ControlsGuidePage } from './pages/ControlsGuidePage';
 import { CanvasRenderingPage } from './pages/CanvasRenderingPage';
+import { VisualizationPatternsPage } from './pages/VisualizationPatternsPage';
 import { DefineSimApiPage } from './pages/api/DefineSimApiPage';
 import { SimulationApiPage } from './pages/api/SimulationApiPage';
 import { UseSimulationApiPage } from './pages/api/UseSimulationApiPage';
@@ -41,6 +42,8 @@ import { SphFluidPage } from './pages/examples/SphFluidPage';
 import { IsingPage } from './pages/examples/IsingPage';
 import { AntColonyPage } from './pages/examples/AntColonyPage';
 import { TrafficPage } from './pages/examples/TrafficPage';
+import { AutomatickHeroPage } from './pages/examples/AutomatickHeroPage';
+import { WorldSpinnerPage } from './pages/examples/WorldSpinnerPage';
 
 export function App() {
   return (
@@ -57,6 +60,7 @@ export function App() {
             <Route path='guide/using-the-hook' element={<UsingTheHookPage />} />
             <Route path='guide/controls' element={<ControlsGuidePage />} />
             <Route path='guide/canvas-rendering' element={<CanvasRenderingPage />} />
+            <Route path='guide/visualization-patterns' element={<VisualizationPatternsPage />} />
             <Route path='api/define-sim' element={<DefineSimApiPage />} />
             <Route path='api/simulation' element={<SimulationApiPage />} />
             <Route path='api/use-simulation' element={<UseSimulationApiPage />} />
@@ -92,6 +96,8 @@ export function App() {
           <Route path='examples/ising' element={<IsingPage />} />
           <Route path='examples/ant-colony' element={<AntColonyPage />} />
           <Route path='examples/traffic' element={<TrafficPage />} />
+          <Route path='examples/automatick-hero' element={<AutomatickHeroPage />} />
+          <Route path='examples/world-spinner' element={<WorldSpinnerPage />} />
           </Route>
           {/* Old routes redirect */}
           <Route path='guide/basic-blocks' element={<Navigate to='/guide/getting-started' replace />} />

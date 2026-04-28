@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { CodeBlock } from '../components/CodeBlock';
-import { HeroBoids } from '../components/HeroBoids';
+import { HeroAutomatick } from '../components/HeroAutomatick';
 import { ArrowIcon, CopyIcon, GithubIcon } from '../layout/icons';
 
 const MODEL_TS = `import { defineSim } from 'automatick/sim';
@@ -97,7 +97,24 @@ const FEATURES: Array<{ n: string; title: string; body: React.ReactNode }> = [
 export function HomePage() {
   return (
     <>
-      <section className='hero'>
+      <section
+        className='hero'
+        style={{
+          gridTemplateColumns: '1fr',
+          paddingBottom: 32,
+          alignItems: 'stretch',
+        }}
+      >
+        <HeroAutomatick />
+      </section>
+
+      <section
+        className='hero'
+        style={{
+          gridTemplateColumns: '1fr',
+          paddingTop: 0,
+        }}
+      >
         <div>
           <div className='eyebrow'>open source · MIT</div>
           <h1>
@@ -119,8 +136,8 @@ export function HomePage() {
                 <ArrowIcon />
               </span>
             </Link>
-            <Link to='/examples/boids' className='btn'>
-              Live examples
+            <Link to='/examples/automatick-hero' className='btn'>
+              See it run
             </Link>
             <a
               className='btn ghost'
@@ -143,10 +160,6 @@ export function HomePage() {
               <CopyIcon />
             </button>
           </div>
-        </div>
-
-        <div>
-          <HeroBoids />
         </div>
       </section>
 

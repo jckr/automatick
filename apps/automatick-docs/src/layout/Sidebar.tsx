@@ -12,6 +12,7 @@ const GUIDE: Item[] = [
   { to: '/guide/using-the-hook', label: 'Using the hook' },
   { to: '/guide/controls', label: 'Controls' },
   { to: '/guide/canvas-rendering', label: 'Canvas rendering' },
+  { to: '/guide/visualization-patterns', label: 'Visualization patterns', badge: 'new' },
 ];
 
 const API: Item[] = [
@@ -50,6 +51,11 @@ const CANVAS: Item[] = [
   { to: '/examples/worker-canvas', label: 'XOR ring' },
 ];
 
+const VIZ: Item[] = [
+  { to: '/examples/automatick-hero', label: 'automatick — letter form', badge: 'new' },
+  { to: '/examples/world-spinner', label: 'World spinner', badge: 'new' },
+];
+
 const STRESS: Item[] = [
   { to: '/examples/gray-scott', label: 'Gray-Scott' },
   { to: '/examples/stable-fluids', label: 'Stable fluids' },
@@ -66,6 +72,7 @@ const GROUPS: Group[] = [
   { label: 'Simple', items: SIMPLE, collapsible: true },
   { label: 'Grid simulations', items: GRID, collapsible: true },
   { label: 'Canvas simulations', items: CANVAS, collapsible: true },
+  { label: 'Visualization', items: VIZ, collapsible: true },
   { label: 'Stress tests', items: STRESS, collapsible: true },
 ];
 
