@@ -1,0 +1,59 @@
+# Visualization-first simulations
+
+Most automatick examples are simulations where `step` does the heavy lifting — Game of Life, Boids, percolation, gravity. Each tick, `step` reads `data`, computes a new `data`, and the renderer paints whatever just happened.
+
+There's a second family of use cases that fits the same primitives but with the workload inverted: **the render is the star**, and `step` is light. An auto-rotating 3D scene. A globe spinning past a fixed dot lattice. A node-link diagram where particles drift gently and links accrete over time. These are visualizations driven by a tick, not simulations that happen to be visualized.
+
+The good news: the API doesn't change. `init` + `step` + render still apply. What changes is **what you put where**.
+
+## The discipline: only animated state goes in `Data`
+
+The single most important pattern for visualization-first sims:
+
+> **Static data lives outside the simulation. `Data` carries only what changes every tick.**
+
+Concretely: if you're rendering a 3D globe with 500 dots and rotating it, the dots are static — they're a module-level constant on the rendering side. `Data` is `{ angle: number }`. `step` increments the angle. The renderer reads the angle from `data`, the dots from a normal import.
+
+```ts
+// worldSpinnerData.ts — static, not in Data
+export const WORLD_DOTS = fibonacciSphere(500);
+
+// worldSpinnerSim.ts — Data is just the angle
+export default defineSim<{ angle: number }, { angularSpeed: number }>({
+  defaultParams: { angularSpeed: 0.005 },
+  init: () => ({ angle: 0 }),
+  step: ({ data, params }) => ({ angle: data.angle + params.angularSpeed }),
+});
+
+// WorldSpinnerDemo.tsx — render reads both
+import { WORLD_DOTS } from './worldSpinnerData';
+const { data } = useSimulation<typeof worldSpinnerSim>();
+// rotate the scene by data.angle, position dots from WORLD_DOTS
+```
+
+The `WORLD_DOTS` array never round-trips through the engine — not at `init`, not on every `step`, not across the worker boundary. It's a constant the renderer reads directly. The engine only ever sees `{ angle }`.
+
+This matters for two reasons:
+
+- **It scales.** A 100MB GeoJSON of land masses is just a larger module-level constant. `Data` is still `{ angle }`. The engine isn't allocating arrays each tick or shipping megabytes across the worker boundary.
+- **It clarifies the mental model.** Asking "is this thing animated?" tells you exactly where it goes. View state in `Data`. Static data outside.
+
+## When the dataset is derived, not constant
+
+Sometimes the renderer doesn't need the raw dataset — it needs a simplified or aggregated view. A 2M-node graph displayed as a 1k-node force layout. A high-res scalar field rendered as a contour set. The reduction is expensive enough that you don't want to do it on every render, but it isn't *animated* either.
+
+Two cheap moves:
+
+1. **Memoize the derivation.** A `useMemo` keyed on the source data, computed once on the rendering side. `Data` still only holds animated state.
+2. **Move the derivation into a worker.** Run the heavy reduce in `step` (in a worker), but make the *output* of `step` only the rendered slice. The input data stays as a worker-side module constant; only the post-reduction summary crosses the wire to the main thread.
+
+Both keep `Data` minimal and the engine's per-tick payload small.
+
+## Examples
+
+- [**automatick — letter form**](/examples/automatick-hero) — Free-floating particles drift across a canvas. Every tick, links are re-rolled from scratch: a pair is connected with probability `q` when both endpoints are inside the silhouette of "automatick", and only `p` otherwise. The wordmark is the steady-state density of those rolls — not an accumulating set. The letter mask itself is a memoized `Uint8Array` constant; only the nodes and the per-tick link roll live in `Data`.
+- [**World spinner**](/examples/world-spinner) — A 3D globe with a Fibonacci-spiral dot lattice and pulsing anchors. Rotation is one number in `Data`; the dots are a module-level constant the renderer imports directly.
+
+## The shape this *doesn't* take
+
+You don't need a separate "view tick" or a model/view split or a render-only loop. Each of those would be a new concept to learn. The discipline above — static outside, animated inside — gets you there with the primitives you already know. If a real ergonomic problem shows up while building one of these (something you wanted to write that you couldn't), bring back the friction concretely. We'd rather earn a new concept than invent one in advance.
