@@ -2,95 +2,40 @@
 
 ## Installation
 
+Install `automatick` with whichever package manager your project uses:
+
 ```bash
 npm install automatick
 ```
 
-The engine API is at the package root; React components and hooks live under subpaths (`automatick/react/simulation`, `automatick/react/hooks`, etc.).
-
-## Your first simulation
-
-An automatick simulation has three parts:
-
-1. **A sim module** — pure business logic: how to initialize state and how to advance it.
-2. **A `<Simulation>` component** — mounts the engine and provides state to children.
-3. **A render component** — reads state via `useSimulation()` and draws the UI.
-
-Here's a complete counter simulation:
-
-```tsx
-// counterSim.ts
-import { defineSim } from 'automatick/sim';
-
-export default defineSim<{ count: number }, { increment: number }>({
-  defaultParams: { increment: 1 },
-  init: (params) => ({ count: 0 }),
-  step: ({ data, params }) => ({ count: data.count + params.increment }),
-});
+```bash
+pnpm add automatick
 ```
 
-```tsx
-// CounterPage.tsx
-import { Simulation } from 'automatick/react/simulation';
-import { useSimulation } from 'automatick/react/hooks';
-import { StandardControls } from 'automatick/react/controls';
-import counterSim from './counterSim';
-
-function Display() {
-  const { data, tick } = useSimulation<typeof counterSim>();
-  return <div>Tick {tick}: count is {data.count}</div>;
-}
-
-export default function CounterPage() {
-  return (
-    <Simulation sim={counterSim}>
-      <Display />
-      <StandardControls />
-    </Simulation>
-  );
-}
+```bash
+yarn add automatick
 ```
 
-That's it. The library handles the animation loop, play/pause/stop state, timing, and controls. You only wrote the business logic (`init` and `step`) and the render function.
-
-## Skipping the module wrapper
-
-When a sim is small and won't be reused or moved to a worker, the `defineSim` indirection is overhead. `<Simulation>` accepts the parts as props directly:
-
-```tsx
-import { Simulation } from 'automatick/react/simulation';
-import { useSimulation } from 'automatick/react/hooks';
-
-function Display() {
-  const { data, tick } = useSimulation<{ count: number }>();
-  return <div>Tick {tick}: count is {data.count}</div>;
-}
-
-export default function CounterPage() {
-  return (
-    <Simulation
-      init={{ count: 0 }}
-      step={({ data }) => ({ count: data.count + 1 })}
-    >
-      <Display />
-    </Simulation>
-  );
-}
+```bash
+bun add automatick
 ```
 
-`init` accepts a value or a `(params) => Data` function. `defaultParams` and `shouldStop` are optional. Reach for `defineSim` once you want to move the sim to its own file, run it in a worker, or share it across pages.
+React and React DOM are optional peer dependencies. If you plan to use the React adapter (the `<Simulation>` component, `useSimulation`, the canvas hook, the built-in controls), install them too:
 
-## What you provide vs. what the library handles
+```bash
+npm install react react-dom
+```
 
-**You provide:**
-- `init(params)` — create initial state
-- `step({ data, params, tick })` — advance state by one tick
-- A React component that renders the current `data`
-- Optionally: `shouldStop`, custom controls, params
+automatick targets React 18 and newer, and requires Node 22.12 or newer for local development.
 
-**The library handles:**
-- Animation loop (`requestAnimationFrame`)
-- Play / pause / stop / seek / reset state machine
-- Timing and delay between ticks
-- Control UI (play button, step button, parameter sliders)
-- Re-rendering only when state changes
+## Where things live
+
+The package ships the simulation engine and the React adapter side by side, exposed as subpath exports:
+
+- `automatick` and `automatick/sim` — the engine and `defineSim`, no React dependency.
+- `automatick/react/simulation`, `automatick/react/hooks`, `automatick/react/controls`, `automatick/react/canvas`, `automatick/react/performance` — the React adapter.
+- `automatick/worker/runner`, `automatick/worker/create`, `automatick/worker/protocol` — helpers for running a sim in a Web Worker.
+
+You only import the subpaths you actually use, so a non-React project never pulls React into its bundle.
+
+Once installed, head to the [tutorial](/guide/tutorial) to build your first simulation.
