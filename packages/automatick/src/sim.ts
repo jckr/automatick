@@ -5,10 +5,36 @@ export type StepArgs<Data, Params> = {
   tick: number;
 };
 
+/**
+ * Initial state for a simulation. Either a value of type `Data`, or a function
+ * `(params) => Data`. The function form is required when the initial state
+ * depends on params; otherwise pass the value directly.
+ *
+ * `Data` itself must not be a function — it has to be structured-cloneable so
+ * it can cross the worker boundary and be safely re-emitted on resetWith.
+ * That's what makes this union unambiguous: a `function` value is always the
+ * `(params) => Data` branch.
+ */
+export type SimInit<Data, Params> = ((params: Params) => Data) | Data;
+
+/**
+ * Type guard that narrows a `SimInit` to its function branch. Defined as a
+ * user-typed predicate so we can do the narrowing without an `as` cast.
+ */
+export function isInitFn<Data, Params>(
+  init: SimInit<Data, Params>
+): init is (params: Params) => Data {
+  return typeof init === 'function';
+}
+
 /** A simulation module: the pure business logic that automatick drives. */
 export type SimModule<Data, Params> = {
-  /** Create initial simulation state from params. Called on engine creation and on resetWith(). */
-  init: (params: Params) => Data;
+  /**
+   * Initial simulation state — value or `(params) => Data`. When a value is
+   * passed, the engine takes a fresh `structuredClone` on every (re)init so
+   * mutations inside `step` never leak across resets.
+   */
+  init: SimInit<Data, Params>;
 
   /** Advance the simulation by one tick. Must be pure and synchronous. */
   step: (args: StepArgs<Data, Params>) => Data;

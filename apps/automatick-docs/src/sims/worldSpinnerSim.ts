@@ -39,7 +39,7 @@ const DEFAULT_PARAMS: WorldSpinnerParams = {
 
 export default defineSim<WorldSpinnerData, WorldSpinnerParams>({
   defaultParams: DEFAULT_PARAMS,
-  init: () => ({ angle: 0, pulses: [] }),
+  init: { angle: 0, pulses: [] },
   step: ({ data, params, tick }) => {
     const { angularSpeed, pulseRate, pulseLifetime } = params;
 
