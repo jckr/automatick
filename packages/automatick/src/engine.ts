@@ -62,8 +62,11 @@ export class SimulationEngine<Data, Params> {
     if (isInitFn(init)) {
       this.initFn = init;
     } else {
-      // Snapshot the source once so later mutations to it can't leak in,
-      // then clone again on every (re)init so step mutations don't persist.
+      // Two clones, two threats. The first freezes `init` at construction so
+      // later mutations to the caller's literal can't leak in. The second
+      // hands the engine its own copy each (re)init so when `step` mutates
+      // its `data` argument in place, that mutation can't reach back into
+      // `seed` and break the next reset.
       const seed = structuredClone(init);
       this.initFn = () => structuredClone(seed);
     }
