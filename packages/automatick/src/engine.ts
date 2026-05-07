@@ -1,4 +1,5 @@
-import type { StepArgs } from './sim';
+import { isInitFn } from './sim';
+import type { SimInit, StepArgs } from './sim';
 
 export type SimulationStatus = 'idle' | 'playing' | 'paused' | 'stopped';
 
@@ -9,7 +10,11 @@ export type TickPerformance = {
 };
 
 export type EngineConfig<Data, Params> = {
-  init: (params: Params) => Data;
+  /**
+   * Initial simulation state — value or `(params) => Data`. See `SimInit`.
+   * When a value is passed, the engine `structuredClone`s it on each (re)init.
+   */
+  init: SimInit<Data, Params>;
   step: (args: StepArgs<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   initialParams: Params;
@@ -53,7 +58,18 @@ export class SimulationEngine<Data, Params> {
   private readonly perfBuffer: TickPerformance[] = [];
 
   constructor(config: EngineConfig<Data, Params>) {
-    this.initFn = config.init;
+    const init = config.init;
+    if (isInitFn(init)) {
+      this.initFn = init;
+    } else {
+      // Two clones, two threats. The first freezes `init` at construction so
+      // later mutations to the caller's literal can't leak in. The second
+      // hands the engine its own copy each (re)init so when `step` mutates
+      // its `data` argument in place, that mutation can't reach back into
+      // `seed` and break the next reset.
+      const seed = structuredClone(init);
+      this.initFn = () => structuredClone(seed);
+    }
     this.stepFn = config.step;
     this.shouldStopFn = config.shouldStop;
     this.maxTime = config.maxTime;

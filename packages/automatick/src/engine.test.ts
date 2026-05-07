@@ -71,6 +71,51 @@ describe('initialization', () => {
 });
 
 // ===========================================================================
+// Category 1b: init as a value (not a function)
+// ===========================================================================
+
+describe('initialization with data-form init', () => {
+  it('accepts a value for init and exposes it as the initial snapshot data', () => {
+    const engine = createEngine({
+      init: { value: 42 },
+      step: ({ data }) => ({ value: data.value + 1 }),
+      initialParams: {},
+    });
+    expect(engine.getSnapshot().data).toEqual({ value: 42 });
+  });
+
+  it('resetWith returns a fresh copy when step has mutated data', () => {
+    type D = { items: number[] };
+    const engine = createEngine<D, Record<string, never>>({
+      init: { items: [] },
+      step: ({ data, tick }) => {
+        // Intentional mutation: simulates a sim that mutates its data in place.
+        data.items.push(tick);
+        return data;
+      },
+      initialParams: {},
+    });
+    engine.advance(3);
+    expect(engine.getSnapshot().data.items).toEqual([1, 2, 3]);
+    engine.resetWith();
+    expect(engine.getSnapshot().data.items).toEqual([]);
+  });
+
+  it('mutating the original literal after construction does not leak into the engine, even across resetWith', () => {
+    const seed = { items: [1, 2, 3] };
+    const engine = createEngine({
+      init: seed,
+      step: ({ data }) => data,
+      initialParams: {},
+    });
+    seed.items.push(999);
+    expect(engine.getSnapshot().data.items).toEqual([1, 2, 3]);
+    engine.resetWith();
+    expect(engine.getSnapshot().data.items).toEqual([1, 2, 3]);
+  });
+});
+
+// ===========================================================================
 // Category 2: State Machine Transitions
 // ===========================================================================
 

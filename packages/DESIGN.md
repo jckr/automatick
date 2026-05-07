@@ -106,9 +106,16 @@ When using `worker`, the type parameter on `useSimulation` must be provided expl
 An identity function that enables type inference. Returns its argument unchanged.
 
 ```ts
+type SimInit<Data, Params> = ((params: Params) => Data) | Data;
+
 type SimModule<Data, Params> = {
-  /** Create initial simulation state from params. Called once at engine creation and on resetWith(). */
-  init: (params: Params) => Data;
+  /**
+   * Initial simulation state — either a value of type `Data`, or a function
+   * `(params) => Data`. Use the function form when init depends on params;
+   * otherwise pass the value directly. Called once at engine creation and on
+   * resetWith().
+   */
+  init: SimInit<Data, Params>;
 
   /** Advance the simulation by one tick. Must be pure and synchronous. */
   step: (args: StepArgs<Data, Params>) => Data;
@@ -127,12 +134,14 @@ type StepArgs<Data, Params> = {
 };
 ```
 
+`Data` must be structured-cloneable: it crosses the worker boundary via `postMessage` and the engine `structuredClone`s data-form `init` values on every (re)init. As a consequence, `Data` must not itself be a function.
+
 **Why this shape:**
 
 The sim module is the part the developer writes most often and stares at most. It must contain only business logic — no library ceremony, no framework imports beyond `defineSim` itself.
 
 - `step` returns `Data` directly — no tagged union, no status envelope. A step function is just a pure transformation: `(state, params) → next state`. Someone unfamiliar with automatick can read it and understand what the simulation does.
-- `init` takes `params` directly, not a wrapper object. Minimal surface.
+- `init` accepts a value or a function. Sims whose initial state doesn't depend on params (`init: { angle: 0, pulses: [] }`) skip the `() =>` wrapper; sims that need params still get the function form.
 - `shouldStop` is a separate optional predicate, not a return value from `step`. This keeps `step` clean — it only answers "what's next?", not "should we keep going?". Most sims don't need termination logic at all.
 - `step` is synchronous. Async computation belongs in a worker, where `step` runs synchronously on the worker thread. The developer doesn't need to think about promises or cancellation.
 - `defineSim` is the only way to create a sim module. One obvious way.
@@ -257,7 +266,8 @@ type UseSimulationHistoryReturn<Data> = {
 
 ```ts
 type EngineConfig<Data, Params> = {
-  init: (params: Params) => Data;
+  /** Value or `(params) => Data`. See SimInit in section 4. */
+  init: SimInit<Data, Params>;
   step: (args: StepArgs<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   initialParams: Params;
@@ -291,7 +301,9 @@ type SimulationEngine<Data, Params> = {
 };
 ```
 
-**Eager initialization:** `createEngine()` calls `init(initialParams)` immediately. The returned engine is snapshot-ready. There is no lazy path, no `didInit` guard.
+**Eager initialization:** `createEngine()` invokes `init` immediately (calling the function or cloning the value). The returned engine is snapshot-ready. There is no lazy path, no `didInit` guard.
+
+**Data-form init cloning:** When `init` is a value, the engine `structuredClone`s it once at construction (so later mutations to the source can't leak in) and again on every (re)init (so step mutations don't persist across resets).
 
 ### State Machine
 
