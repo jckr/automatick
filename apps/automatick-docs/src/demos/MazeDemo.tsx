@@ -11,6 +11,7 @@ import { CanvasStage } from '../components/CanvasStage';
 import mazeSim from '../sims/mazeSim';
 import type { MazeGridKind } from '../sims/mazeSim';
 import { drawMazeFrame } from '../sims/mazeCanvas';
+import styles from './MazeDemo.module.css';
 
 const CSS_SIZE = 600;
 
@@ -69,7 +70,7 @@ function MazeCanvas() {
         ref={canvasRef}
         width={CSS_SIZE * dpr}
         height={CSS_SIZE * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

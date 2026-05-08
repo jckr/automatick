@@ -10,6 +10,7 @@ import { DemoSplit } from '../components/DemoSplit';
 import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import segregationSim, { draw } from '../sims/segregationSim';
 import type { SegData } from '../sims/segregationSim';
+import styles from './SegregationDemo.module.css';
 
 const CSS_SIZE = 600;
 
@@ -24,40 +25,15 @@ function SegregationCanvas() {
   });
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        height: '100%',
-        minHeight: 540,
-        padding: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+    <div className={styles.stage}>
+      <div className={styles.canvasWrap}>
         <canvas
           ref={canvasRef}
           width={CSS_SIZE * dpr}
           height={CSS_SIZE * dpr}
-          style={{
-            width: '100%',
-            maxWidth: CSS_SIZE,
-            height: 'auto',
-            display: 'block',
-            borderRadius: 4,
-          }}
+          className={styles.canvas}
         />
-        <div style={{ position: 'absolute', top: 0, right: 0 }}>
+        <div className={styles.perf}>
           <PerformanceOverlay />
         </div>
       </div>

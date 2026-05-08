@@ -12,6 +12,7 @@ import trafficSim, {
   TRAFFIC_ROAD_LENGTH,
   TRAFFIC_LANES,
 } from '../sims/trafficSim';
+import styles from './TrafficDemo.module.css';
 
 const CSS_WIDTH = 900;
 const CSS_HEIGHT = 200;
@@ -128,7 +129,7 @@ function TrafficCanvas() {
         ref={canvasRef}
         width={CSS_WIDTH * dpr}
         height={CSS_HEIGHT * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );
@@ -139,24 +140,14 @@ function TrafficStats() {
   return (
     <div className='group'>
       <div className='g-lbl'>Traffic</div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'var(--fg3)' }}>cars</span>
-          <span style={{ color: 'var(--fg1)' }}>{data.carCount}</span>
+      <div className={styles.stats}>
+        <div className={styles.row}>
+          <span className={styles.label}>cars</span>
+          <span className={styles.value}>{data.carCount}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'var(--fg3)' }}>avg speed</span>
-          <span style={{ color: 'var(--fg1)' }}>
-            {data.averageSpeed.toFixed(2)}
-          </span>
+        <div className={styles.row}>
+          <span className={styles.label}>avg speed</span>
+          <span className={styles.value}>{data.averageSpeed.toFixed(2)}</span>
         </div>
       </div>
     </div>

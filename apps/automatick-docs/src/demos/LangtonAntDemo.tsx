@@ -5,6 +5,7 @@ import { DemoControlPanel } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import langtonAntSim from '../sims/langtonAntSim';
+import styles from './LangtonAntDemo.module.css';
 
 const CSS_SIZE = 600;
 
@@ -12,10 +13,10 @@ function LangtonCanvas() {
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
 
   const canvasRef = useSimulationCanvas<typeof langtonAntSim>((ctx, { data, params }) => {
-    const styles = getComputedStyle(document.documentElement);
-    const ink = styles.getPropertyValue('--fg1').trim() || '#0E1116';
-    const bg = styles.getPropertyValue('--bg2').trim() || '#EFEADD';
-    const accent = styles.getPropertyValue('--accent').trim() || '#D7451E';
+    const cssStyles = getComputedStyle(document.documentElement);
+    const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
+    const bg = cssStyles.getPropertyValue('--bg2').trim() || '#EFEADD';
+    const accent = cssStyles.getPropertyValue('--accent').trim() || '#D7451E';
 
     const scale = (CSS_SIZE * dpr) / params.width;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -48,7 +49,7 @@ function LangtonCanvas() {
         ref={canvasRef}
         width={CSS_SIZE * dpr}
         height={CSS_SIZE * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

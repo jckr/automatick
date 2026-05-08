@@ -9,8 +9,7 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import boidsSim, { type BoidsParams } from '../sims/boidsSim';
-
-const STAGE_HEIGHT = 540;
+import styles from './BoidsDemo.module.css';
 
 function BoidsCanvas() {
   const { setParams, resetWith } = useSimulation<typeof boidsSim>();
@@ -18,18 +17,18 @@ function BoidsCanvas() {
   const initializedRef = React.useRef(false);
 
   const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }) => {
-    const styles = getComputedStyle(document.documentElement);
-    const bg = styles.getPropertyValue('--bg3').trim() || '#E6E0D0';
-    const ink = styles.getPropertyValue('--fg1').trim() || '#0E1116';
+    const cssStyles = getComputedStyle(document.documentElement);
+    const bg = cssStyles.getPropertyValue('--bg3').trim() || '#E6E0D0';
+    const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
     // Distinct dataviz colors per force, matching the legacy RGB intent:
     // separation = danger (vermillion), alignment = green (moss),
     // cohesion = blue (slate teal).
     const sepColor =
-      styles.getPropertyValue('--viz-1').trim() || '#D7451E';
+      cssStyles.getPropertyValue('--viz-1').trim() || '#D7451E';
     const alignColor =
-      styles.getPropertyValue('--viz-4').trim() || '#3D6B4B';
+      cssStyles.getPropertyValue('--viz-4').trim() || '#3D6B4B';
     const cohColor =
-      styles.getPropertyValue('--viz-2').trim() || '#2B6E8F';
+      cssStyles.getPropertyValue('--viz-2').trim() || '#2B6E8F';
     const dpr = window.devicePixelRatio || 1;
 
     // Sim coords map 1:1 to CSS pixels; scale by dpr so the framebuffer is sharp.
@@ -132,18 +131,9 @@ function BoidsCanvas() {
   }, [canvasRef, setParams, resetWith]);
 
   return (
-    <div
-      ref={wrapperRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        minHeight: STAGE_HEIGHT,
-        lineHeight: 0,
-      }}
-    >
-      <canvas ref={canvasRef} style={{ display: 'block' }} />
-      <div style={{ position: 'absolute', top: 8, right: 8 }}>
+    <div ref={wrapperRef} className={styles.wrapper}>
+      <canvas ref={canvasRef} className={styles.canvas} />
+      <div className={styles.perf}>
         <PerformanceOverlay />
       </div>
     </div>

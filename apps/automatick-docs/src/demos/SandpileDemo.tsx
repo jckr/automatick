@@ -11,6 +11,7 @@ import sandpileSim, {
   SANDPILE_WIDTH,
   SANDPILE_HEIGHT,
 } from '../sims/sandpileSim';
+import styles from './SandpileDemo.module.css';
 
 const CSS_SIZE = 600;
 
@@ -78,7 +79,7 @@ function SandpileCanvas() {
         ref={canvasRef}
         width={CSS_SIZE * dpr}
         height={CSS_SIZE * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

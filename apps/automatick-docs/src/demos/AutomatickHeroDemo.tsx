@@ -7,6 +7,7 @@ import { DemoControlPanel, type DemoControlGroup } from '../components/DemoContr
 import { DemoSplit } from '../components/DemoSplit';
 import automatickHeroSim, { type HeroParams } from '../sims/automatickHeroSim';
 import { getLetterMask, maskFontString } from '../sims/automatickHeroMask';
+import styles from './AutomatickHeroDemo.module.css';
 
 const STAGE_HEIGHT = 480;
 
@@ -27,11 +28,11 @@ export function AutomatickHeroCanvas({
 
   const canvasRef = useSimulationCanvas<typeof automatickHeroSim>(
     (ctx, { data, params }) => {
-      const styles = getComputedStyle(document.documentElement);
-      const bg = styles.getPropertyValue('--bg1').trim() || '#F7F3EA';
-      const linkColor = styles.getPropertyValue('--accent').trim() || '#D7451E';
-      const nodeColor = styles.getPropertyValue('--fg1').trim() || '#0E1116';
-      const dotColor = styles.getPropertyValue('--fg3').trim() || '#5b6070';
+      const cssStyles = getComputedStyle(document.documentElement);
+      const bg = cssStyles.getPropertyValue('--bg1').trim() || '#F7F3EA';
+      const linkColor = cssStyles.getPropertyValue('--accent').trim() || '#D7451E';
+      const nodeColor = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
+      const dotColor = cssStyles.getPropertyValue('--fg3').trim() || '#5b6070';
       const dpr = window.devicePixelRatio || 1;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -114,19 +115,10 @@ export function AutomatickHeroCanvas({
   }, [canvasRef, setParams, resetWith]);
 
   return (
-    <div
-      ref={wrapperRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        minHeight,
-        lineHeight: 0,
-      }}
-    >
-      <canvas ref={canvasRef} style={{ display: 'block' }} />
+    <div ref={wrapperRef} className={styles.wrapper} style={{ minHeight }}>
+      <canvas ref={canvasRef} className={styles.canvas} />
       {showPerf ? (
-        <div style={{ position: 'absolute', top: 8, right: 8 }}>
+        <div className={styles.perf}>
           <PerformanceOverlay />
         </div>
       ) : null}

@@ -11,8 +11,8 @@ import {
   PULSE_ANCHORS,
   latLonToXYZ,
 } from '../sims/worldSpinnerData';
+import styles from './WorldSpinnerDemo.module.css';
 
-const STAGE_HEIGHT = 540;
 const SPHERE_RADIUS = 1;
 
 /** Dots geometry is built once from the static dataset. Never round-trips through Data. */
@@ -96,19 +96,11 @@ function Globe() {
 
 function WorldStage() {
   return (
-    <div
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        minHeight: STAGE_HEIGHT,
-        lineHeight: 0,
-      }}
-    >
+    <div className={styles.stage}>
       <Canvas
         dpr={[1, 2]}
         camera={{ position: [0, 0, 2.6], fov: 45 }}
-        style={{ display: 'block', background: 'var(--bg2, #efeadd)' }}
+        className={styles.canvas}
       >
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 4, 5]} intensity={0.9} />

@@ -7,6 +7,7 @@ import { CanvasStage } from '../components/CanvasStage';
 import fibonacciSpiralSim, {
   drawFibonacciSpiral,
 } from '../sims/fibonacciSpiralSim';
+import styles from './FibonacciSpiralDemo.module.css';
 
 const SIZE = 600;
 
@@ -26,7 +27,7 @@ function SpiralCanvas() {
         ref={canvasRef}
         width={SIZE * dpr}
         height={SIZE * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block' }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

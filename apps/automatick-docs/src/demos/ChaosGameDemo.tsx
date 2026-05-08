@@ -9,6 +9,7 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import chaosGameSim from '../sims/chaosGameSim';
+import styles from './ChaosGameDemo.module.css';
 
 const CSS_SIZE = 600;
 
@@ -78,30 +79,14 @@ function ChaosCanvas() {
   });
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        height: '100%',
-        minHeight: 540,
-        padding: 16,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <div className={styles.stage}>
       <canvas
         ref={canvasRef}
         width={CSS_SIZE * dpr}
         height={CSS_SIZE * dpr}
-        style={{
-          width: '100%',
-          maxWidth: CSS_SIZE,
-          height: 'auto',
-          display: 'block',
-          borderRadius: 4,
-        }}
+        className={styles.canvas}
       />
-      <div style={{ position: 'absolute', top: 16, right: 16 }}>
+      <div className={styles.perf}>
         <PerformanceOverlay />
       </div>
     </div>

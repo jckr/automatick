@@ -9,6 +9,7 @@ import automatickBubblesSim, {
   type BubblesParams,
 } from '../sims/automatickBubblesSim';
 import { getLetterMask, isInsideMask, maskFontString } from '../sims/automatickHeroMask';
+import styles from './AutomatickBubblesDemo.module.css';
 
 /**
  * Stage 2: bubbles render as a metaball iso-contour.
@@ -114,11 +115,11 @@ export function AutomatickBubblesCanvas({
 
   const canvasRef = useSimulationCanvas<typeof automatickBubblesSim>(
     (ctx, { data, params }) => {
-      const styles = getComputedStyle(document.documentElement);
-      const bg = styles.getPropertyValue('--bg1').trim() || '#F7F3EA';
-      const ink = styles.getPropertyValue('--fg1').trim() || '#0E1116';
+      const cssStyles = getComputedStyle(document.documentElement);
+      const bg = cssStyles.getPropertyValue('--bg1').trim() || '#F7F3EA';
+      const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
       const accentColor = parseHex(
-        styles.getPropertyValue('--accent').trim() || '#D7451E',
+        cssStyles.getPropertyValue('--accent').trim() || '#D7451E',
         [215, 69, 30]
       );
       const dpr = window.devicePixelRatio || 1;
@@ -340,19 +341,10 @@ export function AutomatickBubblesCanvas({
   }, [canvasRef, setParams, resetWith]);
 
   return (
-    <div
-      ref={wrapperRef}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        minHeight,
-        lineHeight: 0,
-      }}
-    >
-      <canvas ref={canvasRef} style={{ display: 'block' }} />
+    <div ref={wrapperRef} className={styles.wrapper} style={{ minHeight }}>
+      <canvas ref={canvasRef} className={styles.canvas} />
       {showPerf ? (
-        <div style={{ position: 'absolute', top: 8, right: 8 }}>
+        <div className={styles.perf}>
           <PerformanceOverlay />
         </div>
       ) : null}

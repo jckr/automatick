@@ -4,43 +4,15 @@ import { useSimulation } from 'automatick/react/hooks';
 import { DemoControlPanel } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import fibonacciSim from '../sims/fibonacciSim';
+import styles from './FibonacciDemo.module.css';
 
 function FibonacciView() {
   const { data } = useSimulation<typeof fibonacciSim>();
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        minHeight: 360,
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 8,
-          maxWidth: 720,
-          justifyContent: 'center',
-        }}
-      >
+    <div className={styles.view}>
+      <div className={styles.list}>
         {data.map((n, i) => (
-          <div
-            key={`fib-${i}-${n}`}
-            style={{
-              padding: '10px 14px',
-              background: 'var(--bg2)',
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              fontFamily: 'var(--font-mono)',
-              fontSize: 14,
-              color: 'var(--fg1)',
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
+          <div key={`fib-${i}-${n}`} className={styles.item}>
             {n}
           </div>
         ))}

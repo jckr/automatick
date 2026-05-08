@@ -15,6 +15,7 @@ import {
   WATER_FROM_LEFT,
   WATER_FROM_RIGHT,
 } from '../sims/percolationSim';
+import styles from './PercolationGridDemo.module.css';
 
 const CELL_PX = 3;
 const GAP = 6;
@@ -44,10 +45,10 @@ function GridCanvas() {
 
   const canvasRef = useSimulationCanvas<typeof percolationGridSim>(
     (ctx, { data }) => {
-      const styles = getComputedStyle(document.documentElement);
-      const fg1 = styles.getPropertyValue('--fg1').trim() || '#0E1116';
-      const fg3 = styles.getPropertyValue('--fg3').trim() || '#5B6070';
-      const success = styles.getPropertyValue('--info').trim() || '#2B6E8F';
+      const cssStyles = getComputedStyle(document.documentElement);
+      const fg1 = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
+      const fg3 = cssStyles.getPropertyValue('--fg3').trim() || '#5B6070';
+      const success = cssStyles.getPropertyValue('--info').trim() || '#2B6E8F';
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cssW, cssH);
@@ -118,29 +119,15 @@ function GridCanvas() {
   );
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        height: '100%',
-        minHeight: 540,
-        padding: 16,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <div className={styles.stage}>
       <canvas
         ref={canvasRef}
         width={cssW * dpr}
         height={cssH * dpr}
-        style={{
-          width: cssW,
-          maxWidth: '100%',
-          height: 'auto',
-          display: 'block',
-        }}
+        className={styles.canvas}
+        style={{ width: cssW }}
       />
-      <div style={{ position: 'absolute', top: 16, right: 16 }}>
+      <div className={styles.perf}>
         <PerformanceOverlay />
       </div>
     </div>

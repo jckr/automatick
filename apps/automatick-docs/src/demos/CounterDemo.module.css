@@ -1,0 +1,17 @@
+.view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 360px;
+  padding: 24px;
+}
+
+.value {
+  font-family: var(--font-serif);
+  font-variation-settings: 'opsz' 72;
+  font-size: 96px;
+  font-weight: 500;
+  color: var(--fg1);
+  font-variant-numeric: tabular-nums;
+}

@@ -8,6 +8,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import segregationSim, { defaultParams, draw } from '../sims/segregationSim';
+import styles from './SegregationLocalDemo.module.css';
 
 const CSS_SIZE = defaultParams.width;
 
@@ -27,7 +28,7 @@ function SegregationLocalCanvas() {
         ref={canvasRef}
         width={CSS_SIZE * dpr}
         height={CSS_SIZE * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

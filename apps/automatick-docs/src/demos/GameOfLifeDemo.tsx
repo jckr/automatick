@@ -7,6 +7,7 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import gameOfLifeSim from '../sims/gameOfLifeSim';
+import styles from './GameOfLifeDemo.module.css';
 
 function LifeGrid() {
   const { data, params } = useSimulation<typeof gameOfLifeSim>();
@@ -17,27 +18,18 @@ function LifeGrid() {
     <div
       role='img'
       aria-label='Game of Life grid'
+      className={styles.grid}
       style={{
-        display: 'grid',
         gridTemplateColumns: `repeat(${params.width}, ${cellPx}px)`,
         width: params.width * cellPx,
-        margin: '0 auto',
-        border: '1px solid var(--border)',
-        background: 'var(--bg3)',
       }}
     >
       {data.grid.map((row, y) =>
         row.map((alive, x) => (
           <div
             key={`${x}-${y}`}
-            style={{
-              width: cellPx,
-              height: cellPx,
-              boxSizing: 'border-box',
-              background: alive ? 'var(--fg1)' : 'transparent',
-              borderRight: '1px solid rgba(0,0,0,0.04)',
-              borderBottom: '1px solid rgba(0,0,0,0.04)',
-            }}
+            className={alive ? `${styles.cell} ${styles.alive}` : styles.cell}
+            style={{ width: cellPx, height: cellPx }}
           />
         ))
       )}
@@ -67,16 +59,7 @@ export function GameOfLifeDemo() {
     <Simulation sim={gameOfLifeSim} maxTime={2000} delayMs={100}>
       <DemoSplit
         preview={
-          <div
-            style={{
-              padding: 16,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 520,
-              background: 'var(--bg2)',
-            }}
-          >
+          <div className={styles.preview}>
             <LifeGrid />
           </div>
         }

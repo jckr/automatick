@@ -10,6 +10,7 @@ import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import snakeSim from '../sims/snakeSim';
 import { drawSnakeFrame } from '../sims/snakeCanvas';
+import styles from './SnakeDemo.module.css';
 
 type SpeedSetting = 'normal' | 'fast' | 'very fast';
 
@@ -54,7 +55,7 @@ function SnakeCanvas() {
         ref={canvasRef}
         width={CSS_WIDTH * dpr}
         height={cssHeight * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

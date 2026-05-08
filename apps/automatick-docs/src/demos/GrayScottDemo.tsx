@@ -8,6 +8,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import grayScottSim from '../sims/grayScottSim';
+import styles from './GrayScottDemo.module.css';
 
 const WIDTH = 600;
 const HEIGHT = 600;
@@ -81,7 +82,7 @@ function GrayScottCanvas() {
         ref={canvasRef}
         width={WIDTH * dpr}
         height={HEIGHT * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

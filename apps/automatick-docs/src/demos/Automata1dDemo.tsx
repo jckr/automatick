@@ -8,6 +8,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import automata1dSim from '../sims/automata1dSim';
 import type { Automata1dData } from '../sims/automata1dSim';
+import styles from './Automata1dDemo.module.css';
 
 const CELL = 8;
 
@@ -19,13 +20,8 @@ function AutomataBitToggle(props: { bit: number }) {
   const mid = (2 & props.bit) !== 0;
   const right = (1 & props.bit) !== 0;
 
-  const cellStyle = (on: boolean): React.CSSProperties => ({
-    width: CELL,
-    height: CELL,
-    background: on ? 'var(--fg1)' : 'transparent',
-    border: '1px solid var(--fg1)',
-    boxSizing: 'border-box',
-  });
+  const cellClass = (on: boolean) =>
+    on ? `${styles.miniCell} ${styles.on}` : styles.miniCell;
 
   return (
     <button
@@ -34,23 +30,14 @@ function AutomataBitToggle(props: { bit: number }) {
         const updatedRule = set ? params.rule - increment : params.rule + increment;
         setParams({ rule: updatedRule });
       }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 4,
-        cursor: 'pointer',
-        background: 'none',
-        border: 'none',
-        padding: 4,
-      }}
+      className={styles.bitToggle}
     >
-      <div style={{ display: 'flex', gap: 1 }}>
-        <div style={cellStyle(left)} />
-        <div style={cellStyle(mid)} />
-        <div style={cellStyle(right)} />
+      <div className={styles.bitToggleRow}>
+        <div className={cellClass(left)} />
+        <div className={cellClass(mid)} />
+        <div className={cellClass(right)} />
       </div>
-      <div style={cellStyle(set)} />
+      <div className={cellClass(set)} />
     </button>
   );
 }
@@ -59,14 +46,7 @@ function BitToggleGrid() {
   return (
     <div className='group'>
       <div className='g-lbl'>Rule bits</div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 4,
-          justifyItems: 'center',
-        }}
-      >
+      <div className={styles.bitGrid}>
         {[7, 6, 5, 4, 3, 2, 1, 0].map((bit) => (
           <AutomataBitToggle key={bit} bit={bit} />
         ))}
@@ -88,24 +68,12 @@ function Automata1dView() {
   const nbRows = Math.min(tick + 1, rows);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        minHeight: 540,
-        padding: 16,
-      }}
-    >
+    <div className={styles.view}>
       <div
+        className={styles.board}
         style={{
-          overflow: 'hidden',
-          position: 'relative',
           height: rows * (CELL + 2),
           width: cols * (CELL + 2),
-          border: '1px solid var(--border)',
-          background: 'var(--bg2)',
         }}
       >
         {[...Array(nbRows).keys()].map((rowIndex) => {
@@ -115,24 +83,13 @@ function Automata1dView() {
           return (
             <div
               key={`row-${ts}`}
-              style={{
-                position: 'absolute',
-                top: (CELL + 2) * rowIndex,
-                left: 0,
-                display: 'flex',
-              }}
+              className={styles.row}
+              style={{ top: (CELL + 2) * rowIndex }}
             >
               {row.map((cell, x) => (
                 <div
                   key={`c-${ts}-${x}`}
-                  style={{
-                    height: CELL,
-                    width: CELL,
-                    margin: 1,
-                    border: '1px solid var(--fg1)',
-                    boxSizing: 'border-box',
-                    background: cell ? 'var(--fg1)' : 'transparent',
-                  }}
+                  className={cell ? `${styles.cell} ${styles.on}` : styles.cell}
                 />
               ))}
             </div>

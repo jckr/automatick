@@ -11,6 +11,7 @@ import { DemoSplit } from '../components/DemoSplit';
 import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import epidemicSim from '../sims/epidemicSim';
 import type { EpidemicData, EpidemicParams } from '../sims/epidemicSim';
+import styles from './EpidemicDemo.module.css';
 
 const STATUS_COLORS: Record<string, string> = {
   healthy: '#3D6B4B',
@@ -25,8 +26,8 @@ function EpidemicCanvas() {
   const initializedRef = React.useRef(false);
 
   const canvasRef = useSimulationCanvas<typeof epidemicSim>((ctx, { data, params }) => {
-    const styles = getComputedStyle(document.documentElement);
-    const bg = styles.getPropertyValue('--bg3').trim() || '#E6E0D0';
+    const cssStyles = getComputedStyle(document.documentElement);
+    const bg = cssStyles.getPropertyValue('--bg3').trim() || '#E6E0D0';
     const dpr = window.devicePixelRatio || 1;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -73,22 +74,14 @@ function EpidemicCanvas() {
   }, [canvasRef, setParams, resetWith]);
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        height: '100%',
-        minHeight: 540,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <div ref={wrapperRef} style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-        <canvas ref={canvasRef} style={{ display: 'block' }} />
-        <div style={{ position: 'absolute', top: 8, right: 8 }}>
+    <div className={styles.stage}>
+      <div ref={wrapperRef} className={styles.canvasWrap}>
+        <canvas ref={canvasRef} className={styles.canvas} />
+        <div className={styles.perf}>
           <PerformanceOverlay />
         </div>
       </div>
-      <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
+      <div className={styles.chartWrap}>
         <TimeSeries<EpidemicData>
           mode='area'
           height={120}
