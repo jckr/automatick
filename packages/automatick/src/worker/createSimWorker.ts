@@ -72,6 +72,8 @@ self.onmessage = async (event) => {
           shouldStop: sim.shouldStop,
           initialParams: msg.params,
           maxTime: msg.config.maxTime,
+          // Worker host owns its own setTimeout-driven loop; rAF wouldn't exist here anyway.
+          autoFrame: false,
         });
         postMessage({ kind: 'ready' });
         emitSnapshot();
