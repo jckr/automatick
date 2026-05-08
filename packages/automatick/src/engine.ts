@@ -1,7 +1,8 @@
 import { isInitFn } from './sim';
-import type { SimInit, StepArgs } from './sim';
+import type { SimInit } from './sim';
+import type { State, SimulationStatus } from './state';
 
-export type SimulationStatus = 'idle' | 'playing' | 'paused' | 'stopped';
+export type { SimulationStatus, State } from './state';
 
 export type TickPerformance = {
   tick: number;
@@ -15,7 +16,7 @@ export type EngineConfig<Data, Params> = {
    * When a value is passed, the engine `structuredClone`s it on each (re)init.
    */
   init: SimInit<Data, Params>;
-  step: (args: StepArgs<Data, Params>) => Data;
+  step: (state: State<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   initialParams: Params;
   maxTime?: number;
@@ -23,12 +24,12 @@ export type EngineConfig<Data, Params> = {
   ticksPerFrame?: number;
   /**
    * Optional render callback — sugar for the vanilla path. When provided, the
-   * engine calls it once with the initial snapshot (right after init) and on
-   * every snapshot emit thereafter, equivalent to `engine.subscribe(render)`
+   * engine calls it once with the initial state (right after init) and on
+   * every state emit thereafter, equivalent to `engine.subscribe(render)`
    * followed by an initial paint. `subscribe` remains the lower-level
    * primitive; React adapter and worker callers wire their own subscribers.
    */
-  render?: (snapshot: EngineSnapshot<Data, Params>) => void;
+  render?: (snapshot: State<Data, Params>) => void;
   /**
    * Drive `handleAnimationFrame` from an internal `requestAnimationFrame` loop.
    * Defaults to `true` so vanilla callers don't have to write the loop. The
@@ -44,14 +45,6 @@ export type EngineConfig<Data, Params> = {
   autoFrame?: boolean;
 };
 
-export type EngineSnapshot<Data, Params> = {
-  data: Data;
-  params: Params;
-  tick: number;
-  status: SimulationStatus;
-  stepDurationMs: number;
-};
-
 const PERF_BUFFER_SIZE = 120;
 
 export class SimulationEngine<Data, Params> {
@@ -63,14 +56,14 @@ export class SimulationEngine<Data, Params> {
   private lastStepMs: number = 0;
 
   private readonly initFn: (params: Params) => Data;
-  private readonly stepFn: (args: StepArgs<Data, Params>) => Data;
+  private readonly stepFn: (state: State<Data, Params>) => Data;
   private readonly shouldStopFn?: (data: Data, params: Params) => boolean;
   private readonly maxTime?: number;
   private delayMs: number;
   private ticksPerFrame: number;
 
   private readonly listeners = new Set<
-    (snapshot: EngineSnapshot<Data, Params>) => void
+    (snapshot: State<Data, Params>) => void
   >();
   private readonly historyListeners = new Set<
     (entry: { tick: number; data: Data }) => void
@@ -123,7 +116,7 @@ export class SimulationEngine<Data, Params> {
     }
   }
 
-  getSnapshot(): EngineSnapshot<Data, Params> {
+  getSnapshot(): State<Data, Params> {
     return {
       data: this.data,
       params: this.params,
@@ -160,7 +153,7 @@ export class SimulationEngine<Data, Params> {
   }
 
   subscribe(
-    listener: (snapshot: EngineSnapshot<Data, Params>) => void
+    listener: (snapshot: State<Data, Params>) => void
   ): () => void {
     this.listeners.add(listener);
     return () => {
@@ -286,10 +279,14 @@ export class SimulationEngine<Data, Params> {
       this.tick += 1;
 
       const t0 = performance.now();
+      // `stepDurationMs` is the *previous* tick's duration — the current one
+      // hasn't been measured yet.
       this.data = this.stepFn({
         data: this.data,
         params: this.params,
         tick: this.tick,
+        status: this.status,
+        stepDurationMs: this.lastStepMs,
       });
       const t1 = performance.now();
       this.lastStepMs = t1 - t0;

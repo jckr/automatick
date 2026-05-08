@@ -6,7 +6,7 @@
  * is in serialize.ts — not here.
  */
 
-import type { EngineSnapshot } from '../engine';
+import type { State } from '../state';
 
 /** Messages sent from the main thread to the worker. */
 export type MainToWorkerMessage<Params> =
@@ -22,7 +22,7 @@ export type MainToWorkerMessage<Params> =
 
 /** Messages sent from the worker to the main thread. */
 export type WorkerToMainMessage<Data, Params> =
-  | { kind: 'snapshot'; snapshot: EngineSnapshot<Data, Params> }
+  | { kind: 'snapshot'; snapshot: State<Data, Params> }
   | { kind: 'error'; error: { message: string; stack?: string } }
   | { kind: 'ready' };
 

@@ -29,7 +29,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/engine.ts src/sim.ts src/worker/workerRunner.ts src/worker/createSimWorker.ts src/worker/protocol.ts src/react/Simulation.tsx src/react/hooks.ts src/react/useSimulationCanvas.ts src/react/PerformanceOverlay.tsx src/react/SimulationContext.tsx src/react/EngineContext.tsx src/react/SimulationControls.tsx src/react/controlPrimitives.tsx src/react/stableCallback.ts --format esm,cjs --dts --clean --external react --external react-dom --external react/jsx-runtime",
+    "build": "tsup src/engine.ts src/sim.ts src/state.ts src/worker/workerRunner.ts src/worker/createSimWorker.ts src/worker/protocol.ts src/react/Simulation.tsx src/react/hooks.ts src/react/useSimulationCanvas.ts src/react/PerformanceOverlay.tsx src/react/SimulationContext.tsx src/react/EngineContext.tsx src/react/SimulationControls.tsx src/react/controlPrimitives.tsx src/react/stableCallback.ts --format esm,cjs --dts --clean --external react --external react-dom --external react/jsx-runtime",
     "test": "vitest run"
   },
   "exports": {

@@ -1,7 +1,8 @@
 import React from 'react';
 import type { SimModule } from '../sim';
 import { createEngine } from '../engine';
-import type { SimulationEngine, EngineSnapshot, TickPerformance } from '../engine';
+import type { SimulationEngine, TickPerformance } from '../engine';
+import type { State } from '../state';
 import { SimulationContext } from './SimulationContext';
 import type { SimulationContextValue } from './SimulationContext';
 import { EngineContext } from './EngineContext';
@@ -39,9 +40,9 @@ export type SimulationProps<Data, Params> =
  * Common interface for both engine (main-thread) and worker-backed runner.
  */
 type Backend<Data, Params> = {
-  getSnapshot: () => EngineSnapshot<Data, Params>;
+  getSnapshot: () => State<Data, Params>;
   subscribe: (
-    listener: (snapshot: EngineSnapshot<Data, Params>) => void
+    listener: (snapshot: State<Data, Params>) => void
   ) => () => void;
   play: () => void;
   pause: () => void;
@@ -146,10 +147,9 @@ function WorkerSimulation<Data, Params>(
   const [backend, setBackend] = React.useState<Backend<Data, Params> | null>(
     null
   );
-  const [snapshot, setSnapshot] = React.useState<EngineSnapshot<
-    Data,
-    Params
-  > | null>(null);
+  const [snapshot, setSnapshot] = React.useState<State<Data, Params> | null>(
+    null
+  );
 
   const propsRef = React.useRef(props);
   propsRef.current = props;
@@ -296,7 +296,7 @@ function SimulationProvider<Data, Params>({
   backend,
   children,
 }: {
-  snapshot: EngineSnapshot<Data, Params>;
+  snapshot: State<Data, Params>;
   backend: Backend<Data, Params>;
   children?: React.ReactNode;
 }) {
@@ -332,12 +332,13 @@ function SimulationProvider<Data, Params>({
   // Engine context for direct subscription (used by useSimulationCanvas)
   const engineValue = React.useMemo(
     (): EngineContextValue => ({
+      // TODO(#14): casts here bridge EngineContext's non-generic shape to
+      // the typed Backend<Data, Params>. Make EngineContext generic to drop them.
       subscribe: (listener) =>
         backend.subscribe(
-          listener as (snapshot: EngineSnapshot<Data, Params>) => void
+          listener as (snapshot: State<Data, Params>) => void
         ),
-      getSnapshot: () =>
-        backend.getSnapshot() as EngineSnapshot<unknown, unknown>,
+      getSnapshot: () => backend.getSnapshot() as State<unknown, unknown>,
       recordDrawTime: (tick, ms) => backend.recordDrawTime(tick, ms),
       getPerformance: () => backend.getPerformance(),
     }),
