@@ -23,6 +23,7 @@ function createEngine<Data, Params>(config: EngineConfig<Data, Params>): Simulat
 | `maxTime` | `number` | `undefined` | Tick limit. Engine stops when `tick >= maxTime`. |
 | `delayMs` | `number` | `0` | Minimum ms between animation-frame advances. |
 | `ticksPerFrame` | `number` | `1` | Number of ticks computed per animation frame. |
+| `render` | `(snap: EngineSnapshot<Data, Params>) => void` | `undefined` | Vanilla-DX sugar. When set, fires once with the initial snapshot at construction and on every emit thereafter. Equivalent to `engine.subscribe(render)` plus an initial paint. Skip it if you already wire `subscribe` yourself (e.g. inside the React adapter or a worker host). |
 
 ---
 
@@ -72,6 +73,8 @@ Current status in rows, action in columns. Cell shows the resulting status. `--`
 
 ## Example
 
+Lower-level primitive — wire your own subscriber:
+
 ```ts
 import { createEngine } from 'automatick';
 
@@ -88,4 +91,20 @@ const unsub = engine.subscribe((snap) => {
 
 engine.play();
 // drive with requestAnimationFrame or engine.advance()
+```
+
+Vanilla-DX shortcut — pass `render` and skip the manual subscribe + initial-paint dance:
+
+```ts
+const engine = createEngine({
+  initialParams: { increment: 1 },
+  init: () => ({ count: 0 }),
+  step: ({ data, params }) => ({ count: data.count + params.increment }),
+  render: (snap) => {
+    console.log(`tick ${snap.tick}: count = ${snap.data.count}`);
+  },
+  maxTime: 100,
+});
+
+engine.play();
 ```
