@@ -9,7 +9,7 @@ export function TutorialPage() {
         { label: 'Guide', to: '/guide/getting-started' },
         { label: 'Tutorial' },
       ]}
-      prev={{ label: 'Without React', to: '/guide/without-react' }}
+      prev={{ label: 'With React', to: '/guide/with-react' }}
       next={{ label: 'Defining a simulation', to: '/guide/defining-a-sim' }}
     >
       <Content />

@@ -1,0 +1,104 @@
+import { SimpleModelReactDemo } from '../demos/SimpleModelReactDemo';
+
+# Using Automatick with React
+
+The previous page wired the engine, render loop, and controls by hand. With React, all three of those collapse into components that automatick provides.
+
+## The same simulation, in React
+
+<SimpleModelReactDemo />
+
+Same `init`, same `step`, same animation. The plumbing around them is gone.
+
+## The whole thing
+
+```tsx
+import { Simulation } from 'automatick/react/simulation';
+import { useSimulation } from 'automatick/react/hooks';
+import { StandardControls } from 'automatick/react/controls';
+
+const TOTAL = 100;
+// same as before 
+const init = { cells: new Array(TOTAL).fill(false) };
+
+// same as before
+function step({ data, tick }) {
+  data.cells[tick - 1] = true;
+  return data;
+}
+
+// the rendering component
+function Grid() {
+  // the state now comes from the useSimulation hook, and is updated automatically
+  const { data } = useSimulation();
+  return (
+    <div className='grid'>
+      {data.cells.map((on, i) => (
+        <div key={i} className={on ? 'cell on' : 'cell'} />
+      ))}
+    </div>
+  );
+}
+
+export function SimpleModel() {
+  return (
+    {/* the Simulation component creates the engine under the hood */}
+    <Simulation
+      init={init}
+      step={step}
+      shouldStop={(d) => d.cells.at(-1)}
+      delayMs={100}
+    >
+      <Grid />
+      { /* the StandardControls provides ready to use play, pause and reset buttons, but you can make your own */ }
+      <StandardControls />
+    </Simulation>
+  );
+}
+```
+
+## What changed
+
+### `<Simulation>` replaces `createEngine`
+
+```tsx
+<Simulation init={init} step={step} shouldStop={...} delayMs={100}>
+```
+
+The component creates the engine for you, drives its animation loop tied to the React component lifecycle, and tears it down when the component unmounts. `init`, `step`, `shouldStop`, and the timing options are passed as props instead of as a config object.
+
+### `useSimulation` exposes the state to the rendering component. 
+
+```tsx
+const { data } = useSimulation();
+```
+
+The hook returns the current simulation state and re-renders the component every tick. No need to provide a "render" function, no need to go get the state periodically. 
+
+You can also pull `tick`, `params`, `status`, and the action methods (`play`, `pause`, `resetWith`, etc.) out of the same hook if you want to build custom UI.
+
+### JSX replaces DOM updates
+
+```tsx
+{data.cells.map((on, i) => (
+  <div key={i} className={on ? 'cell on' : 'cell'} />
+))}
+```
+
+Render is just a React component reading `data` and producing JSX. No `cellEls.classList.toggle(...)`, no manual DOM creation in a setup block. When `data` changes, React updates the cells.
+
+### `<StandardControls>` replaces button wiring
+
+```tsx
+<StandardControls />
+```
+
+A complete control strip: play/pause toggle, reset, tick readout, and an optional step button. It uses the same hook internally, so it stays in sync with the engine without any prop wiring from you.
+
+You can replace it with your own controls — every action is on the `useSimulation` hook — but for most cases the built-in version is exactly what you want.
+
+## When to reach for which
+
+The vanilla path (the previous page) is best when you need a self-contained widget you can drop into any HTML page or CodePen, or when the rest of your stack isn't React.
+
+The React path is best when the simulation lives inside a React app, when you want React's component model around the visualization, or when you'd rather not write the engine wiring by hand. The next page builds [Conway's Game of Life](/guide/tutorial) using this same pattern.
