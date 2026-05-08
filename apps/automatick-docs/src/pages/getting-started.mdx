@@ -53,6 +53,33 @@ export default function CounterPage() {
 
 That's it. The library handles the animation loop, play/pause/stop state, timing, and controls. You only wrote the business logic (`init` and `step`) and the render function.
 
+## Skipping the module wrapper
+
+When a sim is small and won't be reused or moved to a worker, the `defineSim` indirection is overhead. `<Simulation>` accepts the parts as props directly:
+
+```tsx
+import { Simulation } from 'automatick/react/simulation';
+import { useSimulation } from 'automatick/react/hooks';
+
+function Display() {
+  const { data, tick } = useSimulation<{ count: number }>();
+  return <div>Tick {tick}: count is {data.count}</div>;
+}
+
+export default function CounterPage() {
+  return (
+    <Simulation
+      init={{ count: 0 }}
+      step={({ data }) => ({ count: data.count + 1 })}
+    >
+      <Display />
+    </Simulation>
+  );
+}
+```
+
+`init` accepts a value or a `(params) => Data` function. `defaultParams` and `shouldStop` are optional. Reach for `defineSim` once you want to move the sim to its own file, run it in a worker, or share it across pages.
+
 ## What you provide vs. what the library handles
 
 **You provide:**

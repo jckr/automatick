@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SimModule } from '../sim';
+import type { SimInit, SimModule } from '../sim';
 import { createEngine } from '../engine';
 import type { SimulationEngine, TickPerformance } from '../engine';
 import type { State } from '../state';
@@ -9,32 +9,48 @@ import { EngineContext } from './EngineContext';
 import type { EngineContextValue } from './EngineContext';
 import { useStableCallback } from './stableCallback';
 
-type SimulationPropsLocal<Data, Params> = {
+/** Common simulation-level props shared by all three modes. */
+type SimulationPropsCommon<Params> = {
+  params?: Partial<Params>;
+  maxTime?: number;
+  delayMs?: number;
+  ticksPerFrame?: number;
+  autoplay?: boolean;
+  children?: React.ReactNode;
+};
+
+type SimulationPropsLocal<Data, Params> = SimulationPropsCommon<Params> & {
   sim: SimModule<Data, Params>;
   worker?: never;
-  params?: Partial<Params>;
-  maxTime?: number;
-  delayMs?: number;
-  ticksPerFrame?: number;
-  autoplay?: boolean;
-  children?: React.ReactNode;
+  init?: never;
+  step?: never;
+  shouldStop?: never;
+  defaultParams?: never;
 };
 
-type SimulationPropsWorker<Data, Params> = {
+type SimulationPropsWorker<Data, Params> = SimulationPropsCommon<Params> & {
   sim?: never;
   worker: () => Promise<{ default: SimModule<Data, Params> }>;
-  params?: Partial<Params>;
-  maxTime?: number;
-  delayMs?: number;
-  ticksPerFrame?: number;
+  init?: never;
+  step?: never;
+  shouldStop?: never;
+  defaultParams?: never;
   snapshotIntervalMs?: number;
-  autoplay?: boolean;
-  children?: React.ReactNode;
 };
 
-export type SimulationProps<Data, Params> =
+type SimulationPropsInline<Data, Params> = SimulationPropsCommon<Params> & {
+  sim?: never;
+  worker?: never;
+  init: SimInit<Data, Params>;
+  step: (state: State<Data, Params>) => Data;
+  shouldStop?: (data: Data, params: Params) => boolean;
+  defaultParams?: Params;
+};
+
+export type SimulationProps<Data, Params = Record<string, never>> =
   | SimulationPropsLocal<Data, Params>
-  | SimulationPropsWorker<Data, Params>;
+  | SimulationPropsWorker<Data, Params>
+  | SimulationPropsInline<Data, Params>;
 
 /**
  * Common interface for both engine (main-thread) and worker-backed runner.
@@ -61,22 +77,48 @@ type Backend<Data, Params> = {
 // Local (main-thread) Simulation
 // ---------------------------------------------------------------------------
 
-function LocalSimulation<Data, Params>(
-  props: SimulationPropsLocal<Data, Params>
-) {
-  const { sim, params: paramsProp, children, autoplay } = props;
+/**
+ * Internal props for LocalSimulation — the *parts* of a sim module plus
+ * simulation-level props. The public `Simulation` dispatcher normalizes both
+ * `sim={module}` and inline-prop call sites into this shape.
+ */
+type LocalSimulationProps<Data, Params> = SimulationPropsCommon<Params> & {
+  init: SimInit<Data, Params>;
+  step: (state: State<Data, Params>) => Data;
+  shouldStop?: (data: Data, params: Params) => boolean;
+  defaultParams?: Params;
+};
+
+function LocalSimulation<Data, Params>(props: LocalSimulationProps<Data, Params>) {
+  const {
+    init,
+    step,
+    shouldStop,
+    defaultParams,
+    params: paramsProp,
+    children,
+    autoplay,
+  } = props;
 
   const engineRef = React.useRef<SimulationEngine<Data, Params> | null>(null);
 
   if (!engineRef.current) {
-    const initialParams = paramsProp
-      ? { ...sim.defaultParams, ...paramsProp }
-      : sim.defaultParams;
+    // Merge precedence: defaultParams (if any) < params prop. When neither
+    // is supplied, leave initialParams undefined and let the engine seed {}.
+    let initialParams: Params | undefined;
+    if (defaultParams && paramsProp) {
+      initialParams = { ...defaultParams, ...paramsProp };
+    } else if (defaultParams) {
+      initialParams = defaultParams;
+    } else if (paramsProp) {
+      // Without defaults, the params prop is the full param object.
+      initialParams = paramsProp as Params;
+    }
 
     engineRef.current = createEngine<Data, Params>({
-      init: sim.init,
-      step: sim.step,
-      shouldStop: sim.shouldStop,
+      init,
+      step,
+      shouldStop,
       initialParams,
       maxTime: props.maxTime,
       delayMs: props.delayMs,
@@ -164,9 +206,14 @@ function WorkerSimulation<Data, Params>(
       if (cancelled) return;
 
       const p = propsRef.current;
-      const initialParams = p.params
-        ? { ...simModule.defaultParams, ...p.params }
-        : simModule.defaultParams;
+      let initialParams: Params | undefined;
+      if (simModule.defaultParams && p.params) {
+        initialParams = { ...simModule.defaultParams, ...p.params };
+      } else if (simModule.defaultParams) {
+        initialParams = simModule.defaultParams;
+      } else if (p.params) {
+        initialParams = p.params as Params;
+      }
 
       const engine = createEngine<Data, Params>({
         init: simModule.init,
@@ -360,11 +407,24 @@ function SimulationProvider<Data, Params>({
 // Public component — dispatches to local or worker implementation
 // ---------------------------------------------------------------------------
 
-export function Simulation<Data, Params>(
+export function Simulation<Data, Params = Record<string, never>>(
   props: SimulationProps<Data, Params>
 ) {
   if ('worker' in props && props.worker != null) {
     return <WorkerSimulation {...(props as SimulationPropsWorker<Data, Params>)} />;
   }
-  return <LocalSimulation {...(props as SimulationPropsLocal<Data, Params>)} />;
+  // Normalize sim={module} and inline forms into the same parts-shaped props.
+  if ('sim' in props && props.sim != null) {
+    const { sim, ...rest } = props as SimulationPropsLocal<Data, Params>;
+    return (
+      <LocalSimulation
+        {...rest}
+        init={sim.init}
+        step={sim.step}
+        shouldStop={sim.shouldStop}
+        defaultParams={sim.defaultParams}
+      />
+    );
+  }
+  return <LocalSimulation {...(props as SimulationPropsInline<Data, Params>)} />;
 }

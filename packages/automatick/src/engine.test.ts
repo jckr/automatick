@@ -1070,3 +1070,71 @@ describe('autoFrame', () => {
     expect(() => engine.destroy()).not.toThrow();
   });
 });
+
+// ===========================================================================
+// Category: Paramless engines
+// ===========================================================================
+//
+// Sims without tweakable params should not be forced to declare an empty
+// params type. The engine accepts `initialParams` as undefined and seeds
+// `params` with `{}`.
+
+describe('paramless engine', () => {
+  it('createEngine works without initialParams; snapshot.params is {}', () => {
+    const engine = createEngine<{ count: number }>({
+      init: { count: 0 },
+      step: ({ data }) => ({ count: data.count + 1 }),
+    });
+    const snap = engine.getSnapshot();
+    expect(snap.data).toEqual({ count: 0 });
+    expect(snap.params).toEqual({});
+    expect(snap.tick).toBe(0);
+    expect(snap.status).toBe('idle');
+  });
+
+  it('advance(1) on a paramless engine runs step and updates data', () => {
+    const engine = createEngine<{ count: number }>({
+      init: { count: 0 },
+      step: ({ data }) => ({ count: data.count + 1 }),
+    });
+    engine.advance(1);
+    expect(engine.getSnapshot().data).toEqual({ count: 1 });
+  });
+
+  it('setParams({}) on a paramless engine is safe and emits once', () => {
+    const engine = createEngine<{ count: number }>({
+      init: { count: 0 },
+      step: ({ data }) => ({ count: data.count + 1 }),
+    });
+    const listener = vi.fn();
+    engine.subscribe(listener);
+    engine.setParams({});
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(engine.getSnapshot().params).toEqual({});
+  });
+
+  it('resetWith() on a paramless engine resets tick and keeps params {}', () => {
+    const engine = createEngine<{ count: number }>({
+      init: { count: 0 },
+      step: ({ data }) => ({ count: data.count + 1 }),
+    });
+    engine.advance(3);
+    expect(engine.getSnapshot().tick).toBe(3);
+    engine.resetWith();
+    const snap = engine.getSnapshot();
+    expect(snap.tick).toBe(0);
+    expect(snap.data).toEqual({ count: 0 });
+    expect(snap.params).toEqual({});
+    expect(snap.status).toBe('idle');
+  });
+
+  it('init function form receives the empty params object', () => {
+    const initSpy = vi.fn(() => ({ count: 7 }));
+    const engine = createEngine<{ count: number }>({
+      init: initSpy,
+      step: ({ data }) => ({ count: data.count + 1 }),
+    });
+    expect(initSpy).toHaveBeenCalledWith({});
+    expect(engine.getSnapshot().data).toEqual({ count: 7 });
+  });
+});
