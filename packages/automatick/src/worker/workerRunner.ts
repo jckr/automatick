@@ -47,8 +47,6 @@ export function createWorkerRunner<Data, Params>(
     stepDurationMs: 0,
   };
 
-  let errorMessage: string | null = null;
-
   function send(msg: MainToWorkerMessage<Params>) {
     worker.postMessage(serializeMainMessage(msg));
   }
@@ -68,7 +66,6 @@ export function createWorkerRunner<Data, Params>(
         emit();
         break;
       case 'error':
-        errorMessage = msg.error.message;
         currentSnapshot = { ...currentSnapshot, status: 'stopped' };
         emit();
         break;
@@ -78,8 +75,7 @@ export function createWorkerRunner<Data, Params>(
     }
   };
 
-  worker.onerror = (event) => {
-    errorMessage = event.message ?? 'Unknown worker error';
+  worker.onerror = () => {
     currentSnapshot = { ...currentSnapshot, status: 'stopped' };
     emit();
   };

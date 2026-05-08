@@ -76,8 +76,6 @@ export default defineSim<ActivatorsData, ActivatorsParams>({
   step: ({ data, params }) => {
     const { grid, neighbors } = data;
     const { w } = params;
-    const height = grid.length;
-    const width = grid[0].length;
     let changes = 0;
 
     const newGrid = grid.map((row, r) =>

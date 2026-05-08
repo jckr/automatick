@@ -843,6 +843,85 @@ describe('edge cases', () => {
 });
 
 // ===========================================================================
+// Category 11: render config option
+// ===========================================================================
+
+describe('render config option', () => {
+  it('is called once with the initial snapshot at construction', () => {
+    const render = vi.fn();
+    const engine = createEngine({ ...counterConfig(), render });
+    expect(render).toHaveBeenCalledTimes(1);
+    const snap = render.mock.calls[0][0];
+    expect(snap.tick).toBe(0);
+    expect(snap.status).toBe('idle');
+    expect(snap.data).toBe(0);
+    expect(snap).toEqual(engine.getSnapshot());
+  });
+
+  it('fires on advance', () => {
+    const render = vi.fn();
+    const engine = createEngine({ ...counterConfig(), render });
+    render.mockClear();
+    engine.advance(1);
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(render.mock.calls[0][0].tick).toBe(1);
+  });
+
+  it('fires on play, pause, stop, seek, setParams', () => {
+    const render = vi.fn();
+    const engine = createEngine({ ...counterConfig(), render });
+    render.mockClear();
+    engine.play();
+    engine.pause();
+    engine.seek(2);
+    engine.setParams({ increment: 5 });
+    engine.stop();
+    // play, pause, seek, setParams, stop = 5 emits
+    expect(render).toHaveBeenCalledTimes(5);
+  });
+
+  it('fires after resetWith with the reset snapshot', () => {
+    const render = vi.fn();
+    const engine = createEngine({ ...counterConfig(), render });
+    engine.advance(3);
+    render.mockClear();
+    engine.resetWith();
+    expect(render).toHaveBeenCalledTimes(1);
+    const snap = render.mock.calls[0][0];
+    expect(snap.tick).toBe(0);
+    expect(snap.status).toBe('idle');
+    expect(snap.data).toBe(0);
+  });
+
+  it('omitted render leaves behavior unchanged', () => {
+    const engine = createEngine(counterConfig());
+    engine.advance(2);
+    expect(engine.getSnapshot().tick).toBe(2);
+    expect(engine.getStatus()).toBe('paused');
+  });
+
+  it('coexists with subscribe — both fire on emits', () => {
+    const render = vi.fn();
+    const sub = vi.fn();
+    const engine = createEngine({ ...counterConfig(), render });
+    engine.subscribe(sub);
+    render.mockClear();
+    engine.advance(1);
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(sub).toHaveBeenCalledTimes(1);
+  });
+
+  it('destroy stops further render calls', () => {
+    const render = vi.fn();
+    const engine = createEngine({ ...counterConfig(), render });
+    engine.destroy();
+    render.mockClear();
+    engine.advance(1);
+    expect(render).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
 // defineSim integration
 // ===========================================================================
 

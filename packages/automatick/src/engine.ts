@@ -21,6 +21,14 @@ export type EngineConfig<Data, Params> = {
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
+  /**
+   * Optional render callback — sugar for the vanilla path. When provided, the
+   * engine calls it once with the initial snapshot (right after init) and on
+   * every snapshot emit thereafter, equivalent to `engine.subscribe(render)`
+   * followed by an initial paint. `subscribe` remains the lower-level
+   * primitive; React adapter and worker callers wire their own subscribers.
+   */
+  render?: (snapshot: EngineSnapshot<Data, Params>) => void;
 };
 
 export type EngineSnapshot<Data, Params> = {
@@ -78,6 +86,11 @@ export class SimulationEngine<Data, Params> {
 
     this.params = { ...config.initialParams };
     this.data = this.initFn(this.params);
+
+    if (config.render) {
+      this.listeners.add(config.render);
+      config.render(this.getSnapshot());
+    }
   }
 
   getSnapshot(): EngineSnapshot<Data, Params> {

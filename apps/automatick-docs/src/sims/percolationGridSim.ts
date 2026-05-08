@@ -109,7 +109,7 @@ export default defineSim<PercGridData, PercGridParams>({
 
   step: ({ data }) => {
     const colsMeta = data.colsMeta.map((m) => ({ ...m }));
-    const cells = data.cells.map((row, y) =>
+    const cells = data.cells.map((row) =>
       row.map((cell, x) => {
         if (cell.result !== 'pending') return cell;
         const next = stepOne(cell);

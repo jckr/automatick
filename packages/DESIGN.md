@@ -274,6 +274,8 @@ type EngineConfig<Data, Params> = {
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
+  /** Optional render callback — sugar for `subscribe` + initial paint, scoped to the vanilla path. */
+  render?: (snapshot: EngineSnapshot<Data, Params>) => void;
 };
 
 type EngineSnapshot<Data, Params> = {
@@ -304,6 +306,8 @@ type SimulationEngine<Data, Params> = {
 **Eager initialization:** `createEngine()` invokes `init` immediately (calling the function or cloning the value). The returned engine is snapshot-ready. There is no lazy path, no `didInit` guard.
 
 **Data-form init cloning:** When `init` is a value, the engine `structuredClone`s it once at construction (so later mutations to the source can't leak in) and again on every (re)init (so step mutations don't persist across resets).
+
+**`render` config option (vanilla DX sugar):** When `config.render` is provided, the engine subscribes it as a listener and invokes it once with the initial snapshot at construction time. From then on it fires on every emit, identically to a manually-wired `subscribe(render)`. This eliminates the two-line boilerplate (`engine.subscribe(render); render(engine.getSnapshot().data)`) for callers who don't have another reactive layer driving rendering. `subscribe` remains the lower-level primitive; React adapter and worker callers wire their own subscribers explicitly and should not pass `render`.
 
 ### State Machine
 
