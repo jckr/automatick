@@ -9,7 +9,7 @@ export function GettingStartedPage() {
         { label: 'Guide', to: '/guide/getting-started' },
         { label: 'Getting started' },
       ]}
-      next={{ label: 'Tutorial', to: '/guide/tutorial' }}
+      next={{ label: 'Without React', to: '/guide/without-react' }}
     >
       <Content />
     </GuidePage>

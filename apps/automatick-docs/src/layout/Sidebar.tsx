@@ -6,6 +6,7 @@ type Group = { label: string; items: Item[]; collapsible?: boolean };
 
 const GUIDE: Item[] = [
   { to: '/guide/getting-started', label: 'Getting started' },
+  { to: '/guide/without-react', label: 'Without React' },
   { to: '/guide/tutorial', label: 'Tutorial' },
   { to: '/guide/defining-a-sim', label: 'Defining a simulation' },
   { to: '/guide/simulation-component', label: 'Simulation component' },
