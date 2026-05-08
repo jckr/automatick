@@ -101,6 +101,8 @@ Useful when `step` is expensive (large grids, n-body simulations, fluid solvers)
 | `automatick/react/performance` | `<PerformanceOverlay>` |
 | `automatick/react/context` | `<SimulationContext>` |
 
+All entry points use named exports. If you'd rather have a single namespace object, use `import * as Automatick from 'automatick'` and call `Automatick.createEngine(...)` — same for any subpath.
+
 ## License
 
 MIT
