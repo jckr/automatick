@@ -13,8 +13,8 @@ export function norm(a: number): number {
 }
 
 export function average(a0: number, a1: number): number {
-  let min = Math.min(norm(a0), norm(a1));
-  let max = Math.max(norm(a0), norm(a1));
+  const min = Math.min(norm(a0), norm(a1));
+  const max = Math.max(norm(a0), norm(a1));
   if (max - min > P) {
     return norm(min + (max - min) / 2 + P);
   }

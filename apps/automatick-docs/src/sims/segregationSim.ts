@@ -127,12 +127,14 @@ export function draw({
       if (citizen.community === 0) {
         ctx.fillStyle = '#33e';
         circle(ctx, { x: (c + 0.5) * sx, y: (r + 0.5) * sy, r: size / 2 });
-        citizen.isHappy ? ctx.fill() : ctx.stroke();
+        if (citizen.isHappy) ctx.fill();
+        else ctx.stroke();
       } else {
         ctx.fillStyle = '#a0c';
         const x = (c + 0.5) * sx - size / 2;
         const y = (r + 0.5) * sy - size / 2;
-        citizen.isHappy ? ctx.fillRect(x, y, size, size) : ctx.strokeRect(x, y, size, size);
+        if (citizen.isHappy) ctx.fillRect(x, y, size, size);
+        else ctx.strokeRect(x, y, size, size);
       }
     })
   );

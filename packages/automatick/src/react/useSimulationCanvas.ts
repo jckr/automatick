@@ -12,13 +12,6 @@ export type CanvasDrawFn<Data, Params> = (
   snapshot: { data: Data; params: Params; tick: number }
 ) => void;
 
-/**
- * Infer Data and Params from either a SimModule type or explicit type parameters.
- */
-type InferSnapshot<T, FallbackParams> = T extends SimModule<infer D, infer P>
-  ? { data: D; params: P; tick: number }
-  : { data: T; params: FallbackParams; tick: number };
-
 type InferDraw<T, FallbackParams> = T extends SimModule<infer D, infer P>
   ? CanvasDrawFn<D, P>
   : CanvasDrawFn<T, FallbackParams>;
