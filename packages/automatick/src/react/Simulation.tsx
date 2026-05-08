@@ -80,6 +80,8 @@ function LocalSimulation<Data, Params>(
       maxTime: props.maxTime,
       delayMs: props.delayMs,
       ticksPerFrame: props.ticksPerFrame,
+      // The React adapter drives its own rAF loop tied to component lifecycle.
+      autoFrame: false,
     });
   }
   const engine = engineRef.current;
@@ -172,6 +174,7 @@ function WorkerSimulation<Data, Params>(
         shouldStop: simModule.shouldStop,
         initialParams,
         maxTime: p.maxTime,
+        autoFrame: false,
       });
 
       if (cancelled) {

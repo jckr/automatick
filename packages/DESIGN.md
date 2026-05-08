@@ -276,6 +276,13 @@ type EngineConfig<Data, Params> = {
   ticksPerFrame?: number;
   /** Optional render callback — sugar for `subscribe` + initial paint, scoped to the vanilla path. */
   render?: (snapshot: EngineSnapshot<Data, Params>) => void;
+  /**
+   * Drive `handleAnimationFrame` from an internal `requestAnimationFrame` loop. Defaults to `true`
+   * so vanilla callers don't have to write the loop. The React adapter and worker host pass `false`
+   * because they own the frame loop or run where rAF doesn't exist. Loop is created at construction
+   * and torn down by `destroy()`. Silently a no-op when `globalThis.requestAnimationFrame` is missing.
+   */
+  autoFrame?: boolean;
 };
 
 type EngineSnapshot<Data, Params> = {

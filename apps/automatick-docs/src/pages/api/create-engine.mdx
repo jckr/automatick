@@ -24,6 +24,7 @@ function createEngine<Data, Params>(config: EngineConfig<Data, Params>): Simulat
 | `delayMs` | `number` | `0` | Minimum ms between animation-frame advances. |
 | `ticksPerFrame` | `number` | `1` | Number of ticks computed per animation frame. |
 | `render` | `(snap: EngineSnapshot<Data, Params>) => void` | `undefined` | Vanilla-DX sugar. When set, fires once with the initial snapshot at construction and on every emit thereafter. Equivalent to `engine.subscribe(render)` plus an initial paint. Skip it if you already wire `subscribe` yourself (e.g. inside the React adapter or a worker host). |
+| `autoFrame` | `boolean` | `true` | Drive `handleAnimationFrame` from an internal `requestAnimationFrame` loop so vanilla callers don't have to write one. Pass `false` from environments that own a frame loop (the React adapter) or have none (workers). The loop is created at construction and torn down by `destroy()`; missing `requestAnimationFrame` makes it a silent no-op. When `true`, calling `destroy()` is required to release the engine for garbage collection. |
 
 ---
 
@@ -43,7 +44,7 @@ function createEngine<Data, Params>(config: EngineConfig<Data, Params>): Simulat
 | `setParams` | `(patch: Partial<Params>) => void` | Merges a partial update into params. |
 | `resetWith` | `(patch?: Partial<Params>) => void` | Re-runs `init()`, resets tick to `0`, status to `idle`. Optionally merges a param patch first. |
 | `handleAnimationFrame` | `(nowMs: number) => void` | Called from a `requestAnimationFrame` loop. Advances ticks when playing and `delayMs` has elapsed. |
-| `destroy` | `() => void` | Removes all listeners. |
+| `destroy` | `() => void` | Removes all listeners and cancels the internal `autoFrame` loop if one is running. |
 
 ---
 
@@ -89,8 +90,7 @@ const unsub = engine.subscribe((snap) => {
   console.log(`tick ${snap.tick}: count = ${snap.data.count}`);
 });
 
-engine.play();
-// drive with requestAnimationFrame or engine.advance()
+engine.play(); // ticks via the internal rAF loop; pass autoFrame: false to drive it yourself
 ```
 
 Vanilla-DX shortcut — pass `render` and skip the manual subscribe + initial-paint dance:

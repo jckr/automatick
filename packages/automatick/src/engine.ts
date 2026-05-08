@@ -29,6 +29,19 @@ export type EngineConfig<Data, Params> = {
    * primitive; React adapter and worker callers wire their own subscribers.
    */
   render?: (snapshot: EngineSnapshot<Data, Params>) => void;
+  /**
+   * Drive `handleAnimationFrame` from an internal `requestAnimationFrame` loop.
+   * Defaults to `true` so vanilla callers don't have to write the loop. The
+   * React adapter and worker host pass `false` because they either own the
+   * frame loop themselves or run in an environment that has none. The loop is
+   * created at construction and torn down by `destroy()`. If
+   * `globalThis.requestAnimationFrame` is missing (server, worker), the option
+   * is silently a no-op.
+   *
+   * Note: when `true`, the rAF closure pins this engine in memory — vanilla
+   * consumers must call `destroy()` to let it be garbage-collected.
+   */
+  autoFrame?: boolean;
 };
 
 export type EngineSnapshot<Data, Params> = {
@@ -65,6 +78,9 @@ export class SimulationEngine<Data, Params> {
 
   private readonly perfBuffer: TickPerformance[] = [];
 
+  private rafId: number | null = null;
+  private rafCancel: ((id: number) => void) | null = null;
+
   constructor(config: EngineConfig<Data, Params>) {
     const init = config.init;
     if (isInitFn(init)) {
@@ -90,6 +106,19 @@ export class SimulationEngine<Data, Params> {
     if (config.render) {
       this.listeners.add(config.render);
       config.render(this.getSnapshot());
+    }
+
+    if (config.autoFrame !== false) {
+      const raf = globalThis.requestAnimationFrame;
+      const caf = globalThis.cancelAnimationFrame;
+      if (typeof raf === 'function' && typeof caf === 'function') {
+        const loop = (now: number) => {
+          this.handleAnimationFrame(now);
+          this.rafId = raf(loop);
+        };
+        this.rafCancel = caf;
+        this.rafId = raf(loop);
+      }
     }
   }
 
@@ -232,6 +261,11 @@ export class SimulationEngine<Data, Params> {
   }
 
   destroy(): void {
+    if (this.rafId !== null && this.rafCancel) {
+      this.rafCancel(this.rafId);
+    }
+    this.rafId = null;
+    this.rafCancel = null;
     this.listeners.clear();
     this.historyListeners.clear();
   }

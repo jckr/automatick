@@ -961,3 +961,112 @@ describe('defineSim', () => {
     expect(engine.getSnapshot().data).toEqual({ count: 15 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// autoFrame option
+// ---------------------------------------------------------------------------
+
+describe('autoFrame', () => {
+  type RafStub = {
+    schedule: (cb: (now: number) => void) => number;
+    cancel: (id: number) => void;
+    pending: Array<(now: number) => void>;
+    cancelled: number[];
+    nextId: number;
+    /** Pump the most recently-scheduled callback with a synthetic timestamp. */
+    flush: (now: number) => void;
+  };
+
+  function installRafStub(): RafStub {
+    const stub: RafStub = {
+      pending: [],
+      cancelled: [],
+      nextId: 0,
+      schedule(cb) {
+        stub.nextId += 1;
+        stub.pending.push(cb);
+        return stub.nextId;
+      },
+      cancel(id) {
+        stub.cancelled.push(id);
+        // Drop the most recent pending callback to model a real cancellation.
+        stub.pending.pop();
+      },
+      flush(now) {
+        const cb = stub.pending.pop();
+        if (cb) cb(now);
+      },
+    };
+    globalThis.requestAnimationFrame = stub.schedule as typeof requestAnimationFrame;
+    globalThis.cancelAnimationFrame = stub.cancel as typeof cancelAnimationFrame;
+    return stub;
+  }
+
+  function uninstallRafStub() {
+    // vitest's node env starts without these globals; restore by deleting.
+    delete (globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame;
+    delete (globalThis as { cancelAnimationFrame?: unknown }).cancelAnimationFrame;
+  }
+
+  it('default-true: schedules an rAF loop at construction when rAF is available', () => {
+    const stub = installRafStub();
+    try {
+      const engine = createEngine(counterConfig());
+      expect(stub.pending.length).toBe(1);
+      engine.destroy();
+    } finally {
+      uninstallRafStub();
+    }
+  });
+
+  it('default-true: the internal loop drives ticks once playing', () => {
+    const stub = installRafStub();
+    try {
+      const engine = createEngine(counterConfig());
+      engine.play();
+      stub.flush(0); // seed lastUpdateMs
+      stub.flush(16); // first tick advance
+      stub.flush(32); // second tick advance
+      expect(engine.getSnapshot().tick).toBe(2);
+      expect(engine.getSnapshot().data).toBe(2);
+      engine.destroy();
+    } finally {
+      uninstallRafStub();
+    }
+  });
+
+  it('autoFrame: false suppresses the loop even when rAF is available', () => {
+    const stub = installRafStub();
+    try {
+      const engine = createEngine({ ...counterConfig(), autoFrame: false });
+      expect(stub.pending.length).toBe(0);
+      engine.destroy();
+    } finally {
+      uninstallRafStub();
+    }
+  });
+
+  it('destroy() cancels the rAF loop and stops further ticks', () => {
+    const stub = installRafStub();
+    try {
+      const engine = createEngine(counterConfig());
+      engine.play();
+      stub.flush(0);
+      stub.flush(16);
+      expect(engine.getSnapshot().tick).toBe(1);
+
+      engine.destroy();
+      expect(stub.cancelled.length).toBe(1);
+      expect(stub.pending.length).toBe(0);
+    } finally {
+      uninstallRafStub();
+    }
+  });
+
+  it('default-true is a no-op in environments without requestAnimationFrame', () => {
+    // Node/vitest default — no globals installed.
+    expect(typeof globalThis.requestAnimationFrame).toBe('undefined');
+    const engine = createEngine(counterConfig());
+    expect(() => engine.destroy()).not.toThrow();
+  });
+});
