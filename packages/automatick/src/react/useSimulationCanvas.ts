@@ -1,15 +1,15 @@
 import React from 'react';
-import type { EngineSnapshot } from '../engine';
 import type { SimModule } from '../sim';
+import type { State } from '../state';
 import { EngineContext } from './EngineContext';
 
 /**
  * Draw callback signature for useSimulationCanvas.
- * Called imperatively on every engine snapshot — no React re-render involved.
+ * Called imperatively on every engine state emit — no React re-render involved.
  */
 export type CanvasDrawFn<Data, Params> = (
   ctx: CanvasRenderingContext2D,
-  snapshot: { data: Data; params: Params; tick: number }
+  snapshot: State<Data, Params>
 ) => void;
 
 type InferDraw<T, FallbackParams> = T extends SimModule<infer D, infer P>
@@ -17,7 +17,7 @@ type InferDraw<T, FallbackParams> = T extends SimModule<infer D, infer P>
   : CanvasDrawFn<T, FallbackParams>;
 
 /**
- * Subscribe to simulation snapshots and draw to a canvas without React re-renders.
+ * Subscribe to simulation state and draw to a canvas without React re-renders.
  *
  * Returns a ref to attach to a `<canvas>` element. The `draw` callback is called
  * directly from the engine's subscription — it bypasses React's state/reconciliation
@@ -60,29 +60,25 @@ export function useSimulationCanvas<T = unknown, FallbackParams = unknown>(
       if (ctx) {
         const snap = engineCtx.getSnapshot();
         const t0 = performance.now();
-        (drawRef.current as CanvasDrawFn<unknown, unknown>)(ctx, {
-          data: snap.data,
-          params: snap.params,
-          tick: snap.tick,
-        });
+        // TODO(#14): re-narrow from EngineContext's erased generics. Drop once
+        // EngineContext carries Data/Params.
+        (drawRef.current as CanvasDrawFn<unknown, unknown>)(ctx, snap);
         engineCtx.recordDrawTime(snap.tick, performance.now() - t0);
       }
     }
 
-    // Subscribe to engine — draw on every snapshot, no setState
+    // Subscribe to engine — draw on every state, no setState
     const unsubscribe = engineCtx.subscribe(
-      (snap: EngineSnapshot<unknown, unknown>) => {
+      (snap: State<unknown, unknown>) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
         const t0 = performance.now();
-        (drawRef.current as CanvasDrawFn<unknown, unknown>)(ctx, {
-          data: snap.data,
-          params: snap.params,
-          tick: snap.tick,
-        });
+        // TODO(#14): re-narrow from EngineContext's erased generics. Drop once
+        // EngineContext carries Data/Params.
+        (drawRef.current as CanvasDrawFn<unknown, unknown>)(ctx, snap);
         engineCtx.recordDrawTime(snap.tick, performance.now() - t0);
       }
     );

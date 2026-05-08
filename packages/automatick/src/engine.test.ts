@@ -29,7 +29,7 @@ function spyConfig() {
     config: {
       init: (params: { x: number }) => 0,
       step: (args: { data: number; params: { x: number }; tick: number }) => {
-        stepCalls.push({ ...args });
+        stepCalls.push({ data: args.data, params: args.params, tick: args.tick });
         return args.data + args.params.x;
       },
       initialParams: { x: 10 },

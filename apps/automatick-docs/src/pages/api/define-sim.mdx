@@ -17,19 +17,23 @@ function defineSim<Data, Params>(sim: SimModule<Data, Params>): SimModule<Data, 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `init` | `(params: Params) => Data` | Yes | Creates initial state from params. Called on engine creation and on `resetWith()`. |
-| `step` | `(args: StepArgs<Data, Params>) => Data` | Yes | Advances simulation by one tick. Must be pure and synchronous. |
+| `step` | `(state: State<Data, Params>) => Data` | Yes | Advances simulation by one tick. Must be pure and synchronous. |
 | `shouldStop` | `(data: Data, params: Params) => boolean` | No | Termination predicate checked after each step. Return `true` to stop. |
 | `defaultParams` | `Params` | Yes | Default parameter values used at engine creation if no override is provided. |
 
 ---
 
-## StepArgs&lt;Data, Params&gt;
+## State&lt;Data, Params&gt;
+
+The unified state shape passed to `step`, returned by `getSnapshot`, and delivered to the `render` callback.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `data` | `Data` | Current simulation state. |
 | `params` | `Params` | Current parameters. |
-| `tick` | `number` | Current tick number (1-based, incremented before `step` is called). |
+| `tick` | `number` | Current tick number (1-based; incremented before `step` is called). |
+| `status` | `SimulationStatus` | `'idle' \| 'playing' \| 'paused' \| 'stopped'` |
+| `stepDurationMs` | `number` | Duration of the previous step in ms. `0` before the first step has run. |
 
 ---
 

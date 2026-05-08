@@ -17,13 +17,13 @@ function createEngine<Data, Params>(config: EngineConfig<Data, Params>): Simulat
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `init` | `(params: Params) => Data` | -- | Creates initial simulation state. |
-| `step` | `(args: StepArgs<Data, Params>) => Data` | -- | Advances state by one tick. |
+| `step` | `(state: State<Data, Params>) => Data` | -- | Advances state by one tick. |
 | `shouldStop` | `(data: Data, params: Params) => boolean` | `undefined` | Termination predicate, checked after each step. |
 | `initialParams` | `Params` | -- | Starting parameter values. |
 | `maxTime` | `number` | `undefined` | Tick limit. Engine stops when `tick >= maxTime`. |
 | `delayMs` | `number` | `0` | Minimum ms between animation-frame advances. |
 | `ticksPerFrame` | `number` | `1` | Number of ticks computed per animation frame. |
-| `render` | `(snap: EngineSnapshot<Data, Params>) => void` | `undefined` | Vanilla-DX sugar. When set, fires once with the initial snapshot at construction and on every emit thereafter. Equivalent to `engine.subscribe(render)` plus an initial paint. Skip it if you already wire `subscribe` yourself (e.g. inside the React adapter or a worker host). |
+| `render` | `(snapshot: State<Data, Params>) => void` | `undefined` | Vanilla-DX sugar. When set, fires once with the initial snapshot at construction and on every emit thereafter. Equivalent to `engine.subscribe(render)` plus an initial paint. Skip it if you already wire `subscribe` yourself (e.g. inside the React adapter or a worker host). |
 | `autoFrame` | `boolean` | `true` | Drive `handleAnimationFrame` from an internal `requestAnimationFrame` loop so vanilla callers don't have to write one. Pass `false` from environments that own a frame loop (the React adapter) or have none (workers). The loop is created at construction and torn down by `destroy()`; missing `requestAnimationFrame` makes it a silent no-op. When `true`, calling `destroy()` is required to release the engine for garbage collection. |
 
 ---
@@ -32,9 +32,9 @@ function createEngine<Data, Params>(config: EngineConfig<Data, Params>): Simulat
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `getSnapshot` | `() => EngineSnapshot<Data, Params>` | Returns current `{ data, params, tick, status }`. |
+| `getSnapshot` | `() => State<Data, Params>` | Returns the current state — `{ data, params, tick, status, stepDurationMs }`. |
 | `getStatus` | `() => SimulationStatus` | Returns current status string. |
-| `subscribe` | `(listener: (snap: EngineSnapshot<Data, Params>) => void) => () => void` | Registers a snapshot listener. Returns an unsubscribe function. |
+| `subscribe` | `(listener: (snapshot: State<Data, Params>) => void) => () => void` | Registers a snapshot listener. Returns an unsubscribe function. |
 | `subscribeHistory` | `(listener: (entry: { tick: number; data: Data }) => void) => () => void` | Registers a per-tick history listener. Returns an unsubscribe function. |
 | `play` | `() => void` | Transitions to `playing`. No-op if already playing or stopped. |
 | `pause` | `() => void` | Transitions to `paused`. No-op if not playing. |
@@ -48,7 +48,9 @@ function createEngine<Data, Params>(config: EngineConfig<Data, Params>): Simulat
 
 ---
 
-## EngineSnapshot&lt;Data, Params&gt;
+## State&lt;Data, Params&gt;
+
+The unified state shape returned by `getSnapshot`, delivered to listeners and to the `render` callback, and passed into `step`. See `define-sim` for the full breakdown — same type, three call sites.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -56,6 +58,7 @@ function createEngine<Data, Params>(config: EngineConfig<Data, Params>): Simulat
 | `params` | `Params` | Current parameters. |
 | `tick` | `number` | Current tick number. |
 | `status` | `SimulationStatus` | `'idle' \| 'playing' \| 'paused' \| 'stopped'` |
+| `stepDurationMs` | `number` | Duration of the previous step in ms. `0` before the first step has run. |
 
 ---
 

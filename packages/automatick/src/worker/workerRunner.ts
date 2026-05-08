@@ -5,7 +5,7 @@
  * The worker owns the tick loop; this side is a passive subscriber.
  */
 
-import type { EngineSnapshot, SimulationStatus } from '../engine';
+import type { State } from '../state';
 import type { MainToWorkerMessage, WorkerConfig } from './protocol';
 import { deserializeWorkerMessage, serializeMainMessage } from './serialize';
 
@@ -15,9 +15,9 @@ export type WorkerRunnerConfig<Params> = {
 };
 
 export type WorkerRunner<Data, Params> = {
-  getSnapshot: () => EngineSnapshot<Data, Params>;
+  getSnapshot: () => State<Data, Params>;
   subscribe: (
-    listener: (snapshot: EngineSnapshot<Data, Params>) => void
+    listener: (snapshot: State<Data, Params>) => void
   ) => () => void;
 
   play: () => void;
@@ -35,15 +35,13 @@ export function createWorkerRunner<Data, Params>(
   worker: Worker,
   config: WorkerRunnerConfig<Params>
 ): WorkerRunner<Data, Params> {
-  const listeners = new Set<
-    (snapshot: EngineSnapshot<Data, Params>) => void
-  >();
+  const listeners = new Set<(snapshot: State<Data, Params>) => void>();
 
-  let currentSnapshot: EngineSnapshot<Data, Params> = {
+  let currentSnapshot: State<Data, Params> = {
     data: undefined as Data,
     params: config.initialParams,
     tick: 0,
-    status: 'idle' as SimulationStatus,
+    status: 'idle',
     stepDurationMs: 0,
   };
 

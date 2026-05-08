@@ -1,9 +1,4 @@
-/** Arguments passed to the `step` function on each tick. */
-export type StepArgs<Data, Params> = {
-  data: Data;
-  params: Params;
-  tick: number;
-};
+import type { State } from './state';
 
 /**
  * Initial state for a simulation. Either a value of type `Data`, or a function
@@ -37,7 +32,7 @@ export type SimModule<Data, Params> = {
   init: SimInit<Data, Params>;
 
   /** Advance the simulation by one tick. Must be pure and synchronous. */
-  step: (args: StepArgs<Data, Params>) => Data;
+  step: (state: State<Data, Params>) => Data;
 
   /** Optional termination predicate. Checked after each step. If it returns true, the simulation stops. */
   shouldStop?: (data: Data, params: Params) => boolean;

@@ -1,5 +1,6 @@
 import React from 'react';
-import type { EngineSnapshot, TickPerformance } from '../engine';
+import type { TickPerformance } from '../engine';
+import type { State } from '../state';
 
 /**
  * Internal context that exposes the engine's subscribe function directly.
@@ -8,9 +9,9 @@ import type { EngineSnapshot, TickPerformance } from '../engine';
  */
 export type EngineContextValue = {
   subscribe: (
-    listener: (snapshot: EngineSnapshot<unknown, unknown>) => void
+    listener: (snapshot: State<unknown, unknown>) => void
   ) => () => void;
-  getSnapshot: () => EngineSnapshot<unknown, unknown>;
+  getSnapshot: () => State<unknown, unknown>;
   recordDrawTime: (tick: number, ms: number) => void;
   getPerformance: () => readonly TickPerformance[];
 };

@@ -118,7 +118,7 @@ type SimModule<Data, Params> = {
   init: SimInit<Data, Params>;
 
   /** Advance the simulation by one tick. Must be pure and synchronous. */
-  step: (args: StepArgs<Data, Params>) => Data;
+  step: (state: State<Data, Params>) => Data;
 
   /** Optional termination predicate. Checked after each step. */
   shouldStop?: (data: Data, params: Params) => boolean;
@@ -126,13 +126,9 @@ type SimModule<Data, Params> = {
   /** Default parameter values. Used at engine creation if no params prop is provided. */
   defaultParams: Params;
 };
-
-type StepArgs<Data, Params> = {
-  data: Data;
-  params: Params;
-  tick: number;
-};
 ```
+
+`step`, `getSnapshot`, and the `render` callback all operate on the same engine state, so they share one type — `State<Data, Params>`. See section 7.
 
 `Data` must be structured-cloneable: it crosses the worker boundary via `postMessage` and the engine `structuredClone`s data-form `init` values on every (re)init. As a consequence, `Data` must not itself be a function.
 
@@ -268,14 +264,14 @@ type UseSimulationHistoryReturn<Data> = {
 type EngineConfig<Data, Params> = {
   /** Value or `(params) => Data`. See SimInit in section 4. */
   init: SimInit<Data, Params>;
-  step: (args: StepArgs<Data, Params>) => Data;
+  step: (state: State<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   initialParams: Params;
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
   /** Optional render callback — sugar for `subscribe` + initial paint, scoped to the vanilla path. */
-  render?: (snapshot: EngineSnapshot<Data, Params>) => void;
+  render?: (snapshot: State<Data, Params>) => void;
   /**
    * Drive `handleAnimationFrame` from an internal `requestAnimationFrame` loop. Defaults to `true`
    * so vanilla callers don't have to write the loop. The React adapter and worker host pass `false`
@@ -285,16 +281,18 @@ type EngineConfig<Data, Params> = {
   autoFrame?: boolean;
 };
 
-type EngineSnapshot<Data, Params> = {
+type State<Data, Params> = {
   data: Data;
   params: Params;
   tick: number;
   status: SimulationStatus;
+  /** Duration of the previous step in ms. `0` before the first step has run. */
+  stepDurationMs: number;
 };
 
 type SimulationEngine<Data, Params> = {
-  getSnapshot: () => EngineSnapshot<Data, Params>;
-  subscribe: (listener: (snapshot: EngineSnapshot<Data, Params>) => void) => () => void;
+  getSnapshot: () => State<Data, Params>;
+  subscribe: (listener: (snapshot: State<Data, Params>) => void) => () => void;
   subscribeHistory: (listener: (entry: { tick: number; data: Data }) => void) => () => void;
 
   play: () => void;
@@ -314,7 +312,7 @@ type SimulationEngine<Data, Params> = {
 
 **Data-form init cloning:** When `init` is a value, the engine `structuredClone`s it once at construction (so later mutations to the source can't leak in) and again on every (re)init (so step mutations don't persist across resets).
 
-**`render` config option (vanilla DX sugar):** When `config.render` is provided, the engine subscribes it as a listener and invokes it once with the initial snapshot at construction time. From then on it fires on every emit, identically to a manually-wired `subscribe(render)`. This eliminates the two-line boilerplate (`engine.subscribe(render); render(engine.getSnapshot().data)`) for callers who don't have another reactive layer driving rendering. `subscribe` remains the lower-level primitive; React adapter and worker callers wire their own subscribers explicitly and should not pass `render`.
+**`render` config option (vanilla DX sugar):** When `config.render` is provided, the engine subscribes it as a listener and invokes it once with the initial state at construction time. From then on it fires on every emit, identically to a manually-wired `subscribe(render)`. This eliminates the two-line boilerplate (`engine.subscribe(render); render(engine.getSnapshot())`) for callers who don't have another reactive layer driving rendering. `subscribe` remains the lower-level primitive; React adapter and worker callers wire their own subscribers explicitly and should not pass `render`.
 
 ### State Machine
 
@@ -409,7 +407,7 @@ type WorkerConfig = {
 
 ```ts
 type WorkerToMainMessage<Data, Params> =
-  | { kind: 'snapshot'; snapshot: EngineSnapshot<Data, Params> }
+  | { kind: 'snapshot'; snapshot: State<Data, Params> }
   | { kind: 'error'; error: { message: string; stack?: string } }
   | { kind: 'ready' };
 ```
@@ -423,7 +421,7 @@ This is the **only** place in the codebase where `unknown` and `as` casts are pe
 
 /** Cast a typed snapshot to the wire format. Called in the worker before postMessage. */
 export function serializeSnapshot<Data, Params>(
-  snapshot: EngineSnapshot<Data, Params>
+  snapshot: State<Data, Params>
 ): unknown {
   // postMessage uses structured clone; this cast marks the serialization boundary.
   return snapshot;
@@ -432,9 +430,9 @@ export function serializeSnapshot<Data, Params>(
 /** Cast the wire format back to a typed snapshot. Called on main thread after onmessage. */
 export function deserializeSnapshot<Data, Params>(
   raw: unknown
-): EngineSnapshot<Data, Params> {
+): State<Data, Params> {
   // Structured clone preserves shape; this cast marks the deserialization boundary.
-  return raw as EngineSnapshot<Data, Params>;
+  return raw as State<Data, Params>;
 }
 ```
 
