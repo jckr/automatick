@@ -108,7 +108,7 @@ An identity function that enables type inference. Returns its argument unchanged
 ```ts
 type SimInit<Data, Params> = ((params: Params) => Data) | Data;
 
-type SimModule<Data, Params> = {
+type SimModule<Data, Params = Record<string, never>> = {
   /**
    * Initial simulation state — either a value of type `Data`, or a function
    * `(params) => Data`. Use the function form when init depends on params;
@@ -123,8 +123,12 @@ type SimModule<Data, Params> = {
   /** Optional termination predicate. Checked after each step. */
   shouldStop?: (data: Data, params: Params) => boolean;
 
-  /** Default parameter values. Used at engine creation if no params prop is provided. */
-  defaultParams: Params;
+  /**
+   * Default parameter values. Optional — sims that don't have tweakable params
+   * can omit this. When omitted, `Params` defaults to `Record<string, never>`
+   * and the engine seeds an empty params object.
+   */
+  defaultParams?: Params;
 };
 ```
 
@@ -146,38 +150,69 @@ The sim module is the part the developer writes most often and stares at most. I
 
 ## 5. The `<Simulation>` Component API
 
-One component, two mutually exclusive modes:
+One component, three mutually exclusive modes — `sim={module}`, `worker={loader}`, or the sim parts inline as props:
 
 ```ts
-// Main-thread mode
-type SimulationPropsLocal<Data, Params> = {
-  sim: SimModule<Data, Params>;
-  worker?: never;
+type SimulationPropsCommon<Params> = {
   params?: Partial<Params>;
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
   autoplay?: boolean;
   children?: React.ReactNode;
+};
+
+// Main-thread mode (pre-built module)
+type SimulationPropsLocal<Data, Params> = SimulationPropsCommon<Params> & {
+  sim: SimModule<Data, Params>;
+  worker?: never;
+  init?: never;
+  step?: never;
+  shouldStop?: never;
+  defaultParams?: never;
 };
 
 // Worker mode
-type SimulationPropsWorker<Data, Params> = {
+type SimulationPropsWorker<Data, Params> = SimulationPropsCommon<Params> & {
   sim?: never;
   worker: () => Promise<{ default: SimModule<Data, Params> }>;
-  params?: Partial<Params>;
-  maxTime?: number;
-  delayMs?: number;
-  ticksPerFrame?: number;
+  init?: never;
+  step?: never;
+  shouldStop?: never;
+  defaultParams?: never;
   snapshotIntervalMs?: number;
-  autoplay?: boolean;
-  children?: React.ReactNode;
 };
 
-type SimulationProps<Data, Params> =
+// Inline mode — sim parts as props, no module wrapper
+type SimulationPropsInline<Data, Params> = SimulationPropsCommon<Params> & {
+  sim?: never;
+  worker?: never;
+  init: SimInit<Data, Params>;
+  step: (state: State<Data, Params>) => Data;
+  shouldStop?: (data: Data, params: Params) => boolean;
+  defaultParams?: Params;
+};
+
+type SimulationProps<Data, Params = Record<string, never>> =
   | SimulationPropsLocal<Data, Params>
-  | SimulationPropsWorker<Data, Params>;
+  | SimulationPropsWorker<Data, Params>
+  | SimulationPropsInline<Data, Params>;
 ```
+
+**Inline form (simplest case).** When a sim has no reuse value beyond a single page and won't run in a worker, the `defineSim` wrapper is overhead. Skip it and pass the parts directly:
+
+```tsx
+<Simulation
+  init={{ count: 0 }}
+  step={({ data }) => ({ count: data.count + 1 })}
+>
+  <Display />
+</Simulation>
+```
+
+The inline form is main-thread only — worker mode requires a module file the bundler can split.
+
+**Dispatch precedence.** The component checks props in order: `worker` first, then `sim`, then falls through to inline. The `?: never` discriminators on each branch make all three forms mutually exclusive at the type level.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -261,12 +296,13 @@ type UseSimulationHistoryReturn<Data> = {
 ### `createEngine<Data, Params>(config): SimulationEngine<Data, Params>`
 
 ```ts
-type EngineConfig<Data, Params> = {
+type EngineConfig<Data, Params = Record<string, never>> = {
   /** Value or `(params) => Data`. See SimInit in section 4. */
   init: SimInit<Data, Params>;
   step: (state: State<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
-  initialParams: Params;
+  /** Optional — when omitted, the engine seeds `params` with `{}`. */
+  initialParams?: Params;
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;

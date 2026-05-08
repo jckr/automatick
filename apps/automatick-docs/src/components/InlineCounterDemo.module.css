@@ -1,0 +1,18 @@
+.wrap {
+  padding: 1rem;
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-family: var(--mono, monospace);
+}
+
+.readout {
+  font-size: 1.25rem;
+}
+
+.tick {
+  opacity: 0.6;
+  font-size: 0.85rem;
+}

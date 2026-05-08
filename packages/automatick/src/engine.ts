@@ -10,7 +10,7 @@ export type TickPerformance = {
   drawMs?: number;
 };
 
-export type EngineConfig<Data, Params> = {
+export type EngineConfig<Data, Params = Record<string, never>> = {
   /**
    * Initial simulation state — value or `(params) => Data`. See `SimInit`.
    * When a value is passed, the engine `structuredClone`s it on each (re)init.
@@ -18,7 +18,11 @@ export type EngineConfig<Data, Params> = {
   init: SimInit<Data, Params>;
   step: (state: State<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
-  initialParams: Params;
+  /**
+   * Initial param values. Optional — when omitted, the engine seeds an empty
+   * params object and `Params` defaults to `Record<string, never>`.
+   */
+  initialParams?: Params;
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
@@ -47,7 +51,7 @@ export type EngineConfig<Data, Params> = {
 
 const PERF_BUFFER_SIZE = 120;
 
-export class SimulationEngine<Data, Params> {
+export class SimulationEngine<Data, Params = Record<string, never>> {
   private data: Data;
   private params: Params;
   private tick: number = 0;
@@ -93,7 +97,13 @@ export class SimulationEngine<Data, Params> {
     this.delayMs = config.delayMs ?? 0;
     this.ticksPerFrame = config.ticksPerFrame ?? 1;
 
-    this.params = { ...config.initialParams };
+    // `initialParams` is optional; when absent we seed an empty params object.
+    // The `as Params` is the one cast at this boundary: `Params` defaults to
+    // `Record<string, never>`, so `{}` is structurally exact for the default
+    // case, and explicit-Params callers always pass `initialParams`.
+    this.params = config.initialParams
+      ? { ...config.initialParams }
+      : ({} as Params);
     this.data = this.initFn(this.params);
 
     if (config.render) {
@@ -330,7 +340,7 @@ export class SimulationEngine<Data, Params> {
   }
 }
 
-export function createEngine<Data, Params>(
+export function createEngine<Data, Params = Record<string, never>>(
   config: EngineConfig<Data, Params>
 ): SimulationEngine<Data, Params> {
   return new SimulationEngine(config);

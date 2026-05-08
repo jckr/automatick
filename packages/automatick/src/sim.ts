@@ -23,7 +23,7 @@ export function isInitFn<Data, Params>(
 }
 
 /** A simulation module: the pure business logic that automatick drives. */
-export type SimModule<Data, Params> = {
+export type SimModule<Data, Params = Record<string, never>> = {
   /**
    * Initial simulation state — value or `(params) => Data`. When a value is
    * passed, the engine takes a fresh `structuredClone` on every (re)init so
@@ -37,8 +37,12 @@ export type SimModule<Data, Params> = {
   /** Optional termination predicate. Checked after each step. If it returns true, the simulation stops. */
   shouldStop?: (data: Data, params: Params) => boolean;
 
-  /** Default parameter values. Used at engine creation if no params override is provided. */
-  defaultParams: Params;
+  /**
+   * Default parameter values. Optional — sims without tweakable params can
+   * omit this. When omitted, `Params` defaults to `Record<string, never>` and
+   * the engine seeds an empty params object.
+   */
+  defaultParams?: Params;
 };
 
 /**
@@ -57,7 +61,7 @@ export type SimModule<Data, Params> = {
  * });
  * ```
  */
-export function defineSim<Data, Params>(
+export function defineSim<Data, Params = Record<string, never>>(
   sim: SimModule<Data, Params>
 ): SimModule<Data, Params> {
   return sim;

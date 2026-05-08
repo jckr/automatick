@@ -17,6 +17,7 @@ import { UseSimulationApiPage } from './pages/api/UseSimulationApiPage';
 import { ControlsApiPage } from './pages/api/ControlsApiPage';
 import { CreateEngineApiPage } from './pages/api/CreateEngineApiPage';
 import { CounterPage } from './pages/examples/CounterPage';
+import { InlineCounterPage } from './pages/examples/InlineCounterPage';
 import { WorkerCanvasPage } from './pages/examples/WorkerCanvasPage';
 import { SegregationPage } from './pages/examples/SegregationPage';
 import { SegregationLocalPage } from './pages/examples/SegregationLocalPage';
@@ -71,6 +72,7 @@ export function App() {
           {/* Examples — playground layout (sidebar + flush main, no TOC) */}
           <Route element={<ShellRoute variant='playground' />}>
           <Route path='examples/counter' element={<CounterPage />} />
+          <Route path='examples/inline-counter' element={<InlineCounterPage />} />
           <Route path='examples/fibonacci' element={<FibonacciPage />} />
           <Route path='examples/fibonacci-spiral' element={<FibonacciSpiralPage />} />
           <Route path='examples/dice' element={<DicePage />} />
