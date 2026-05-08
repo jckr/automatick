@@ -108,7 +108,8 @@ export class SimulationEngine<Data, Params> {
       config.render(this.getSnapshot());
     }
 
-    if (config.autoFrame !== false) {
+    const autoFrame = config.autoFrame ?? true;
+    if (autoFrame) {
       const raf = globalThis.requestAnimationFrame;
       const caf = globalThis.cancelAnimationFrame;
       if (typeof raf === 'function' && typeof caf === 'function') {
