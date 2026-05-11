@@ -66,11 +66,14 @@ self.onmessage = async (event) => {
           import(msg.engineUrl),
         ]);
         const sim = simMod.default;
+        // Merge sim.defaultParams under the patch sent from main — the main
+        // thread sees the sim module via a URL, so it can't apply defaults.
+        const initialParams = { ...(sim.defaultParams || {}), ...(msg.params || {}) };
         engine = engineMod.createEngine({
           init: sim.init,
           step: sim.step,
           shouldStop: sim.shouldStop,
-          initialParams: msg.params,
+          initialParams,
           maxTime: msg.config.maxTime,
           // Worker host owns its own setTimeout-driven loop; rAF wouldn't exist here anyway.
           autoFrame: false,
@@ -106,6 +109,11 @@ self.onmessage = async (event) => {
       case 'resetWith':
         if (!engine) return;
         stopLoop(); engine.resetWith(msg.patch); emitSnapshot();
+        break;
+      case 'setConfig':
+        if (msg.patch.delayMs !== undefined) delayMs = msg.patch.delayMs;
+        if (msg.patch.ticksPerFrame !== undefined) ticksPerFrame = msg.patch.ticksPerFrame;
+        if (msg.patch.snapshotIntervalMs !== undefined) snapshotIntervalMs = msg.patch.snapshotIntervalMs;
         break;
       case 'destroy':
         stopLoop();
