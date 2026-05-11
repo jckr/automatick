@@ -2,7 +2,9 @@ import { SimpleModelCanvasDemo } from '../demos/SimpleModelCanvasDemo';
 
 # Drawing to a canvas
 
-The previous page renders the simple model as a hundred `<div>` cells. That's fine at this size. Once you scale up to thousands of agents, particles, or pixels, the DOM stops keeping up and you'll want a `<canvas>` instead. automatick provides a second hook for that path.
+The previous page renders the simple model as a hundred `<div>` cells. That's fine at this size. Once you scale up to thousands of agents, particles, or pixels, the DOM stops keeping up and you'll want a `<canvas>` instead.
+
+automatick provides a special hook for that path: the engine updates the canvas every tick without re-rendering the component, which is the performance win.
 
 ## The same simulation, drawn on canvas
 
@@ -77,7 +79,7 @@ See the [canvas rendering guide](/guide/canvas-rendering) for the full `useSimul
 
 ```tsx
 ctx.clearRect(0, 0, SIZE * CELL, SIZE * CELL);
-ctx.fillStyle = 'rgba(215, 69, 30, 0.12)';
+ctx.fillStyle = CELL_COLOR;
 for (let i = 0; i < TOTAL; i++) {
   if (data.cells[i]) {
     ctx.fillRect(...);
@@ -90,6 +92,12 @@ The draw function is plain Canvas 2D API — `clearRect`, `fillStyle`, `fillRect
 ### Everything else stays the same
 
 `<Simulation>`, `<StandardControls>`, `init`, `step`, `shouldStop`, `delayMs` — none of those change. The canvas is purely a different way to *render* state. The engine, the controls, and the React composition are identical to the previous page.
+
+## Some notes
+
+- You can still use the [with react](/guide/with-react) approach, get the state through the `useSimulation` hook and update your canvas directly with a useEffect (but then, your component will re-render at each tick).
+- If you don't use React, the [without react](/guide/without-react) approach works just as well with or without canvas.
+- You can still have components that access the state in the Simulation wrapper, even if you use `useSimulationCanvas`. For instance, the `StandardControls` component uses `useSimulation` internally to read tick and status, and re-renders accordingly.
 
 ## When canvas pays off
 
