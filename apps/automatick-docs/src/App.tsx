@@ -6,6 +6,7 @@ import { HomePage } from './pages/HomePage';
 import { GettingStartedPage } from './pages/GettingStartedPage';
 import { WithoutReactPage } from './pages/WithoutReactPage';
 import { WithReactPage } from './pages/WithReactPage';
+import { WithCanvasPage } from './pages/WithCanvasPage';
 import { TutorialPage } from './pages/TutorialPage';
 import { DefiningASimPage } from './pages/DefiningASimPage';
 import { SimulationComponentPage } from './pages/SimulationComponentPage';
@@ -60,6 +61,7 @@ export function App() {
             <Route path='guide/getting-started' element={<GettingStartedPage />} />
             <Route path='guide/without-react' element={<WithoutReactPage />} />
             <Route path='guide/with-react' element={<WithReactPage />} />
+            <Route path='guide/with-canvas' element={<WithCanvasPage />} />
             <Route path='guide/tutorial' element={<TutorialPage />} />
             <Route path='guide/defining-a-sim' element={<DefiningASimPage />} />
             <Route path='guide/simulation-component' element={<SimulationComponentPage />} />

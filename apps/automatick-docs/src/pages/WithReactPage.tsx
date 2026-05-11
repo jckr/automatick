@@ -10,7 +10,7 @@ export function WithReactPage() {
         { label: 'With React' },
       ]}
       prev={{ label: 'Without React', to: '/guide/without-react' }}
-      next={{ label: 'Tutorial', to: '/guide/tutorial' }}
+      next={{ label: 'With Canvas', to: '/guide/with-canvas' }}
     >
       <Content />
     </GuidePage>

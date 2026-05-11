@@ -1,0 +1,106 @@
+import { SimpleModelCanvasDemo } from '../demos/SimpleModelCanvasDemo';
+
+# Drawing to a canvas
+
+The previous page renders the simple model as a hundred `<div>` cells. That's fine at this size. Once you scale up to thousands of agents, particles, or pixels, the DOM stops keeping up and you'll want a `<canvas>` instead. automatick provides a second hook for that path.
+
+## The same simulation, drawn on canvas
+
+<SimpleModelCanvasDemo />
+
+`init` and `step` are unchanged from the previous two pages. The only thing different is how the data is rendered.
+
+## The whole thing
+
+```tsx
+import { Simulation } from 'automatick/react/simulation';
+import { useSimulationCanvas } from 'automatick/react/canvas';
+import { StandardControls } from 'automatick/react/controls';
+
+const SIZE = 10;
+const CELL = 36;
+const TOTAL = SIZE * SIZE;
+const CELL_COLOR = 'rgba(215, 69, 30, 0.12)';
+
+const init = { cells: new Array(TOTAL).fill(false) };
+
+function step({ data, tick }) {
+  data.cells[tick - 1] = true;
+  return data;
+}
+
+function Grid() {
+  const canvasRef = useSimulationCanvas((ctx, { data }) => {
+    ctx.clearRect(0, 0, SIZE * CELL, SIZE * CELL);
+    ctx.fillStyle = CELL_COLOR;
+    for (let i = 0; i < TOTAL; i++) {
+      if (data.cells[i]) {
+        ctx.fillRect((i % SIZE) * CELL, Math.floor(i / SIZE) * CELL, CELL, CELL);
+      }
+    }
+  });
+  return <canvas ref={canvasRef} width={SIZE * CELL} height={SIZE * CELL} />;
+}
+
+export function SimpleModel() {
+  return (
+    <Simulation
+      init={init}
+      step={step}
+      shouldStop={(d) => d.cells.at(-1)}
+      delayMs={100}
+    >
+      <Grid />
+      <StandardControls />
+    </Simulation>
+  );
+}
+```
+
+## What changed
+
+### `useSimulationCanvas` replaces `useSimulation`
+
+```tsx
+const canvasRef = useSimulationCanvas((ctx, { data }) => {
+  // draw whatever you want
+});
+```
+
+Instead of returning the simulation state for your component to render, the canvas hook takes a **draw function** and returns a ref. Every time the engine emits a new state, automatick calls your draw function with the canvas's 2D context and the current snapshot — directly, no React re-render involved. The hook handles subscription, teardown, and an initial paint for you.
+
+You still attach the ref to a `<canvas>` element in your JSX. From React's point of view, the canvas component never re-renders after mount.
+
+See the [canvas rendering guide](/guide/canvas-rendering) for the full `useSimulationCanvas` API, dynamic sizing, and incremental drawing patterns.
+
+### Drawing instead of JSX
+
+```tsx
+ctx.clearRect(0, 0, SIZE * CELL, SIZE * CELL);
+ctx.fillStyle = 'rgba(215, 69, 30, 0.12)';
+for (let i = 0; i < TOTAL; i++) {
+  if (data.cells[i]) {
+    ctx.fillRect(...);
+  }
+}
+```
+
+The draw function is plain Canvas 2D API — `clearRect`, `fillStyle`, `fillRect`, paths, text, images, whatever. You own the whole frame: clear it, redraw the state you want to show, return. There's no diffing — each emit is a full repaint.
+
+### Everything else stays the same
+
+`<Simulation>`, `<StandardControls>`, `init`, `step`, `shouldStop`, `delayMs` — none of those change. The canvas is purely a different way to *render* state. The engine, the controls, and the React composition are identical to the previous page.
+
+## When canvas pays off
+
+DOM rendering is the right call when:
+- Each cell or element is interactive (hover states, click handlers, focus).
+- The number of elements is small (low hundreds).
+- You want the browser's text rendering, CSS, and accessibility for free.
+
+Canvas is the right call when:
+- You're drawing thousands of agents, particles, or pixels per frame.
+- The visualization is continuous (positions, shapes, gradients) rather than a grid of discrete elements.
+- You need sub-pixel control or per-pixel writes via `ImageData`.
+
+The simple model is comfortably in DOM territory at 100 cells — we're using canvas here to show the API, not because it's necessary. Conway's Game of Life on the next page is the same shape but at 1,600 cells, which is where the canvas path starts to actually pay for itself.
