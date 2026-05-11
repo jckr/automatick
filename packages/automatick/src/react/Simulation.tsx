@@ -45,12 +45,6 @@ type SimulationPropsWorker<_Data, Params> = SimulationPropsCommon<Params> & {
    * specify them via the `<Simulation<Data, Params>>` generic parameters.
    */
   worker: URL | string;
-  /**
-   * Override the URL of the automatick engine module the worker imports. By
-   * default this resolves to the engine module shipped in this package; pass
-   * this if your bundler can't reach that path from the worker context.
-   */
-  engineUrl?: URL | string;
   init?: never;
   step?: never;
   shouldStop?: never;
@@ -205,10 +199,9 @@ function LocalSimulation<Data, Params>(props: LocalSimulationProps<Data, Params>
 /**
  * Resolve the URL of the automatick engine module shipped alongside this file.
  * After build, this file lives at `dist/react/Simulation.js` and the engine is
- * the sibling-of-parent `dist/engine.js`. Consumers whose bundler can't follow
- * that path may pass `engineUrl` explicitly.
+ * the sibling-of-parent `dist/engine.js`.
  */
-function defaultEngineUrl(): string {
+function engineUrl(): string {
   return new URL('../engine.js', import.meta.url).href;
 }
 
@@ -228,12 +221,11 @@ function WorkerSimulation<Data, Params>(
   // worker — that would lose tick state.
   React.useEffect(() => {
     const moduleUrl = props.worker.toString();
-    const engineUrl = (props.engineUrl ?? defaultEngineUrl()).toString();
     const initialParams = (props.params ?? {}) as Params;
 
     const worker = createSimWorker<Params>({
       moduleUrl,
-      engineUrl,
+      engineUrl: engineUrl(),
       initialParams,
       config: {
         maxTime: props.maxTime,
