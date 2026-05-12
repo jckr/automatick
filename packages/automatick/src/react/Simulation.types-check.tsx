@@ -105,13 +105,21 @@ const _inlineParamless = (
 // @ts-expect-error sim and init are mutually exclusive
 const _bothSimAndInline = <Simulation sim={counterSim} init={{ count: 0 }} step={({ data }) => ({ count: data.count })} />;
 
+// Stand-in for `new URL('./sim.ts', import.meta.url)` — the type-check only
+// cares that this is a URL, not where it points.
+const workerUrl = new URL('https://example.com/sim.js');
+
 // prettier-ignore
 // @ts-expect-error sim and worker are mutually exclusive
-const _bothSimAndWorker = <Simulation sim={counterSim} worker={() => Promise.resolve({ default: counterSim })} />;
+const _bothSimAndWorker = <Simulation sim={counterSim} worker={workerUrl} />;
 
 // prettier-ignore
 // @ts-expect-error worker and inline are mutually exclusive
-const _bothWorkerAndInline = <Simulation worker={() => Promise.resolve({ default: counterSim })} init={{ count: 0 }} step={({ data }) => ({ count: data.count })} />;
+const _bothWorkerAndInline = <Simulation worker={workerUrl} init={{ count: 0 }} step={({ data }) => ({ count: data.count })} />;
+
+// Worker form accepts a URL or a string.
+const _workerFormUrl = <Simulation<{ count: number }, { increment: number }> worker={workerUrl} />;
+const _workerFormString = <Simulation<{ count: number }, { increment: number }> worker='./sim.js' />;
 
 // @ts-expect-error inline form requires both init and step
 const _inlineMissingStep = <Simulation init={{ count: 0 }} />;
@@ -128,6 +136,8 @@ export {
   _bothSimAndInline,
   _bothSimAndWorker,
   _bothWorkerAndInline,
+  _workerFormUrl,
+  _workerFormString,
   _inlineMissingStep,
   _inlineMissingInit,
 };

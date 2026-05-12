@@ -3,6 +3,9 @@ import type { SimInit, SimModule } from '../sim';
 import { createEngine } from '../engine';
 import type { SimulationEngine, TickPerformance } from '../engine';
 import type { State } from '../state';
+import { createSimWorker } from '../worker/createSimWorker';
+import { createWorkerRunner } from '../worker/workerRunner';
+import type { WorkerRunner } from '../worker/workerRunner';
 import { SimulationContext } from './SimulationContext';
 import type { SimulationContextValue } from './SimulationContext';
 import { EngineContext } from './EngineContext';
@@ -28,9 +31,20 @@ type SimulationPropsLocal<Data, Params> = SimulationPropsCommon<Params> & {
   defaultParams?: never;
 };
 
-type SimulationPropsWorker<Data, Params> = SimulationPropsCommon<Params> & {
+// `_Data` is unused in this variant — a worker-mode call site specifies Data
+// via the `<Simulation<Data, Params>>` generic args, since it can't be
+// inferred from a URL.
+type SimulationPropsWorker<_Data, Params> = SimulationPropsCommon<Params> & {
   sim?: never;
-  worker: () => Promise<{ default: SimModule<Data, Params> }>;
+  /**
+   * URL of the sim module the worker should `import()` inside its own context.
+   * Vite idiom: `new URL('./sim.ts', import.meta.url)`. Plain strings are
+   * resolved the same way.
+   *
+   * Data/Params can't be inferred from a URL, so worker-mode call sites
+   * specify them via the `<Simulation<Data, Params>>` generic parameters.
+   */
+  worker: URL | string;
   init?: never;
   step?: never;
   shouldStop?: never;
@@ -182,153 +196,104 @@ function LocalSimulation<Data, Params>(props: LocalSimulationProps<Data, Params>
 // Worker-backed Simulation
 // ---------------------------------------------------------------------------
 
+/**
+ * Resolve the URL of the automatick engine module shipped alongside this file.
+ * After build, this file lives at `dist/react/Simulation.js` and the engine is
+ * the sibling-of-parent `dist/engine.js`.
+ */
+function engineUrl(): string {
+  return new URL('../engine.js', import.meta.url).href;
+}
+
 function WorkerSimulation<Data, Params>(
   props: SimulationPropsWorker<Data, Params>
 ) {
   const { children, autoplay } = props;
-  const [backend, setBackend] = React.useState<Backend<Data, Params> | null>(
+  const [runner, setRunner] = React.useState<WorkerRunner<Data, Params> | null>(
     null
   );
   const [snapshot, setSnapshot] = React.useState<State<Data, Params> | null>(
     null
   );
 
-  const propsRef = React.useRef(props);
-  propsRef.current = props;
-
+  // Mount-only: spawn the worker, build the runner. Subsequent updates flow
+  // through dedicated effects (params, timing) rather than recreating the
+  // worker — that would lose tick state.
   React.useEffect(() => {
-    let cancelled = false;
-    let runner: Backend<Data, Params> | null = null;
+    const moduleUrl = props.worker.toString();
+    const initialParams = (props.params ?? {}) as Params;
 
-    (async () => {
-      const mod = await propsRef.current.worker();
-      const simModule = mod.default;
-      if (cancelled) return;
+    const worker = createSimWorker<Params>({
+      moduleUrl,
+      engineUrl: engineUrl(),
+      initialParams,
+      config: {
+        maxTime: props.maxTime,
+        delayMs: props.delayMs,
+        ticksPerFrame: props.ticksPerFrame,
+        snapshotIntervalMs: props.snapshotIntervalMs,
+      },
+    });
 
-      const p = propsRef.current;
-      let initialParams: Params | undefined;
-      if (simModule.defaultParams && p.params) {
-        initialParams = { ...simModule.defaultParams, ...p.params };
-      } else if (simModule.defaultParams) {
-        initialParams = simModule.defaultParams;
-      } else if (p.params) {
-        initialParams = p.params as Params;
-      }
+    const r = createWorkerRunner<Data, Params>(worker, {
+      initialParams,
+      config: {
+        maxTime: props.maxTime,
+        delayMs: props.delayMs,
+        ticksPerFrame: props.ticksPerFrame,
+        snapshotIntervalMs: props.snapshotIntervalMs,
+      },
+    });
 
-      const engine = createEngine<Data, Params>({
-        init: simModule.init,
-        step: simModule.step,
-        shouldStop: simModule.shouldStop,
-        initialParams,
-        maxTime: p.maxTime,
-        autoFrame: false,
-      });
-
-      if (cancelled) {
-        engine.destroy();
-        return;
-      }
-
-      // Worker-mode tick loop: setTimeout-driven, decoupled from RAF
-      const delayMs = p.delayMs ?? 0;
-      const ticksPerFrame = p.ticksPerFrame ?? 1;
-      let loopTimer: ReturnType<typeof setTimeout> | null = null;
-
-      function stopLoop() {
-        if (loopTimer !== null) {
-          clearTimeout(loopTimer);
-          loopTimer = null;
-        }
-      }
-
-      function tickLoop() {
-        if (engine.getStatus() !== 'playing') return;
-
-        for (let i = 0; i < ticksPerFrame; i++) {
-          engine.advance(1);
-          const s = engine.getStatus();
-          if (s === 'stopped') return;
-          if (s !== 'paused') break;
-        }
-
-        if (engine.getStatus() === 'paused') {
-          engine.play();
-        }
-
-        loopTimer = setTimeout(tickLoop, delayMs);
-      }
-
-      runner = {
-        getSnapshot: () => engine.getSnapshot(),
-        subscribe: (listener) => engine.subscribe(listener),
-        play: () => {
-          engine.play();
-          stopLoop();
-          loopTimer = setTimeout(tickLoop, 0);
-        },
-        pause: () => {
-          stopLoop();
-          engine.pause();
-        },
-        stop: () => {
-          stopLoop();
-          engine.stop();
-        },
-        seek: (tick) => {
-          stopLoop();
-          engine.seek(tick);
-        },
-        advance: (count) => engine.advance(count),
-        setParams: (patch) => engine.setParams(patch),
-        resetWith: (patch) => {
-          stopLoop();
-          engine.resetWith(patch);
-        },
-        destroy: () => {
-          stopLoop();
-          engine.destroy();
-        },
-        recordDrawTime: (tick, ms) => engine.recordDrawTime(tick, ms),
-        getPerformance: () => engine.getPerformance(),
-      };
-
-      if (!cancelled) {
-        setBackend(runner);
-        setSnapshot(engine.getSnapshot());
-      }
-    })();
+    setRunner(r);
+    setSnapshot(r.getSnapshot());
 
     return () => {
-      cancelled = true;
-      runner?.destroy();
+      r.destroy();
     };
+    // Deliberately mount-only: rebuilding the worker on prop changes would
+    // reset the simulation. Timing/param changes flow through the effects below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Subscribe to snapshots
   React.useEffect(() => {
-    if (!backend) return;
-    return backend.subscribe((next) => setSnapshot(next));
-  }, [backend]);
+    if (!runner) return;
+    return runner.subscribe((next) => setSnapshot(next));
+  }, [runner]);
 
-  // Autoplay when backend becomes available
   React.useEffect(() => {
-    if (autoplay && backend) backend.play();
-  }, [backend, autoplay]);
+    if (autoplay && runner) runner.play();
+  }, [runner, autoplay]);
 
-  // Live-apply params
   const isFirstRender = React.useRef(true);
   React.useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    if (props.params && backend) backend.setParams(props.params);
-  }, [backend, props.params]);
+    if (props.params && runner) runner.setParams(props.params);
+  }, [runner, props.params]);
 
-  if (!snapshot || !backend) return null;
+  // Live-apply timing config — mirrors LocalSimulation's behavior.
+  React.useEffect(() => {
+    if (!runner) return;
+    if (
+      props.delayMs === undefined &&
+      props.ticksPerFrame === undefined &&
+      props.snapshotIntervalMs === undefined
+    )
+      return;
+    runner.setConfig({
+      delayMs: props.delayMs,
+      ticksPerFrame: props.ticksPerFrame,
+      snapshotIntervalMs: props.snapshotIntervalMs,
+    });
+  }, [runner, props.delayMs, props.ticksPerFrame, props.snapshotIntervalMs]);
+
+  if (!snapshot || !runner) return null;
 
   return (
-    <SimulationProvider snapshot={snapshot} backend={backend}>
+    <SimulationProvider snapshot={snapshot} backend={runner}>
       {children}
     </SimulationProvider>
   );

@@ -18,6 +18,7 @@ export type MainToWorkerMessage<Params> =
   | { kind: 'advance'; count: number }
   | { kind: 'setParams'; patch: Partial<Params> }
   | { kind: 'resetWith'; patch?: Partial<Params> }
+  | { kind: 'setConfig'; patch: Partial<WorkerConfig> }
   | { kind: 'destroy' };
 
 /** Messages sent from the worker to the main thread. */

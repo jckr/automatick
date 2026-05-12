@@ -5,6 +5,7 @@
  * The worker owns the tick loop; this side is a passive subscriber.
  */
 
+import type { TickPerformance } from '../engine';
 import type { State } from '../state';
 import type { MainToWorkerMessage, WorkerConfig } from './protocol';
 import { deserializeWorkerMessage, serializeMainMessage } from './serialize';
@@ -27,9 +28,19 @@ export type WorkerRunner<Data, Params> = {
   advance: (count?: number) => void;
   setParams: (patch: Partial<Params>) => void;
   resetWith: (patch?: Partial<Params>) => void;
+  setConfig: (patch: Partial<WorkerConfig>) => void;
+
+  /**
+   * Record a draw time for a tick. Draws happen on the main thread, so
+   * timings are tracked here — they never cross the postMessage boundary.
+   */
+  recordDrawTime: (tick: number, ms: number) => void;
+  getPerformance: () => readonly TickPerformance[];
 
   destroy: () => void;
 };
+
+const PERF_BUFFER_SIZE = 120;
 
 export function createWorkerRunner<Data, Params>(
   worker: Worker,
@@ -45,6 +56,10 @@ export function createWorkerRunner<Data, Params>(
     stepDurationMs: 0,
   };
 
+  // Snapshots arrive throttled (snapshotIntervalMs in the worker), so this
+  // buffer holds one entry per emitted snapshot — not per tick.
+  const perfBuffer: TickPerformance[] = [];
+
   function send(msg: MainToWorkerMessage<Params>) {
     worker.postMessage(serializeMainMessage(msg));
   }
@@ -55,12 +70,21 @@ export function createWorkerRunner<Data, Params>(
     }
   }
 
+  function pushPerf(snapshot: State<Data, Params>) {
+    if (snapshot.tick <= 0) return;
+    const last = perfBuffer[perfBuffer.length - 1];
+    if (last && last.tick === snapshot.tick) return;
+    if (perfBuffer.length >= PERF_BUFFER_SIZE) perfBuffer.shift();
+    perfBuffer.push({ tick: snapshot.tick, stepMs: snapshot.stepDurationMs });
+  }
+
   worker.onmessage = (event: MessageEvent) => {
     const msg = deserializeWorkerMessage<Data, Params>(event.data);
 
     switch (msg.kind) {
       case 'snapshot':
         currentSnapshot = msg.snapshot;
+        pushPerf(msg.snapshot);
         emit();
         break;
       case 'error':
@@ -97,6 +121,18 @@ export function createWorkerRunner<Data, Params>(
       send({ kind: 'setParams', patch }),
     resetWith: (patch?: Partial<Params>) =>
       send({ kind: 'resetWith', patch }),
+    setConfig: (patch: Partial<WorkerConfig>) =>
+      send({ kind: 'setConfig', patch }),
+
+    recordDrawTime(tick, ms) {
+      for (let i = perfBuffer.length - 1; i >= 0; i--) {
+        if (perfBuffer[i].tick === tick) {
+          perfBuffer[i].drawMs = ms;
+          return;
+        }
+      }
+    },
+    getPerformance: () => perfBuffer,
 
     destroy() {
       listeners.clear();
