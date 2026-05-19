@@ -21,7 +21,6 @@ function XorRingCanvas() {
   const lastTickRef = React.useRef(-1);
 
   const canvasRef = useSimulationCanvas<typeof xorRingSim>((ctx, { data, params, tick }) => {
-    if (!data) return;
     const cssStyles = getComputedStyle(document.documentElement);
     const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
     const bg = cssStyles.getPropertyValue('--bg2').trim() || '#EFEADD';

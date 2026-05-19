@@ -91,9 +91,6 @@ export function createWorkerRunner<Data, Params>(
         currentSnapshot = { ...currentSnapshot, status: 'stopped' };
         emit();
         break;
-      case 'ready':
-        // Worker initialized, emit initial snapshot
-        break;
     }
   };
 

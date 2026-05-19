@@ -217,9 +217,10 @@ function WorkerSimulation<Data, Params>(
     null
   );
 
-  // Mount-only: spawn the worker, build the runner. Subsequent updates flow
-  // through dedicated effects (params, timing) rather than recreating the
-  // worker — that would lose tick state.
+  // Mount-only: spawn the worker, build the runner, and subscribe immediately
+  // so the first snapshot (emitted by the worker after init) is never missed.
+  // Subsequent updates flow through dedicated effects (params, timing) rather
+  // than recreating the worker — that would lose tick state.
   React.useEffect(() => {
     const moduleUrl = props.worker.toString();
     const initialParams = (props.params ?? {}) as Params;
@@ -246,21 +247,17 @@ function WorkerSimulation<Data, Params>(
       },
     });
 
+    const unsub = r.subscribe((next) => setSnapshot(next));
     setRunner(r);
-    setSnapshot(r.getSnapshot());
 
     return () => {
+      unsub();
       r.destroy();
     };
     // Deliberately mount-only: rebuilding the worker on prop changes would
     // reset the simulation. Timing/param changes flow through the effects below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  React.useEffect(() => {
-    if (!runner) return;
-    return runner.subscribe((next) => setSnapshot(next));
-  }, [runner]);
 
   React.useEffect(() => {
     if (autoplay && runner) runner.play();

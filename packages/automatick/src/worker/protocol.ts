@@ -24,8 +24,7 @@ export type MainToWorkerMessage<Params> =
 /** Messages sent from the worker to the main thread. */
 export type WorkerToMainMessage<Data, Params> =
   | { kind: 'snapshot'; snapshot: State<Data, Params> }
-  | { kind: 'error'; error: { message: string; stack?: string } }
-  | { kind: 'ready' };
+  | { kind: 'error'; error: { message: string; stack?: string } };
 
 /** Worker-specific configuration passed at init time. */
 export type WorkerConfig = {
