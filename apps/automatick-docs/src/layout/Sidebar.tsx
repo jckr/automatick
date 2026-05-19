@@ -9,6 +9,7 @@ const GUIDE: Item[] = [
   { to: '/guide/without-react', label: 'Without React' },
   { to: '/guide/with-react', label: 'With React' },
   { to: '/guide/with-canvas', label: 'With Canvas' },
+  { to: '/guide/with-worker', label: 'With Worker' },
   { to: '/guide/tutorial', label: 'Tutorial' },
   { to: '/guide/defining-a-sim', label: 'Defining a simulation' },
   { to: '/guide/simulation-component', label: 'Simulation component' },

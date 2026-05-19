@@ -10,7 +10,7 @@ export function WithCanvasPage() {
         { label: 'With Canvas' },
       ]}
       prev={{ label: 'With React', to: '/guide/with-react' }}
-      next={{ label: 'Tutorial', to: '/guide/tutorial' }}
+      next={{ label: 'With Worker', to: '/guide/with-worker' }}
     >
       <Content />
     </GuidePage>

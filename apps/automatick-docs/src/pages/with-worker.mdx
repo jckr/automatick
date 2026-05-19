@@ -1,0 +1,131 @@
+import { SimpleModelWorkerDemo } from '../demos/SimpleModelWorkerDemo';
+
+# Running in a Web Worker
+
+The previous pages ran the simulation on the main thread. That works well for light models, but a computationally heavy step function — fluid simulation, dense cellular automata, large particle systems — will compete with your UI for CPU time and cause jank.
+
+The worker path moves the engine and tick loop into a Web Worker. Your step function never runs on the main thread. The worker sends snapshots back on a configurable interval and the canvas renders them as they arrive.
+
+## The same simulation, off the main thread
+
+<SimpleModelWorkerDemo />
+
+`init`, `step`, and `shouldStop` are unchanged from the previous two pages. The canvas draw function is unchanged too. The only thing different is how `<Simulation>` is wired up.
+
+## The whole thing
+
+Sim module — in its own file so the worker can import it by URL:
+
+```ts
+// simpleModelSim.ts
+import { defineSim } from 'automatick/sim';
+
+const SIZE = 10;
+const TOTAL = SIZE * SIZE;
+
+export type Data = { cells: boolean[] };
+export type Params = Record<string, never>;
+
+export default defineSim<Data, Params>({
+  init: { cells: new Array(TOTAL).fill(false) },
+  step: ({ data, tick }) => {
+    data.cells[tick - 1] = true;
+    return data;
+  },
+  shouldStop: (data) => Boolean(data.cells.at(-1)),
+});
+```
+
+Component — points `<Simulation>` at that file URL instead of inlining the sim:
+
+```tsx
+import { Simulation } from 'automatick/react/simulation';
+import { useSimulationCanvas } from 'automatick/react/canvas';
+import { StandardControls } from 'automatick/react/controls';
+import type { Data, Params } from './simpleModelSim';
+
+const SIZE = 10;
+const CELL = 36;
+const TOTAL = SIZE * SIZE;
+const CELL_COLOR = 'rgba(215, 69, 30, 0.12)';
+
+const workerUrl = new URL('./simpleModelSim.ts', import.meta.url);
+
+function Grid() {
+  const canvasRef = useSimulationCanvas<Data, Params>((ctx, { data }) => {
+    ctx.clearRect(0, 0, SIZE * CELL, SIZE * CELL);
+    ctx.fillStyle = CELL_COLOR;
+    for (let i = 0; i < TOTAL; i++) {
+      if (data.cells[i]) {
+        ctx.fillRect((i % SIZE) * CELL, Math.floor(i / SIZE) * CELL, CELL, CELL);
+      }
+    }
+  });
+  return <canvas ref={canvasRef} width={SIZE * CELL} height={SIZE * CELL} />;
+}
+
+export function SimpleModel() {
+  return (
+    <Simulation<Data, Params> worker={workerUrl} delayMs={100}>
+      <Grid />
+      <StandardControls />
+    </Simulation>
+  );
+}
+```
+
+## What changed
+
+### The sim module moves to its own file
+
+When you use the `worker` prop, automatick needs a URL it can pass to `import()` inside the worker context. You can't serialize an inline function across that boundary — so the sim has to live in its own module.
+
+Export it as the default export using `defineSim`:
+
+```ts
+export default defineSim<Data, Params>({ init, step, shouldStop });
+```
+
+Export the types too. Your component imports them to keep `Data` and `Params` consistent between the worker and the draw function.
+
+### `worker` replaces `sim` (or inline props)
+
+```tsx
+// Before — local execution
+<Simulation sim={localSim} delayMs={100}>
+
+// After — worker execution
+<Simulation<Data, Params> worker={new URL('./sim.ts', import.meta.url)} delayMs={100}>
+```
+
+The `worker` prop takes a `URL` or a plain string. The Vite idiom is `new URL('./sim.ts', import.meta.url)` — this produces an absolute URL that survives the build and resolves correctly from the worker's own context.
+
+### Type parameters become explicit
+
+With `sim=` or inline props, TypeScript can infer `Data` and `Params` from the values you pass. A URL carries no type information, so you pass them explicitly:
+
+```tsx
+<Simulation<Data, Params> worker={workerUrl}>
+```
+
+### `useSimulationCanvas` and `StandardControls` are unchanged
+
+The canvas component and controls don't know or care whether the engine is running on the main thread or in a worker. They subscribe to the same context, call the same methods, and receive the same snapshot shape. Move the engine into a worker and nothing in your render tree changes.
+
+## Some notes
+
+- When the worker is initializing, `<Simulation>` renders nothing. For the simple model this is imperceptible; for large sims you may want to show a placeholder.
+- The `snapshotIntervalMs` prop (default: 16 ms, roughly 60 fps) controls how often the worker sends a snapshot to the main thread. Increasing it reduces serialization overhead at the cost of visual update frequency.
+- The sim module is a normal ES module. You can import helpers, constants, or any other code from it — as long as those imports are also resolvable in the worker context (i.e., no DOM APIs, no React, no browser globals).
+- `params` and resets work the same way. The worker applies `defaultParams` internally and accepts live `setParams` calls from the main thread.
+
+## When the worker path pays off
+
+Main-thread execution is fine when:
+- `step` is fast (under a millisecond).
+- The simulation is simple enough that it never competes with input or layout.
+
+Move to a worker when:
+- `step` is expensive and you notice frame drops or input lag.
+- You're running a tight tick loop (`delayMs: 0`, `ticksPerFrame > 1`) and need the main thread free for rendering.
+- You want the sim to keep running at full speed while the tab is in the background.
