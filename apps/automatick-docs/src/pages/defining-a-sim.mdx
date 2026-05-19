@@ -29,7 +29,9 @@ init: (params) => ({
 
 ## `step({ data, params, tick }): Data`
 
-Advances the simulation by one tick. Returns the next state. Must be **pure** and **synchronous**.
+Advances the simulation by one tick. Must be **synchronous** and **must return the next `data`** — even when you've mutated it in place. The engine assigns whatever `step` returns to its internal state, so a `step` that mutates and forgets to return drops `data` to `undefined` on the next tick.
+
+Mutating `data` in place is fine — automatick re-renders every tick, not on referential change, so mutation doesn't hide updates the way it does in React. Just make sure you `return data` at the end.
 
 ```ts
 step: ({ data, params, tick }) => ({
@@ -105,6 +107,6 @@ export default defineSim<{ grid: number[][] }, { width: number; height: number }
 
 ## Tips
 
-- **Keep `step` pure.** No side effects, no DOM access, no randomness stored outside `data`. If you need randomness, put the seed in `data` or use `Math.random()` (accepting non-reproducibility).
-- **Put everything in `data`.** If the render component needs it, it should be in `data`. Don't use external variables to communicate between `step` and the renderer.
+- **Don't reach outside `data`.** No DOM access, no module-scope state. If `step` needs to remember something between ticks or expose it to the renderer, put it in `data`. Mutating `data` itself in place is fine.
+- **Reproducibility is opt-in.** `Math.random()` works in `step`, but `resetWith()` won't replay the same sequence. For replayable animations, store a seeded RNG in `data` and advance it deterministically.
 - **`step` is synchronous.** If your computation is expensive, use the `worker` prop on `<Simulation>` to run it off the main thread.

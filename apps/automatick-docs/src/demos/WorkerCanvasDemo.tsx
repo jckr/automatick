@@ -8,6 +8,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import xorRingSim from '../sims/xorRingSim';
+import styles from './WorkerCanvasDemo.module.css';
 
 const ROW_HEIGHT = 1;
 const MAX_ROWS = 200;
@@ -21,9 +22,9 @@ function XorRingCanvas() {
 
   const canvasRef = useSimulationCanvas<typeof xorRingSim>((ctx, { data, params, tick }) => {
     if (!data) return;
-    const styles = getComputedStyle(document.documentElement);
-    const ink = styles.getPropertyValue('--fg1').trim() || '#0E1116';
-    const bg = styles.getPropertyValue('--bg2').trim() || '#EFEADD';
+    const cssStyles = getComputedStyle(document.documentElement);
+    const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
+    const bg = cssStyles.getPropertyValue('--bg2').trim() || '#EFEADD';
 
     if (tick === 0) {
       historyRef.current = [];
@@ -63,13 +64,7 @@ function XorRingCanvas() {
         ref={canvasRef}
         width={CSS_WIDTH * dpr}
         height={CSS_HEIGHT * dpr}
-        style={{
-          width: '100%',
-          height: 'auto',
-          display: 'block',
-          borderRadius: 4,
-          imageRendering: 'pixelated',
-        }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

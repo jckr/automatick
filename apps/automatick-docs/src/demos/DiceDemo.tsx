@@ -7,40 +7,33 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import diceSim from '../sims/diceSim';
+import styles from './DiceDemo.module.css';
 
 function Die(props: { value: number }) {
-  const dotStyle: React.CSSProperties = {
-    background: 'var(--fg1)',
-    width: 4,
-    height: 4,
-    borderRadius: '100%',
-    position: 'absolute',
-  };
-  const top = { top: 4 };
-  const bottom = { bottom: 4 };
-  const right = { right: 4 };
-  const left = { left: 4 };
-  const mid = { top: 11 };
-  const center = { left: 11 };
   const { value } = props;
   return (
-    <div
-      style={{
-        width: 26,
-        height: 26,
-        marginRight: 10,
-        position: 'relative',
-        border: '1px solid var(--fg1)',
-        borderRadius: 4,
-      }}
-    >
-      {value !== 1 && <div style={{ ...dotStyle, ...top, ...left }} />}
-      {value > 3 && <div style={{ ...dotStyle, ...top, ...right }} />}
-      {value === 6 && <div style={{ ...dotStyle, ...mid, ...left }} />}
-      {value % 2 === 1 && <div style={{ ...dotStyle, ...mid, ...center }} />}
-      {value === 6 && <div style={{ ...dotStyle, ...mid, ...right }} />}
-      {value > 3 && <div style={{ ...dotStyle, ...bottom, ...left }} />}
-      {value !== 1 && <div style={{ ...dotStyle, ...bottom, ...right }} />}
+    <div className={styles.die}>
+      {value !== 1 && (
+        <div className={`${styles.dot} ${styles.top} ${styles.left}`} />
+      )}
+      {value > 3 && (
+        <div className={`${styles.dot} ${styles.top} ${styles.right}`} />
+      )}
+      {value === 6 && (
+        <div className={`${styles.dot} ${styles.mid} ${styles.left}`} />
+      )}
+      {value % 2 === 1 && (
+        <div className={`${styles.dot} ${styles.mid} ${styles.center}`} />
+      )}
+      {value === 6 && (
+        <div className={`${styles.dot} ${styles.mid} ${styles.right}`} />
+      )}
+      {value > 3 && (
+        <div className={`${styles.dot} ${styles.bottom} ${styles.left}`} />
+      )}
+      {value !== 1 && (
+        <div className={`${styles.dot} ${styles.bottom} ${styles.right}`} />
+      )}
     </div>
   );
 }
@@ -54,33 +47,13 @@ function Bar(props: {
   const height = props.max ? (140 * props.nbRolls) / props.max : 0;
   const width = 420 / props.nbValues;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width }}>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'flex-end',
-          height: 140,
-        }}
-      >
-        <div
-          style={{
-            width: width * 0.78,
-            height,
-            backgroundColor: 'var(--accent)',
-          }}
-        />
+    <div className={styles.barCol} style={{ width }}>
+      <div className={styles.barFrame}>
+        <div className={styles.bar} style={{ width: width * 0.78, height }} />
       </div>
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          fontSize: Math.min(420 / (1.5 * props.nbValues), 12),
-          fontFamily: 'var(--font-mono)',
-          color: 'var(--fg3)',
-          marginTop: 4,
-        }}
+        className={styles.barLabel}
+        style={{ fontSize: Math.min(420 / (1.5 * props.nbValues), 12) }}
       >
         {props.label}
       </div>
@@ -103,24 +76,13 @@ function DiceView() {
   });
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 24,
-        height: '100%',
-        minHeight: 360,
-        padding: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+    <div className={styles.view}>
+      <div className={styles.diceRow}>
         {rolls.map((value, index) => (
           <Die key={`die-${index}-${value}`} value={value} />
         ))}
       </div>
-      <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+      <div className={styles.barsRow}>
         {bars.map((bar) => (
           <Bar
             key={bar.label}

@@ -1,0 +1,26 @@
+.preview {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 520px;
+  background: var(--bg2);
+}
+
+.grid {
+  display: grid;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.cell {
+  box-sizing: border-box;
+  background: transparent;
+  border-right: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.cell.alive {
+  background: var(--fg1);
+}

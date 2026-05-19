@@ -1,0 +1,13 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0;
+}
+
+.canvas {
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  display: block;
+}

@@ -8,6 +8,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import sphFluidSim from '../sims/sphFluidSim';
+import styles from './SphFluidDemo.module.css';
 
 const WIDTH = 600;
 const HEIGHT = 400;
@@ -36,7 +37,7 @@ function SphFluidCanvas() {
         ref={canvasRef}
         width={WIDTH * dpr}
         height={HEIGHT * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );

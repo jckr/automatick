@@ -1,0 +1,28 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 420px;
+  padding: 24px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(10, 36px);
+  width: 360px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.cell {
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.cell.on {
+  background: var(--accent-soft);
+}

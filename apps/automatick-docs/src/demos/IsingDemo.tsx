@@ -9,6 +9,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import isingSim from '../sims/isingSim';
+import styles from './IsingDemo.module.css';
 
 const GRID = 200;
 const CSS_SIZE = 600;
@@ -65,7 +66,7 @@ function IsingCanvas() {
         ref={canvasRef}
         width={CSS_SIZE * dpr}
         height={CSS_SIZE * dpr}
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+        className={styles.canvas}
       />
     </CanvasStage>
   );
@@ -76,22 +77,14 @@ function IsingStats() {
   return (
     <div className='group'>
       <div className='g-lbl'>Readouts</div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'var(--fg3)' }}>magnetization</span>
-          <span style={{ color: 'var(--fg1)' }}>{data.magnetization.toFixed(3)}</span>
+      <div className={styles.stats}>
+        <div className={styles.row}>
+          <span className={styles.label}>magnetization</span>
+          <span className={styles.value}>{data.magnetization.toFixed(3)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'var(--fg3)' }}>energy</span>
-          <span style={{ color: 'var(--fg1)' }}>{data.energy.toFixed(3)}</span>
+        <div className={styles.row}>
+          <span className={styles.label}>energy</span>
+          <span className={styles.value}>{data.energy.toFixed(3)}</span>
         </div>
       </div>
     </div>

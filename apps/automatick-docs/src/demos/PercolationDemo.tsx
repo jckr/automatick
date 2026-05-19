@@ -14,6 +14,7 @@ import percolationSim, {
   WATER_FROM_LEFT,
   WATER_FROM_RIGHT,
 } from '../sims/percolationSim';
+import styles from './PercolationDemo.module.css';
 
 const CELL_PX = 6;
 const CSS_SIZE = 600;
@@ -65,34 +66,19 @@ function PercolationGrid() {
   });
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        height: '100%',
-        minHeight: 540,
-        padding: 16,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <div className={styles.stage}>
       <div
-        style={{
-          width: '100%',
-          maxWidth: CSS_SIZE,
-          border: `3px solid ${borderColor}`,
-          borderRadius: 4,
-          lineHeight: 0,
-        }}
+        className={styles.frame}
+        style={{ border: `3px solid ${borderColor}` }}
       >
         <canvas
           ref={canvasRef}
           width={CSS_SIZE * dpr}
           height={CSS_SIZE * dpr}
-          style={{ width: '100%', height: 'auto', display: 'block' }}
+          className={styles.canvas}
         />
       </div>
-      <div style={{ position: 'absolute', top: 16, right: 16 }}>
+      <div className={styles.perf}>
         <PerformanceOverlay />
       </div>
     </div>

@@ -23,4 +23,11 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 5173,
   },
+  build: {
+    // Every page and demo is statically imported in App.tsx, so the single
+    // bundle is ~1.5 MB minified (~350 kB gzipped). See issue #20 for the
+    // real fix (lazy-loading the examples/* routes). Until then, raise the
+    // warning threshold so it doesn't fire on every build.
+    chunkSizeWarningLimit: 2000,
+  },
 }));

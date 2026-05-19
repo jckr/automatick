@@ -7,30 +7,13 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import counterSim from '../sims/counterSim';
+import styles from './CounterDemo.module.css';
 
 function CounterView() {
   const { data } = useSimulation<typeof counterSim>();
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        minHeight: 360,
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          fontFamily: 'var(--font-serif)',
-          fontVariationSettings: '"opsz" 72',
-          fontSize: 96,
-          fontWeight: 500,
-          color: 'var(--fg1)',
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
+    <div className={styles.view}>
+      <div className={styles.value}>
         {data.value}
       </div>
     </div>

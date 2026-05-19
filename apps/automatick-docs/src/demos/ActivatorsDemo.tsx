@@ -8,6 +8,7 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import activatorsSim from '../sims/activatorsSim';
+import styles from './ActivatorsDemo.module.css';
 
 const CELL_PX = 10;
 const CSS_SIZE = 600;
@@ -16,9 +17,9 @@ function ActivatorsCanvas() {
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
 
   const canvasRef = useSimulationCanvas<typeof activatorsSim>((ctx, { data, params }) => {
-    const styles = getComputedStyle(document.documentElement);
-    const ink = styles.getPropertyValue('--fg1').trim() || '#0E1116';
-    const bg = styles.getPropertyValue('--bg3').trim() || '#E6E0D0';
+    const cssStyles = getComputedStyle(document.documentElement);
+    const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
+    const bg = cssStyles.getPropertyValue('--bg3').trim() || '#E6E0D0';
 
     const simW = params.width * CELL_PX;
     const scale = (CSS_SIZE * dpr) / simW;
@@ -36,29 +37,14 @@ function ActivatorsCanvas() {
   });
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        height: '100%',
-        minHeight: 540,
-        padding: 16,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <div className={styles.stage}>
       <canvas
         ref={canvasRef}
         width={CSS_SIZE * dpr}
         height={CSS_SIZE * dpr}
-        style={{
-          width: '100%',
-          maxWidth: CSS_SIZE,
-          height: 'auto',
-          display: 'block',
-        }}
+        className={styles.canvas}
       />
-      <div style={{ position: 'absolute', top: 16, right: 16 }}>
+      <div className={styles.perf}>
         <PerformanceOverlay />
       </div>
     </div>

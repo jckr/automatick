@@ -1,0 +1,119 @@
+# Using Automatick without React
+
+Automatick is React-friendly, but doesn't require React. 
+
+## Creating an Automatick engine
+
+To create self-running animations, you need an engine, which you can get by running `createEngine`. 
+This engine will maintain an internal state. At every step of the animation, the state will be updated, then, the updated data will be used for rendering. 
+
+So, your engine needs 3 things: 
+
+- `init`: the initial data, which can be a function or constant,
+- `step`: the function that will update data at every step, and
+- `render`: the function that will handle the rendering.
+
+After that, you can start your engine with its `play` method. 
+
+```
+import { createEngine } from 'automatick';
+
+const engine = createEngine({init, step, render});
+engine.play();
+```
+
+The engine has a more complex API, which you can find [here](/api/create-engine).
+
+## What's in the state? 
+
+The engine state is what's updated at every step and what is used for rendering. It's made of:
+- `data`: the internal data for the animation, that can be of any form - and it's what has been initialized by `init`. 
+- `tick`: a number, which by default starts at 0 and is incremented by 1 at each step of the animation. 
+- `params`: if you used parameters to initialize the data, these are exposed in the state as `params`. 
+- `status`: the status of the animation, can be `idle`, `playing`, `paused` or `stopped`
+- `stepDurationMs`: the duration of the previous step, in milliseconds (`0` before the first step has run). 
+
+## What to pass to the engine
+
+### init - the initial data
+
+You can use either a constant or a function to initialize the data of the animation. If you're using a function, it can take parameters (params).
+
+### step - updating the data
+
+At every step of the animation, the engine will update the data from the state. `step` is a function that takes the state and return updated data. 
+
+### render - representing the data
+
+Likewise, render is a function that takes the state, and does something from the data (such as representing it on screen). Without React, this can be manipulating the DOM, canvas operations, etc. 
+
+## A simple example
+
+<iframe
+  height='560'
+  style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8 }}
+  src='https://codepen.io/jckr/embed/bNBNgbv?default-tab=result'
+  loading='lazy'
+  allowFullScreen
+  title='Simple model on CodePen'
+/>
+
+We have our 3 inputs to the engine: 
+
+```
+// --- the three inputs to the engine ---
+
+// init - creates initial data - can be a function or a constant
+const init = { cells: new Array(TOTAL).fill(false) };
+
+// step - updates the data
+function step({ data, tick }) {
+  data.cells[tick - 1] = true;
+  return data;
+}
+
+// render - paint after each update
+function render({data}) {
+  for (let i = 0; i < TOTAL; i++) {
+    cellEls[i].classList.toggle("on", data.cells[i]);
+  }
+}
+```
+
+Our data starts as an array of 100 "false" values. At every step, the tick-th item of that array becomes true. When we render, we just toggle classes depending on the value of that array. 
+Both `step` and `render` are operations on state, but we only really need `data` and `tick` for step, and just `data` for render in this case. 
+
+Note that `step` **must return the updated data**, even though we just mutated `data.cells` in place. The engine assigns whatever `step` returns to its internal state, so forgetting `return data` would set `data` to `undefined` on the next tick and break render. Mutating is fine; silently mutating without returning is not.
+
+Now, we can initialize our engine: 
+
+```
+// --- the engine ---
+
+const engine = createEngine({
+  init,
+  render,
+  step,
+  shouldStop: (data) => data.cells.at(-1),
+  delayMs: 100
+});
+```
+
+we've added 2 arguments - `shouldStop`, which is a predicate on the data - if it returns true, the animation stops. `delayMs` is a delay between steps, if omitted the animation will go as fast as possible. 
+
+For a complete list of arguments, see [the engine API page](/api/create-engine).
+
+At this stage, our engine is ready to go and produce an animation. But how to control it? that's the last part of the code:
+
+```
+
+// hook it to buttons
+document.getElementById("play").onclick = () => engine.play();
+document.getElementById("pause").onclick = () => engine.pause();
+document.getElementById("reset").onclick = () => engine.resetWith();
+```
+
+Here, we just bind the buttons to some of the engine methods. `.play()` starts the animation and keeps it running. `.pause()` puts it in a paused status, it won't update automatically until unpaused. Finally, `.resetWith()` will stop it and reinitialize the data. 
+More methods are available, see [the engine API page](/api/create-engine).
+
+

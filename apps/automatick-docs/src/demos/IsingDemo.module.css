@@ -1,0 +1,27 @@
+.canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.label {
+  color: var(--fg3);
+}
+
+.value {
+  color: var(--fg1);
+}
