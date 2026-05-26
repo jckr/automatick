@@ -10,7 +10,7 @@ const CELL = 36;
 const TOTAL = SIZE * SIZE;
 const CELL_COLOR = 'rgba(215, 69, 30, 0.12)';
 
-const workerUrl = new URL('../sims/simpleModelWorkerSim.ts', import.meta.url);
+import simUrl from '../sims/simpleModelWorkerSim.ts?worker-module';
 
 function Grid() {
   const canvasRef = useSimulationCanvas<Data, Params>((ctx, { data }) => {
@@ -35,7 +35,7 @@ function Grid() {
 export function SimpleModelWorkerDemo() {
   return (
     <div className={styles.wrap}>
-      <Simulation<Data, Params> worker={workerUrl} delayMs={100}>
+      <Simulation<Data, Params> worker={simUrl} delayMs={100}>
         <Grid />
         <StandardControls />
       </Simulation>

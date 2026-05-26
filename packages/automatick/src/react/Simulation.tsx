@@ -197,12 +197,13 @@ function LocalSimulation<Data, Params>(props: LocalSimulationProps<Data, Params>
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve the URL of the automatick engine module shipped alongside this file.
- * After build, this file lives at `dist/react/Simulation.js` and the engine is
- * the sibling-of-parent `dist/engine.js`.
+ * Resolve the URL of the standalone engine module shipped alongside this file.
+ * The standalone build at `dist/standalone/engine.js` bundles all dependencies
+ * so it can be `import()`ed from a worker context (where relative chunk
+ * imports would fail).
  */
 function engineUrl(): string {
-  return new URL('../engine.js', import.meta.url).href;
+  return new URL('../standalone/engine.js', import.meta.url).href;
 }
 
 function WorkerSimulation<Data, Params>(
