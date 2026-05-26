@@ -290,7 +290,7 @@ function WorkerSimulation<Data, Params>(
     });
   }, [runner, props.delayMs, props.ticksPerFrame, props.snapshotIntervalMs]);
 
-  if (!snapshot || !runner) return null;
+  if (!snapshot || !runner || snapshot.data === undefined) return null;
 
   return (
     <SimulationProvider snapshot={snapshot} backend={runner}>
