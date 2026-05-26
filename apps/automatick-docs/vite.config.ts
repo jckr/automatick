@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import mdx from '@mdx-js/rollup';
 import remarkGfm from 'remark-gfm';
@@ -9,12 +10,45 @@ const prettyCodeOptions = {
   keepBackground: false,
 };
 
+/**
+ * Vite plugin that handles `?worker-module` imports. These are TypeScript
+ * modules that need to be compiled to JS and emitted as separate files so a
+ * Web Worker can `import()` them at runtime.
+ *
+ * In dev mode, resolves to the raw file URL (Vite serves .ts as JS).
+ * In build mode, emits the file as a separate chunk and returns its URL.
+ *
+ * Usage: `import simUrl from './sim.ts?worker-module';`
+ */
+function workerModulePlugin(): Plugin {
+  let isBuild = false;
+  return {
+    name: 'worker-module',
+    config(_, { command }) {
+      isBuild = command === 'build';
+    },
+    resolveId(source) {
+      if (source.endsWith('?worker-module')) {
+        return source;
+      }
+    },
+    load(id) {
+      if (!id.endsWith('?worker-module')) return;
+      const realId = id.replace('?worker-module', '');
+      if (!isBuild) {
+        return `export default new URL(${JSON.stringify(realId)}, import.meta.url).href;`;
+      }
+      const ref = this.emitFile({ type: 'chunk', id: realId });
+      return `export default import.meta.ROLLUP_FILE_URL_${ref};`;
+    },
+  };
+}
+
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? (process.env.VITE_BASE_PATH || '/automatick/') : '/',
   plugins: [
+    workerModulePlugin(),
     react(),
-    // MDX with GitHub-flavored markdown (tables, strikethrough, task lists)
-    // and Shiki-powered syntax highlighting via rehype-pretty-code.
     mdx({
       remarkPlugins: [remarkGfm],
       rehypePlugins: [[rehypePrettyCode, prettyCodeOptions]],
@@ -24,10 +58,6 @@ export default defineConfig(({ command }) => ({
     port: 5173,
   },
   build: {
-    // Every page and demo is statically imported in App.tsx, so the single
-    // bundle is ~1.5 MB minified (~350 kB gzipped). See issue #20 for the
-    // real fix (lazy-loading the examples/* routes). Until then, raise the
-    // warning threshold so it doesn't fire on every build.
     chunkSizeWarningLimit: 2000,
   },
 }));
