@@ -10,7 +10,7 @@ const prettyCodeOptions = {
 };
 
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/automatick/' : '/',
+  base: command === 'build' ? (process.env.VITE_BASE_PATH || '/automatick/') : '/',
   plugins: [
     react(),
     // MDX with GitHub-flavored markdown (tables, strikethrough, task lists)
