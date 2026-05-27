@@ -24,6 +24,12 @@ jobs:
       - run: npm ci
       - run: npm run build:packages
       - run: npm run build -w automatick-docs
+      - name: Add preview redirect to 404.html
+        run: |
+          # Insert a script into 404.html that redirects preview deep links
+          # to the preview's own index.html with the path in the query string.
+          # The preview's index.html already has the spa-github-pages restore script.
+          sed -i 's|<head>|<head>\n    <script>\n      (function(){\n        var m=location.pathname.match(/^\\/automatick\\/(pr-preview\\/pr-\\d+)\\/(.+)/);\n        if(m)location.replace("/automatick/"+m[1]+"/?/"+m[2]+location.hash);\n      })();\n    </script>|' apps/automatick-docs/dist/404.html
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
