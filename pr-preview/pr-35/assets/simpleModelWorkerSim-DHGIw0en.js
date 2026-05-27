@@ -1,0 +1,1 @@
+import{t as e}from"./chunk-IKR53C2U-BjHhJfWz.js";var t=10,n=t*t,r=e({init:{cells:Array(n).fill(!1)},step:({data:e,tick:t})=>(e.cells[t-1]=!0,e),shouldStop:e=>!!e.cells.at(-1)});export{r as default};
