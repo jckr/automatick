@@ -38,7 +38,7 @@ function workerModulePlugin(): Plugin {
       if (!isBuild) {
         return `export default new URL(${JSON.stringify(realId)}, import.meta.url).href;`;
       }
-      const ref = this.emitFile({ type: 'chunk', id: realId });
+      const ref = this.emitFile({ type: 'chunk', id: realId, preserveSignature: 'strict' });
       return `export default import.meta.ROLLUP_FILE_URL_${ref};`;
     },
   };
