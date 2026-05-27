@@ -26,14 +26,19 @@ function inBounds(x: number, y: number) {
   return x >= 0 && x < SAND_W && y >= 0 && y < SAND_H;
 }
 
+function canSandDisplace(cell: number) {
+  return cell === EMPTY || cell === WATER;
+}
+
 function updateSand(grid: Uint8Array, next: Uint8Array, x: number, y: number) {
   if (next[idx(x, y)] !== SAND) return;
   const below = y + 1;
   if (below >= SAND_H) return;
 
-  if (next[idx(x, below)] === EMPTY) {
+  const belowCell = next[idx(x, below)];
+  if (canSandDisplace(belowCell)) {
     next[idx(x, below)] = SAND;
-    next[idx(x, y)] = EMPTY;
+    next[idx(x, y)] = belowCell;
     return;
   }
 
@@ -41,12 +46,14 @@ function updateSand(grid: Uint8Array, next: Uint8Array, x: number, y: number) {
   const dx1 = x + dir;
   const dx2 = x - dir;
 
-  if (inBounds(dx1, below) && next[idx(dx1, below)] === EMPTY) {
+  if (inBounds(dx1, below) && canSandDisplace(next[idx(dx1, below)])) {
+    const displaced = next[idx(dx1, below)];
     next[idx(dx1, below)] = SAND;
-    next[idx(x, y)] = EMPTY;
-  } else if (inBounds(dx2, below) && next[idx(dx2, below)] === EMPTY) {
+    next[idx(x, y)] = displaced;
+  } else if (inBounds(dx2, below) && canSandDisplace(next[idx(dx2, below)])) {
+    const displaced = next[idx(dx2, below)];
     next[idx(dx2, below)] = SAND;
-    next[idx(x, y)] = EMPTY;
+    next[idx(x, y)] = displaced;
   }
 }
 
@@ -147,7 +154,7 @@ export default defineSim<FallingSandData, FallingSandParams>({
     for (let i = 0; i < params.dropRate; i++) {
       const x = Math.floor(Math.random() * SAND_W);
       if (next[idx(x, 0)] === EMPTY) {
-        next[idx(x, 0)] = params.material === STONE ? SAND : params.material;
+        next[idx(x, 0)] = params.material;
       }
     }
 

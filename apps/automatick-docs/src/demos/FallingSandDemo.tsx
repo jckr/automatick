@@ -25,7 +25,7 @@ const COLORS: Record<number, [number, number, number]> = {
   [EMPTY]: [20, 20, 28],
   [SAND]: [220, 180, 80],
   [WATER]: [50, 100, 210],
-  [STONE]: [130, 130, 130],
+  [STONE]: [60, 65, 75],
 };
 
 function SandCanvas() {
