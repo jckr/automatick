@@ -131,6 +131,7 @@ self.onmessage = async (event) => {
 `]}),`
 `,(0,B.jsx)(t.p,{children:`You only import the subpaths you actually use, so a non-React project never pulls React into its bundle.`}),`
 `,(0,B.jsxs)(t.p,{children:[`Once installed, the next page builds a `,(0,B.jsx)(t.a,{href:`/guide/without-react`,children:`first simulation without React`}),` — vanilla JS that you can paste into CodePen and embed anywhere.`]})]})}function Cr(e={}){let{wrapper:t}=e.components||{};return t?(0,B.jsx)(t,Object.assign({},e,{children:(0,B.jsx)(Sr,e)})):Sr(e)}function wr(){return(0,B.jsx)(xr,{crumbs:[{label:`Guide`,to:`/guide/getting-started`},{label:`Getting started`}],next:{label:`Without React`,to:`/guide/without-react`},children:(0,B.jsx)(Cr,{})})}function Tr(e){let t=Object.assign({h1:`h1`,p:`p`,h2:`h2`,code:`code`,ul:`ul`,li:`li`,pre:`pre`,a:`a`,h3:`h3`,strong:`strong`},e.components);return(0,B.jsxs)(B.Fragment,{children:[(0,B.jsx)(t.h1,{children:`Using Automatick without React`}),`
+`,(0,B.jsx)(`iframe`,{height:`560`,style:{width:`100%`,border:`1px solid var(--border)`,borderRadius:8},src:`https://codepen.io/jckr/embed/bNBNgbv?default-tab=result`,loading:`lazy`,allowFullScreen:!0,title:`Simple model on CodePen`}),`
 `,(0,B.jsx)(t.p,{children:`Automatick is React-friendly, but doesn't require React.`}),`
 `,(0,B.jsx)(t.h2,{children:`Creating an Automatick engine`}),`
 `,(0,B.jsxs)(t.p,{children:[`To create self-running animations, you need an engine, which you can get by running `,(0,B.jsx)(t.code,{children:`createEngine`}),`.
@@ -165,7 +166,6 @@ engine.play();
 `,(0,B.jsx)(t.h3,{children:`render - representing the data`}),`
 `,(0,B.jsx)(t.p,{children:`Likewise, render is a function that takes the state, and does something from the data (such as representing it on screen). Without React, this can be manipulating the DOM, canvas operations, etc.`}),`
 `,(0,B.jsx)(t.h2,{children:`A simple example`}),`
-`,(0,B.jsx)(`iframe`,{height:`560`,style:{width:`100%`,border:`1px solid var(--border)`,borderRadius:8},src:`https://codepen.io/jckr/embed/bNBNgbv?default-tab=result`,loading:`lazy`,allowFullScreen:!0,title:`Simple model on CodePen`}),`
 `,(0,B.jsx)(t.p,{children:`We have our 3 inputs to the engine:`}),`
 `,(0,B.jsx)(t.pre,{children:(0,B.jsx)(t.code,{children:`// --- the three inputs to the engine ---
 
