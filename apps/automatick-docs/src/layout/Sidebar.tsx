@@ -30,41 +30,20 @@ const API: Item[] = [
   { to: '/api/create-engine', label: 'createEngine' },
 ];
 
-const SIMPLE: Item[] = [
-  { to: '/examples/counter', label: 'Counter' },
-  { to: '/examples/fibonacci', label: 'Fibonacci' },
-  { to: '/examples/fibonacci-spiral', label: 'Fibonacci spiral' },
+const EXAMPLES: Item[] = [
   { to: '/examples/dice', label: 'Dice' },
-  { to: '/examples/simple-model', label: 'Simple model' },
-];
-
-const GRID: Item[] = [
   { to: '/examples/game-of-life', label: 'Game of Life' },
   { to: '/examples/automata-1d', label: '1D automata' },
   { to: '/examples/percolation', label: 'Percolation' },
   { to: '/examples/activators', label: 'Activators' },
   { to: '/examples/langton-ant', label: "Langton's ant" },
   { to: '/examples/segregation', label: 'Segregation' },
-  { to: '/examples/segregation-local', label: 'Segregation (local)' },
-];
-
-const CANVAS: Item[] = [
   { to: '/examples/gravity', label: 'N-body gravity' },
   { to: '/examples/boids', label: 'Boids' },
   { to: '/examples/snake', label: 'Snake' },
   { to: '/examples/mazes', label: 'Mazes' },
-  { to: '/examples/epidemic', label: 'Epidemic' },
   { to: '/examples/chaos-game', label: 'Chaos game' },
   { to: '/examples/worker-canvas', label: 'XOR ring' },
-];
-
-const VIZ: Item[] = [
-  { to: '/examples/automatick-hero', label: 'automatick — letter form', badge: 'new' },
-  { to: '/examples/automatick-bubbles', label: 'automatick — bubbles', badge: 'new' },
-  { to: '/examples/world-spinner', label: 'World spinner', badge: 'new' },
-];
-
-const STRESS: Item[] = [
   { to: '/examples/gray-scott', label: 'Gray-Scott' },
   { to: '/examples/stable-fluids', label: 'Stable fluids' },
   { to: '/examples/sandpile', label: 'Abelian sandpile' },
@@ -78,11 +57,7 @@ const GROUPS: Group[] = [
   { label: 'Getting started', items: GETTING_STARTED },
   { label: 'Guide', items: GUIDE },
   { label: 'API reference', items: API },
-  { label: 'Simple', items: SIMPLE, collapsible: true },
-  { label: 'Grid simulations', items: GRID, collapsible: true },
-  { label: 'Canvas simulations', items: CANVAS, collapsible: true },
-  { label: 'Visualization', items: VIZ, collapsible: true },
-  { label: 'Stress tests', items: STRESS, collapsible: true },
+  { label: 'Examples', items: EXAMPLES, collapsible: true },
 ];
 
 function NavItem({ to, label, badge }: Item) {
