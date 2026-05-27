@@ -26,6 +26,7 @@ jobs:
       - run: npm run build -w automatick-docs
         env:
           VITE_BASE_PATH: /automatick/pr-preview/pr-${{ github.event.pull_request.number }}/
+          VITE_PR_NUMBER: ${{ github.event.pull_request.number }}
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
