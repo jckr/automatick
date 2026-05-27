@@ -69,6 +69,7 @@ const STRESS: Item[] = [
   { to: '/examples/ising', label: 'Ising model' },
   { to: '/examples/ant-colony', label: 'Ant colony' },
   { to: '/examples/traffic', label: 'Traffic' },
+  { to: '/examples/falling-sand', label: 'Falling sand' },
 ];
 
 const GROUPS: Group[] = [

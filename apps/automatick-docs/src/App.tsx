@@ -50,6 +50,7 @@ import { TrafficPage } from './pages/examples/TrafficPage';
 import { AutomatickHeroPage } from './pages/examples/AutomatickHeroPage';
 import { WorldSpinnerPage } from './pages/examples/WorldSpinnerPage';
 import { AutomatickBubblesPage } from './pages/examples/AutomatickBubblesPage';
+import { FallingSandPage } from './pages/examples/FallingSandPage';
 
 export function App() {
   return (
@@ -107,6 +108,7 @@ export function App() {
           <Route path='examples/ising' element={<IsingPage />} />
           <Route path='examples/ant-colony' element={<AntColonyPage />} />
           <Route path='examples/traffic' element={<TrafficPage />} />
+          <Route path='examples/falling-sand' element={<FallingSandPage />} />
           <Route path='examples/automatick-hero' element={<AutomatickHeroPage />} />
           <Route path='examples/automatick-bubbles' element={<AutomatickBubblesPage />} />
           <Route path='examples/world-spinner' element={<WorldSpinnerPage />} />
