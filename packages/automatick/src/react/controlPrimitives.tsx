@@ -24,7 +24,7 @@ export function PlayPauseButton(props: PlayPauseButtonProps) {
   return (
     <button
       type='button'
-      style={btnStyle}
+      style={{ ...btnStyle, minWidth: 62 }}
       onClick={isPlaying ? pause : play}
       disabled={disabled ?? (!canPlay && !isPlaying)}
     >

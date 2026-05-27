@@ -2,13 +2,11 @@ import { SimpleModelWorkerDemo } from '../demos/SimpleModelWorkerDemo';
 
 # Running in a Web Worker
 
+<SimpleModelWorkerDemo />
+
 The previous pages ran the simulation on the main thread. That works well for light models, but a computationally heavy step function — fluid simulation, dense cellular automata, large particle systems — will compete with your UI for CPU time and cause jank.
 
 The worker path moves the engine and tick loop into a Web Worker. Your step function never runs on the main thread. The worker sends snapshots back on a configurable interval and the canvas renders them as they arrive.
-
-## The same simulation, off the main thread
-
-<SimpleModelWorkerDemo />
 
 `init`, `step`, and `shouldStop` are unchanged from the previous two pages. The canvas draw function is unchanged too. The only thing different is how `<Simulation>` is wired up.
 
