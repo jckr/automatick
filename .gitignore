@@ -24,7 +24,6 @@ yarn-error.log*
 # playwright / e2e artifacts
 test-results/
 
-CLAUDE.md
 .claude
 .cursor
 plans
