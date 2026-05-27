@@ -78,7 +78,6 @@ self.onmessage = async (event) => {
           // Worker host owns its own setTimeout-driven loop; rAF wouldn't exist here anyway.
           autoFrame: false,
         });
-        postMessage({ kind: 'ready' });
         emitSnapshot();
         break;
       }
@@ -137,9 +136,9 @@ export function createSimWorker<Params>(options: {
   const blobUrl = URL.createObjectURL(blob);
   const worker = new Worker(blobUrl, { type: 'module' });
 
-  // Clean up blob URL once worker is ready
+  // Clean up blob URL once worker sends its first message (snapshot or error)
   worker.addEventListener('message', function cleanup(event) {
-    if (event.data?.kind === 'ready' || event.data?.kind === 'error') {
+    if (event.data?.kind === 'snapshot' || event.data?.kind === 'error') {
       URL.revokeObjectURL(blobUrl);
       worker.removeEventListener('message', cleanup);
     }

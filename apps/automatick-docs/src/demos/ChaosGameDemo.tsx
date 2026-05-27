@@ -50,7 +50,6 @@ function ChaosCanvas() {
   const bgRef = React.useRef<string | null>(null);
 
   const canvasRef = useSimulationCanvas<typeof chaosGameSim>((ctx, { data, params }) => {
-    if (!data) return;
     const scale = (CSS_SIZE * dpr) / params.width;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
