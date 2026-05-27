@@ -2,13 +2,11 @@ import { SimpleModelCanvasDemo } from '../demos/SimpleModelCanvasDemo';
 
 # Drawing to a canvas
 
+<SimpleModelCanvasDemo />
+
 The previous page renders the simple model as a hundred `<div>` cells. That's fine at this size. Once you scale up to thousands of agents, particles, or pixels, the DOM stops keeping up and you'll want a `<canvas>` instead.
 
 automatick provides a special hook for that path: the engine updates the canvas every tick without re-rendering the component, which is the performance win.
-
-## The same simulation, drawn on canvas
-
-<SimpleModelCanvasDemo />
 
 `init` and `step` are unchanged from the previous two pages. The only thing different is how the data is rendered.
 

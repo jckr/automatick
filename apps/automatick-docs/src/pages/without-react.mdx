@@ -1,5 +1,16 @@
 # Using Automatick without React
 
+<iframe
+  height='560'
+  style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8 }}
+  src='https://codepen.io/jckr/embed/bNBNgbv?default-tab=result'
+  loading='lazy'
+  allowFullScreen
+  title='Simple model on CodePen'
+/>
+
+On this page and the following ones, we're going to implement the same simple demo: the squares on the grid fill up from top left to bottom right. We're going to show how to do this in pure vanilla JavaScript (this page), [with React](/guide/with-react) using HTML, with React using [canvas](/guide/with-canvas), and finally, with React, canvas and [a web worker](/guide/with-worker).
+
 Automatick is React-friendly, but doesn't require React. 
 
 ## Creating an Automatick engine
@@ -48,15 +59,6 @@ At every step of the animation, the engine will update the data from the state. 
 Likewise, render is a function that takes the state, and does something from the data (such as representing it on screen). Without React, this can be manipulating the DOM, canvas operations, etc. 
 
 ## A simple example
-
-<iframe
-  height='560'
-  style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8 }}
-  src='https://codepen.io/jckr/embed/bNBNgbv?default-tab=result'
-  loading='lazy'
-  allowFullScreen
-  title='Simple model on CodePen'
-/>
 
 We have our 3 inputs to the engine: 
 

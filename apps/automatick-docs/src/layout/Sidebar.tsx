@@ -4,12 +4,15 @@ import { NavLink, useLocation } from 'react-router-dom';
 type Item = { to: string; label: string; badge?: 'new' };
 type Group = { label: string; items: Item[]; collapsible?: boolean };
 
-const GUIDE: Item[] = [
+const GETTING_STARTED: Item[] = [
   { to: '/guide/getting-started', label: 'Getting started' },
   { to: '/guide/without-react', label: 'Without React' },
   { to: '/guide/with-react', label: 'With React' },
   { to: '/guide/with-canvas', label: 'With Canvas' },
   { to: '/guide/with-worker', label: 'With Worker' },
+];
+
+const GUIDE: Item[] = [
   { to: '/guide/tutorial', label: 'Tutorial' },
   { to: '/guide/defining-a-sim', label: 'Defining a simulation' },
   { to: '/guide/simulation-component', label: 'Simulation component' },
@@ -72,6 +75,7 @@ const STRESS: Item[] = [
 ];
 
 const GROUPS: Group[] = [
+  { label: 'Getting started', items: GETTING_STARTED },
   { label: 'Guide', items: GUIDE },
   { label: 'API reference', items: API },
   { label: 'Simple', items: SIMPLE, collapsible: true },
