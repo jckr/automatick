@@ -36,8 +36,9 @@ function ErosionCanvas() {
   const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
   const imageDataRef = React.useRef<ImageData | null>(null);
 
-  const canvasRef = useSimulationCanvas<typeof erosionSim>((ctx, { data }) => {
+  const canvasRef = useSimulationCanvas<typeof erosionSim>((ctx, { data, params }) => {
     const { heightmap, water, size } = data;
+    const showWater = params.showWater;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     if (!offscreenRef.current) {
@@ -88,7 +89,7 @@ function ErosionCanvas() {
 
         // Water overlay where droplets recently flowed.
         const w = water[i];
-        if (w > 0.4) {
+        if (showWater && w > 0.4) {
           const wf = Math.min(w / 6, 0.7);
           r = r * (1 - wf) + 40 * wf;
           g = g * (1 - wf) + 90 * wf;
@@ -193,6 +194,16 @@ const EROSION_GROUPS: DemoControlGroup[] = [
         min: 0.005,
         max: 0.08,
         step: 0.005,
+      },
+    ],
+  },
+  {
+    label: 'Display',
+    controls: [
+      {
+        type: 'toggle',
+        param: 'showWater',
+        label: 'Water overlay',
       },
     ],
   },

@@ -18,6 +18,7 @@ export type ErosionParams = {
   noiseScale: number;
   noiseOctaves: number;
   seed: number;
+  showWater: boolean;
 };
 
 function mulberry32(a: number) {
@@ -132,6 +133,7 @@ export default defineSim<ErosionData, ErosionParams>({
     noiseScale: 4,
     noiseOctaves: 5,
     seed: 1,
+    showWater: true,
   },
 
   init: (params) => {
