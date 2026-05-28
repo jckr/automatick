@@ -205,7 +205,7 @@ const SETTLEMENT_GROUPS: DemoControlGroup[] = [
 
 export function SettlementDemo() {
   return (
-    <Simulation sim={settlementSim} delayMs={0} autoplay>
+    <Simulation sim={settlementSim} delayMs={30} autoplay>
       <DemoSplit
         preview={<SettlementCanvas />}
         controls={
