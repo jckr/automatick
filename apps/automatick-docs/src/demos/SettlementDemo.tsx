@@ -102,13 +102,13 @@ function SettlementCanvas() {
         ctx.fillRect(bx, by, bldgSize, bldgSize);
       }
 
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.15;
+      ctx.lineWidth = 1.5;
       for (let sj = si + 1; sj < data.settlements.length; sj++) {
         const other = data.settlements[sj];
         const dist = Math.sqrt((s.x - other.x) ** 2 + (s.y - other.y) ** 2);
         if (dist < 60) {
+          ctx.strokeStyle = '#d4a843';
+          ctx.globalAlpha = 0.5;
           ctx.beginPath();
           ctx.moveTo(s.x * scale, s.y * scale);
           ctx.lineTo(other.x * scale, other.y * scale);

@@ -202,6 +202,20 @@ export default defineSim<SettlementData, SettlementParams>({
       }
     }
 
+    for (let si = 0; si < settlements.length; si++) {
+      const a = settlements[si];
+      for (let sj = si + 1; sj < settlements.length; sj++) {
+        const b = settlements[sj];
+        const dist = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+        if (dist < 60) {
+          const diff = a.storedResources - b.storedResources;
+          const transfer = diff * 0.05;
+          a.storedResources -= transfer;
+          b.storedResources += transfer;
+        }
+      }
+    }
+
     for (const s of settlements) {
       s.storedResources -= s.population * 0.3;
       if (s.storedResources >= params.buildCost) {
