@@ -1,14 +1,22 @@
 import { defineSim } from 'automatick/sim';
-import type { CrowdScenario, Obstacle } from './crowdSim';
 
-// Two crowds, same scenario and params, run side by side:
+// Two crowds, same scenario and density, run side by side:
 //   • "selfish"     — autonomous agents that go as fast as they can and shove
 //                     past each other (the social-force model).
 //   • "coordinated" — agents follow assigned itineraries at a steady pace,
-//                     never pushing: lanes are pre-assigned, an intersection is
-//                     signalled, and they queue (car-following) instead of
+//                     never pushing: lanes are pre-assigned, doors/intersections
+//                     are signalled, and they queue (car-following) instead of
 //                     colliding.
 // The chart races their cumulative arrivals so you can compare throughput.
+
+export type CrowdScenario =
+  | 'bidirectional'
+  | 'bottleneck'
+  | 'counterflow'
+  | 'crossing'
+  | 'fourway';
+
+export type Obstacle = { x: number; y: number; w: number; h: number };
 
 export type CmpAgent = {
   x: number;
@@ -63,12 +71,15 @@ const GAP_HALF = 36;
 const WALL_THICK = 24;
 const STRIP_HALF = 110;
 
-// Crossing signal: alternate which stream may enter the central box.
+// Signal timing for the crossing / four-way axis phases.
 const PHASE_LEN = 180;
 
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v;
 }
+
+const usesDoorWall = (s: CrowdScenario) =>
+  s === 'bottleneck' || s === 'counterflow';
 
 export function obstaclesFor(scenario: CrowdScenario, W: number, H: number): Obstacle[] {
   if (scenario === 'bidirectional') {
@@ -77,22 +88,30 @@ export function obstaclesFor(scenario: CrowdScenario, W: number, H: number): Obs
       { x: 0, y: CORRIDOR_BOT, w: W, h: H - CORRIDOR_BOT },
     ];
   }
-  if (scenario === 'bottleneck') {
+  if (usesDoorWall(scenario)) {
     const cx = W / 2 - WALL_THICK / 2;
     return [
       { x: cx, y: 0, w: WALL_THICK, h: H / 2 - GAP_HALF },
       { x: cx, y: H / 2 + GAP_HALF, w: WALL_THICK, h: H / 2 - GAP_HALF },
     ];
   }
-  return [];
+  return []; // crossing / four-way: open field
 }
 
 function groupFor(scenario: CrowdScenario, index: number): number {
-  return scenario === 'bottleneck' ? 0 : index % 2;
+  if (scenario === 'bottleneck') return 0;
+  if (scenario === 'fourway') return index % 4;
+  return index % 2;
 }
 
 function blankAgent(group: number): CmpAgent {
   return { x: 0, y: 0, vx: 0, vy: 0, dirX: 1, dirY: 0, radius: RADIUS, group, wx: 0, wy: 0, stage: 0 };
+}
+
+// Map a spawn coordinate into the gap opening so agents queue several abreast.
+function gapLane(coord: number, span: number): number {
+  const pad = RADIUS + 1;
+  return CMP_H / 2 - GAP_HALF + pad + (coord / span) * (2 * (GAP_HALF - pad));
 }
 
 // ---- Selfish world: reactive social-force placement ----
@@ -100,29 +119,44 @@ function placeSelfish(a: CmpAgent, scenario: CrowdScenario, W: number, H: number
   const r = Math.random;
   if (scenario === 'bidirectional') {
     a.y = CORRIDOR_TOP + RADIUS + r() * (CORRIDOR_BOT - CORRIDOR_TOP - 2 * RADIUS);
-    if (a.group === 0) {
-      a.x = RADIUS + r() * 80;
-      a.dirX = 1;
-    } else {
-      a.x = W - RADIUS - r() * 80;
-      a.dirX = -1;
-    }
+    a.dirX = a.group === 0 ? 1 : -1;
+    a.x = a.group === 0 ? RADIUS + r() * 80 : W - RADIUS - r() * 80;
     a.dirY = 0;
   } else if (scenario === 'bottleneck') {
     a.x = RADIUS + r() * 90;
     a.y = RADIUS + r() * (H - 2 * RADIUS);
     a.dirX = 1;
     a.dirY = 0;
-  } else if (a.group === 0) {
-    a.x = RADIUS + r() * 80;
-    a.y = H / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
-    a.dirX = 1;
+  } else if (scenario === 'counterflow') {
+    a.y = RADIUS + r() * (H - 2 * RADIUS);
+    a.dirX = a.group === 0 ? 1 : -1;
+    a.x = a.group === 0 ? RADIUS + r() * 90 : W - RADIUS - r() * 90;
     a.dirY = 0;
+  } else if (scenario === 'crossing') {
+    if (a.group === 0) {
+      a.x = RADIUS + r() * 80;
+      a.y = H / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
+      a.dirX = 1;
+      a.dirY = 0;
+    } else {
+      a.x = W / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
+      a.y = RADIUS + r() * 80;
+      a.dirX = 0;
+      a.dirY = 1;
+    }
   } else {
-    a.x = W / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
-    a.y = RADIUS + r() * 80;
-    a.dirX = 0;
-    a.dirY = 1;
+    // fourway: 0 →, 1 ↓, 2 ←, 3 ↑
+    if (a.group === 0 || a.group === 2) {
+      a.y = H / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
+      a.dirY = 0;
+      a.dirX = a.group === 0 ? 1 : -1;
+      a.x = a.group === 0 ? RADIUS + r() * 80 : W - RADIUS - r() * 80;
+    } else {
+      a.x = W / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
+      a.dirX = 0;
+      a.dirY = a.group === 1 ? 1 : -1;
+      a.y = a.group === 1 ? RADIUS + r() * 80 : H - RADIUS - r() * 80;
+    }
   }
   a.vx = a.dirX * 0.5;
   a.vy = a.dirY * 0.5;
@@ -135,7 +169,6 @@ function placeCoordinated(a: CmpAgent, scenario: CrowdScenario, W: number, H: nu
   a.vy = 0;
   a.stage = 0;
   if (scenario === 'bidirectional') {
-    // Each direction gets its own half of the corridor — no conflict.
     const mid = (CORRIDOR_TOP + CORRIDOR_BOT) / 2;
     const pad = RADIUS + 4;
     if (a.group === 0) {
@@ -156,25 +189,73 @@ function placeCoordinated(a: CmpAgent, scenario: CrowdScenario, W: number, H: nu
     a.y = RADIUS + r() * (H - 2 * RADIUS);
     a.dirX = 1;
     a.dirY = 0;
-    // Assign a queue lane spread across the gap opening (keeps relative order),
-    // so agents pass several abreast instead of jamming at a single point.
+    a.wx = W / 2; // funnel to the gap, keeping a queue lane
+    a.wy = gapLane(a.y, H);
+  } else if (scenario === 'counterflow') {
+    // Give each direction its own half of the world and the door, so the two
+    // streams never share space — no head-on conflict, no signal needed.
     const pad = RADIUS + 1;
-    a.wx = W / 2;
-    a.wy = H / 2 - GAP_HALF + pad + (a.y / H) * (2 * (GAP_HALF - pad));
-  } else if (a.group === 0) {
-    a.x = RADIUS + r() * 80;
-    a.y = H / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
-    a.dirX = 1;
     a.dirY = 0;
-    a.wx = W + 30;
-    a.wy = a.y;
+    a.wx = W / 2;
+    if (a.group === 0) {
+      a.dirX = 1;
+      a.x = RADIUS + r() * 90;
+      a.y = pad + r() * (H / 2 - 2 * pad);
+      a.wy = H / 2 - GAP_HALF + pad + (a.y / (H / 2)) * (GAP_HALF - 2 * pad);
+    } else {
+      a.dirX = -1;
+      a.x = W - RADIUS - r() * 90;
+      a.y = H / 2 + pad + r() * (H / 2 - 2 * pad);
+      a.wy = H / 2 + pad + ((a.y - H / 2) / (H / 2)) * (GAP_HALF - 2 * pad);
+    }
+  } else if (scenario === 'crossing') {
+    if (a.group === 0) {
+      a.x = RADIUS + r() * 80;
+      a.y = H / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
+      a.dirX = 1;
+      a.dirY = 0;
+      a.wx = W + 30;
+      a.wy = a.y;
+    } else {
+      a.x = W / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
+      a.y = RADIUS + r() * 80;
+      a.dirX = 0;
+      a.dirY = 1;
+      a.wx = a.x;
+      a.wy = H + 30;
+    }
   } else {
-    a.x = W / 2 - STRIP_HALF + r() * (2 * STRIP_HALF);
-    a.y = RADIUS + r() * 80;
-    a.dirX = 0;
-    a.dirY = 1;
-    a.wx = a.x;
-    a.wy = H + 30;
+    // fourway: opposite directions share an axis but get separate half-lanes.
+    const pad = RADIUS + 3;
+    if (a.group === 0 || a.group === 2) {
+      a.dirY = 0;
+      if (a.group === 0) {
+        a.y = H / 2 - STRIP_HALF + pad + r() * (STRIP_HALF - 2 * pad);
+        a.dirX = 1;
+        a.x = RADIUS + r() * 80;
+        a.wx = W + 30;
+      } else {
+        a.y = H / 2 + pad + r() * (STRIP_HALF - 2 * pad);
+        a.dirX = -1;
+        a.x = W - RADIUS - r() * 80;
+        a.wx = -30;
+      }
+      a.wy = a.y;
+    } else {
+      a.dirX = 0;
+      if (a.group === 1) {
+        a.x = W / 2 - STRIP_HALF + pad + r() * (STRIP_HALF - 2 * pad);
+        a.dirY = 1;
+        a.y = RADIUS + r() * 80;
+        a.wy = H + 30;
+      } else {
+        a.x = W / 2 + pad + r() * (STRIP_HALF - 2 * pad);
+        a.dirY = -1;
+        a.y = H - RADIUS - r() * 80;
+        a.wy = -30;
+      }
+      a.wx = a.x;
+    }
   }
 }
 
@@ -203,11 +284,7 @@ function reachedEdge(a: CmpAgent, W: number, H: number): boolean {
   return false;
 }
 
-function stepSelfish(
-  world: World,
-  obstacles: Obstacle[],
-  p: CrowdCompareParams
-): void {
+function stepSelfish(world: World, obstacles: Obstacle[], p: CrowdCompareParams): void {
   const { width: W, height: H, desiredSpeed, personalSpace: B, scenario } = p;
   const agents = world.agents;
   const n = agents.length;
@@ -292,18 +369,30 @@ function stepSelfish(
   }
 }
 
-function stepCoordinated(
-  world: World,
-  p: CrowdCompareParams,
-  tick: number
-): void {
+// Returns true if the agent must hold (red light) before a conflict region.
+function mustHold(a: CmpAgent, scenario: CrowdScenario, tick: number, ds: number, W: number, H: number): boolean {
+  if (scenario === 'crossing' || scenario === 'fourway') {
+    const horizontalGreen = Math.floor(tick / PHASE_LEN) % 2 === 0;
+    const boxLeft = W / 2 - STRIP_HALF;
+    const boxRight = W / 2 + STRIP_HALF;
+    const boxTop = H / 2 - STRIP_HALF;
+    const boxBot = H / 2 + STRIP_HALF;
+    const horizontal = a.group === 0 || a.group === 2;
+    const green = horizontal ? horizontalGreen : !horizontalGreen;
+    if (green) return false;
+    if (a.group === 0) return a.x < boxLeft && a.x + ds >= boxLeft - 2;
+    if (a.group === 2) return a.x > boxRight && a.x - ds <= boxRight + 2;
+    if (a.group === 1) return a.y < boxTop && a.y + ds >= boxTop - 2;
+    if (a.group === 3) return a.y > boxBot && a.y - ds <= boxBot + 2;
+  }
+  return false;
+}
+
+function stepCoordinated(world: World, p: CrowdCompareParams, tick: number): void {
   const { width: W, height: H, desiredSpeed, scenario } = p;
   const agents = world.agents;
   const n = agents.length;
   const minGap = 2 * RADIUS + 3;
-  const boxLeft = W / 2 - STRIP_HALF;
-  const boxTop = H / 2 - STRIP_HALF;
-  const horizontalGreen = Math.floor(tick / PHASE_LEN) % 2 === 0;
 
   for (let i = 0; i < n; i++) {
     const ai = agents[i];
@@ -313,21 +402,8 @@ function stepCoordinated(
     const dx = ddx / dist;
     const dy = ddy / dist;
 
-    let go = true;
+    let go = !mustHold(ai, scenario, tick, desiredSpeed, W, H);
 
-    // Crossing signal: hold before the intersection on a red light.
-    if (scenario === 'crossing') {
-      const green = ai.group === 0 ? horizontalGreen : !horizontalGreen;
-      if (!green) {
-        if (ai.group === 0 && ai.x < boxLeft && ai.x + desiredSpeed >= boxLeft - 2) {
-          go = false;
-        } else if (ai.group === 1 && ai.y < boxTop && ai.y + desiredSpeed >= boxTop - 2) {
-          go = false;
-        }
-      }
-    }
-
-    // Car-following: stop if another agent is close ahead (no pushing).
     if (go) {
       for (let j = 0; j < n; j++) {
         if (j === i) continue;
@@ -350,14 +426,13 @@ function stepCoordinated(
     ai.x += ai.vx;
     ai.y += ai.vy;
 
-    // Waypoint / exit handling.
-    if (scenario === 'bottleneck' && ai.stage === 0) {
-      // Reached the gap; continue straight through on the same lane (keep wy).
-      if (ai.x >= W / 2 - 1) {
+    if (usesDoorWall(scenario) && ai.stage === 0) {
+      // Reached the gap; continue straight out on the same lane (keep wy).
+      if (Math.abs(ai.x - W / 2) < desiredSpeed + 1) {
         ai.stage = 1;
-        ai.wx = W + 30;
-        ai.dirX = 1;
+        ai.dirX = ai.group === 0 ? 1 : -1;
         ai.dirY = 0;
+        ai.wx = ai.group === 0 ? W + 30 : -30;
       }
     } else if (reachedEdge(ai, W, H)) {
       placeCoordinated(ai, scenario, W, H);

@@ -13,7 +13,7 @@ import type { CrowdCompareData } from '../sims/crowdCompareSim';
 import styles from './CrowdCompareDemo.module.css';
 
 const PANEL = 300; // each world is drawn into a PANEL×PANEL square
-const GROUP_COLORS = ['#3b82f6', '#e8612c'];
+const GROUP_COLORS = ['#3b82f6', '#e8612c', '#22c55e', '#a855f7'];
 const OBSTACLE_FILL = '#39414f';
 const SELFISH_COLOR = '#d9534f';
 const COORD_COLOR = '#41a36a';
@@ -122,7 +122,9 @@ const COMPARE_GROUPS: DemoControlGroup[] = [
         options: [
           { value: 'bidirectional', label: 'Corridor' },
           { value: 'bottleneck', label: 'Bottleneck' },
+          { value: 'counterflow', label: 'Counterflow' },
           { value: 'crossing', label: 'Crossing' },
+          { value: 'fourway', label: 'Four-way' },
         ],
       },
       {

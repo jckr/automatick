@@ -20,14 +20,17 @@ export function CrowdComparePage() {
             arrivals, so the steeper line is the more efficient regime.
           </p>
           <p>
-            The result is not one-sided. Coordination wins decisively where
-            there is a hard conflict — opposing lanes in the corridor, and the
-            bottleneck, where selfish agents clog the gap while the scheduled
-            crowd streams through. But at the open <strong>crossing</strong>,
-            the fixed signal idles half the flow while selfish agents simply
-            weave through each other, so reactivity is actually faster (until
-            density gets high enough to gridlock). Efficiency depends on the
-            geometry: schedules pay off exactly where free-for-all breaks down.
+            Five layouts. Coordination wins decisively where there is a hard
+            conflict — the <strong>corridor</strong> (opposing lanes), the{' '}
+            <strong>bottleneck</strong>, the <strong>counterflow</strong> door
+            (two directions through one gap, where selfish agents jam head-on
+            and the scheduled crowd splits into one-way lanes — the biggest gap
+            of all), and the <strong>four-way</strong> intersection. But at the
+            open two-way <strong>crossing</strong>, the fixed signal idles half
+            the flow while selfish agents simply weave through each other, so
+            reactivity is actually faster — until density gets high enough to
+            gridlock. Efficiency depends on the geometry: schedules pay off
+            exactly where the free-for-all breaks down.
           </p>
         </>
       }

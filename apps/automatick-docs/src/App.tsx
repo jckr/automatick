@@ -34,7 +34,6 @@ import { SimpleModelPage } from './pages/examples/SimpleModelPage';
 import { Automata1dPage } from './pages/examples/Automata1dPage';
 import { EpidemicPage } from './pages/examples/EpidemicPage';
 import { PredatorPreyPage } from './pages/examples/PredatorPreyPage';
-import { CrowdPage } from './pages/examples/CrowdPage';
 import { CrowdComparePage } from './pages/examples/CrowdComparePage';
 import { LangtonAntPage } from './pages/examples/LangtonAntPage';
 import { BoidsPage } from './pages/examples/BoidsPage';
@@ -106,7 +105,6 @@ export function App() {
           <Route path='examples/mazes' element={<MazePage />} />
           <Route path='examples/epidemic' element={<EpidemicPage />} />
           <Route path='examples/predator-prey' element={<PredatorPreyPage />} />
-          <Route path='examples/crowd' element={<CrowdPage />} />
           <Route path='examples/crowd-compare' element={<CrowdComparePage />} />
           <Route path='examples/segregation' element={<SegregationPage />} />
           <Route path='examples/segregation-local' element={<SegregationLocalPage />} />
