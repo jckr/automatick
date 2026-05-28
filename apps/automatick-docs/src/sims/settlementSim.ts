@@ -154,7 +154,29 @@ export default defineSim<SettlementData, SettlementParams>({
 
       agent.x = Math.max(0, Math.min(GRID - 1, agent.x));
       agent.y = Math.max(0, Math.min(GRID - 1, agent.y));
+    }
 
+    const repelRadius = 4;
+    for (let i = 0; i < agents.length; i++) {
+      let rx = 0;
+      let ry = 0;
+      for (let j = 0; j < agents.length; j++) {
+        if (i === j) continue;
+        const dx = agents[i].x - agents[j].x;
+        const dy = agents[i].y - agents[j].y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < repelRadius * repelRadius && d2 > 0.01) {
+          const d = Math.sqrt(d2);
+          const strength = (repelRadius - d) / repelRadius;
+          rx += (dx / d) * strength;
+          ry += (dy / d) * strength;
+        }
+      }
+      agents[i].x = Math.max(0, Math.min(GRID - 1, agents[i].x + rx * 0.4));
+      agents[i].y = Math.max(0, Math.min(GRID - 1, agents[i].y + ry * 0.4));
+    }
+
+    for (const agent of agents) {
       const gx = Math.floor(agent.x);
       const gy = Math.floor(agent.y);
       const gi = gy * GRID + gx;
