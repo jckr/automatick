@@ -194,27 +194,29 @@ export default defineSim<SettlementData, SettlementParams>({
     for (const agent of agents) {
       if (agent.home >= 0) continue;
       if (agent.resources >= params.settlementThreshold) {
-        let nearestSettlement = -1;
-        let nearestDist = 15;
+        let nearestJoinable = -1;
+        let joinDist = 20;
+        let tooClose = false;
         for (let si = 0; si < settlements.length; si++) {
-          if (si === agent.avoidSettlement && agent.cooldown > 0) continue;
           const s = settlements[si];
           const d = Math.sqrt(
             (s.x - agent.x) ** 2 + (s.y - agent.y) ** 2,
           );
-          if (d < nearestDist) {
-            nearestDist = d;
-            nearestSettlement = si;
+          if (d < 25) tooClose = true;
+          if (si === agent.avoidSettlement && agent.cooldown > 0) continue;
+          if (d < joinDist) {
+            joinDist = d;
+            nearestJoinable = si;
           }
         }
 
-        if (nearestSettlement >= 0) {
-          const s = settlements[nearestSettlement];
+        if (nearestJoinable >= 0) {
+          const s = settlements[nearestJoinable];
           s.storedResources += agent.resources;
           s.population++;
           agent.resources = 0;
-          agent.home = nearestSettlement;
-        } else {
+          agent.home = nearestJoinable;
+        } else if (!tooClose) {
           const idx = settlements.length;
           settlements.push({
             x: agent.x,
