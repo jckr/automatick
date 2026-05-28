@@ -3,4 +3,13 @@
   height: auto;
   display: block;
   image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--fg3);
+  padding: 0 2px 8px;
+  line-height: 1.4;
 }

@@ -173,7 +173,17 @@ export function FallingSandDemo() {
     <Simulation sim={fallingSandSim} delayMs={0} autoplay>
       <DemoSplit
         preview={<SandCanvas />}
-        controls={<DemoControlPanel groups={SAND_GROUPS} />}
+        controls={
+          <DemoControlPanel
+            groups={SAND_GROUPS}
+            extra={
+              <div className={styles.hint}>
+                Click and drag on the canvas to draw. Sand and water also
+                rain from the top edge.
+              </div>
+            }
+          />
+        }
       />
     </Simulation>
   );
