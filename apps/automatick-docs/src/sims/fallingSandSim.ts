@@ -105,7 +105,8 @@ function paintBrush(
       if (dx * dx + dy * dy > radius * radius) continue;
       const px = cx + dx;
       const py = cy + dy;
-      if (inBounds(px, py) && grid[idx(px, py)] === EMPTY) {
+      if (!inBounds(px, py)) continue;
+      if (material === EMPTY || grid[idx(px, py)] === EMPTY) {
         grid[idx(px, py)] = material;
       }
     }
@@ -151,10 +152,12 @@ export default defineSim<FallingSandData, FallingSandParams>({
       }
     }
 
-    for (let i = 0; i < params.dropRate; i++) {
-      const x = Math.floor(Math.random() * SAND_W);
-      if (next[idx(x, 0)] === EMPTY) {
-        next[idx(x, 0)] = params.material;
+    if (params.material !== STONE) {
+      for (let i = 0; i < params.dropRate; i++) {
+        const x = Math.floor(Math.random() * SAND_W);
+        if (next[idx(x, 0)] === EMPTY) {
+          next[idx(x, 0)] = params.material;
+        }
       }
     }
 
