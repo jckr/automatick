@@ -56,10 +56,11 @@ function SettlementCanvas() {
       const r = data.resourceGrid[i];
       const cap = data.capacityGrid[i];
       const fill = cap > 0 ? r / cap : 0;
+      const richness = cap > 0 ? Math.min(cap, 1) : 0;
       const j = i * 4;
-      px[j] = Math.floor(20 + fill * 15);
-      px[j + 1] = Math.floor(30 + fill * 80 + cap * 40);
-      px[j + 2] = Math.floor(15 + fill * 10);
+      px[j] = Math.floor(18 + (1 - fill) * richness * 40);
+      px[j + 1] = Math.floor(18 + fill * richness * 140);
+      px[j + 2] = Math.floor(12 + fill * richness * 20);
       px[j + 3] = 255;
     }
     offCtx.putImageData(imageData, 0, 0);
