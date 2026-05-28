@@ -19,10 +19,19 @@ import styles from './PredatorPreyDemo.module.css';
 const CSS_SIZE = 600;
 const PREY_COLOR = '#2ecc71';
 const PREDATOR_COLOR = '#e74c3c';
+/** How many recent positions to keep per agent for its trail. */
+const TRAIL_LEN = 12;
+
+type TrailAgent = { x: number; y: number; vx: number; vy: number; type: string };
 
 function PredatorPreyCanvas() {
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  // Per-agent position history, keyed by the agent object itself. The engine
+  // reuses agent objects across ticks (no cloning in local mode), so surviving
+  // agents accumulate a trail while dead ones are dropped from the map by GC.
+  const trailsRef = React.useRef(new WeakMap<TrailAgent, number[]>());
   const lastTickRef = React.useRef(-1);
+
   const canvasRef = useSimulationCanvas<typeof predatorPreySim>(
     (ctx, { data, params, tick }) => {
       const scale = CSS_SIZE / params.worldWidth;
@@ -30,22 +39,60 @@ function PredatorPreyCanvas() {
       const bg = cssStyles.getPropertyValue('--bg3').trim() || '#14181f';
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
 
-      if (tick === 0 || tick < lastTickRef.current) {
-        // Fresh start or reset: wipe to a clean background.
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
-      } else {
-        // Fade the previous frame toward the background so agents leave trails.
-        ctx.globalAlpha = 0.14;
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
-        ctx.globalAlpha = 1;
-      }
+      const trails = trailsRef.current;
+      // Only extend trails when the tick actually advanced — the engine also
+      // emits on pause / param changes, which must not duplicate positions.
+      const advanced = tick !== lastTickRef.current;
       lastTickRef.current = tick;
 
-      // Prey: small green dots.
+      const wrapJump = CSS_SIZE / 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Trails: a comet tail per agent that tapers in width and opacity from
+      // tail to head, breaking across world-wrap jumps.
+      for (const a of data.agents) {
+        let hist = trails.get(a);
+        if (!hist) {
+          hist = [];
+          trails.set(a, hist);
+        }
+        if (advanced) {
+          hist.push(a.x * scale, a.y * scale);
+          if (hist.length > TRAIL_LEN * 2) {
+            hist.splice(0, hist.length - TRAIL_LEN * 2);
+          }
+        }
+
+        const pts = hist.length / 2;
+        if (pts < 2) continue;
+        const isPrey = a.type === 'prey';
+        const maxAlpha = isPrey ? 0.35 : 0.55;
+        const maxWidth = isPrey ? 1.0 : 1.8;
+        ctx.strokeStyle = isPrey ? PREY_COLOR : PREDATOR_COLOR;
+        for (let k = 1; k < pts; k++) {
+          const x0 = hist[(k - 1) * 2];
+          const y0 = hist[(k - 1) * 2 + 1];
+          const x1 = hist[k * 2];
+          const y1 = hist[k * 2 + 1];
+          if (Math.abs(x1 - x0) > wrapJump || Math.abs(y1 - y0) > wrapJump) {
+            continue;
+          }
+          const t = k / (pts - 1);
+          ctx.globalAlpha = maxAlpha * t;
+          ctx.lineWidth = maxWidth * (0.3 + 0.7 * t);
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      // Prey heads: small green dots.
       ctx.fillStyle = PREY_COLOR;
       for (const a of data.agents) {
         if (a.type !== 'prey') continue;
@@ -54,7 +101,7 @@ function PredatorPreyCanvas() {
         ctx.fill();
       }
 
-      // Predators: triangles pointing in their direction of travel.
+      // Predator heads: triangles pointing in their direction of travel.
       const tip = PREDATOR_RADIUS + 2;
       ctx.fillStyle = PREDATOR_COLOR;
       for (const a of data.agents) {
