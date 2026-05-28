@@ -93,14 +93,14 @@ export default defineSim<SettlementData, SettlementParams>({
 
   init: (params) => {
     const capacity = new Float32Array(GRID * GRID);
-    gaussianPeak(capacity, GRID * 0.25, GRID * 0.3, 1, 12);
-    gaussianPeak(capacity, GRID * 0.45, GRID * 0.2, 0.8, 10);
-    gaussianPeak(capacity, GRID * 0.7, GRID * 0.25, 0.9, 11);
-    gaussianPeak(capacity, GRID * 0.2, GRID * 0.6, 0.7, 10);
-    gaussianPeak(capacity, GRID * 0.5, GRID * 0.5, 1, 14);
-    gaussianPeak(capacity, GRID * 0.75, GRID * 0.55, 0.8, 11);
-    gaussianPeak(capacity, GRID * 0.35, GRID * 0.8, 0.9, 12);
-    gaussianPeak(capacity, GRID * 0.65, GRID * 0.75, 0.7, 10);
+    gaussianPeak(capacity, GRID * 0.25, GRID * 0.3, 1, 9);
+    gaussianPeak(capacity, GRID * 0.45, GRID * 0.2, 0.7, 7);
+    gaussianPeak(capacity, GRID * 0.7, GRID * 0.25, 0.85, 8);
+    gaussianPeak(capacity, GRID * 0.2, GRID * 0.6, 0.6, 7);
+    gaussianPeak(capacity, GRID * 0.5, GRID * 0.5, 1, 10);
+    gaussianPeak(capacity, GRID * 0.75, GRID * 0.55, 0.7, 8);
+    gaussianPeak(capacity, GRID * 0.35, GRID * 0.8, 0.85, 9);
+    gaussianPeak(capacity, GRID * 0.65, GRID * 0.75, 0.6, 7);
 
     const resourceGrid = new Float32Array(capacity);
 
@@ -246,7 +246,7 @@ export default defineSim<SettlementData, SettlementParams>({
     }
 
     for (const s of settlements) {
-      s.storedResources -= s.population * 0.3;
+      s.storedResources -= s.population * 0.5 + s.buildings * 0.2;
       if (s.storedResources >= params.buildCost) {
         s.storedResources -= params.buildCost;
         s.buildings++;
