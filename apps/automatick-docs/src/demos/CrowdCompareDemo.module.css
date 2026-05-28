@@ -1,0 +1,16 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
+.chartWrap {
+  padding-top: 12px;
+}
