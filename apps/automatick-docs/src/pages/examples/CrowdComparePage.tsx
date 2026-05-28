@@ -32,6 +32,12 @@ export function CrowdComparePage() {
             gridlock. Efficiency depends on the geometry: schedules pay off
             exactly where the free-for-all breaks down.
           </p>
+          <p>
+            In short: <strong>coordination wins wherever there is a hard
+            conflict</strong> — doors, bottlenecks, counterflow — but{' '}
+            <strong>reactive weaving beats a fixed schedule at an open
+            crossing</strong>, until density rises enough to gridlock it.
+          </p>
         </>
       }
     >
