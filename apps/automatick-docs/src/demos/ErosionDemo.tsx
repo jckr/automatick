@@ -8,7 +8,7 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
-import erosionSim, { ERO_SIZE } from '../sims/erosionSim';
+import erosionSim from '../sims/erosionSim';
 import styles from './ErosionDemo.module.css';
 
 const CSS_SIZE = 600;
@@ -123,7 +123,7 @@ function ErosionCanvas() {
 }
 
 function NewTerrainButton() {
-  const { resetWith, params } = useSimulation<typeof erosionSim>();
+  const { resetWith } = useSimulation<typeof erosionSim>();
   return (
     <div className='group'>
       <button
