@@ -210,6 +210,16 @@ export default defineSim<SettlementData, SettlementParams>({
     }
 
     for (const agent of agents) {
+      if (agent.home < 0) continue;
+      const s = settlements[agent.home];
+      const resourcesPerCapita = s.population > 0 ? s.storedResources / s.population : 0;
+      if (resourcesPerCapita < 1 && Math.random() < 0.03) {
+        s.population = Math.max(0, s.population - 1);
+        agent.home = -1;
+      }
+    }
+
+    for (const agent of agents) {
       if (agent.home >= 0) continue;
       let nearestSettlement = -1;
       let nearestDist = 20;
