@@ -86,15 +86,7 @@ function SettlementCanvas() {
     for (let si = 0; si < data.settlements.length; si++) {
       const s = data.settlements[si];
       const color = SETTLEMENT_COLORS[si % SETTLEMENT_COLORS.length];
-      const size = 4 + Math.min(s.buildings, 20) * 1.5;
 
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 0.3;
-      ctx.beginPath();
-      ctx.arc(s.x * scale, s.y * scale, size + 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.globalAlpha = 1;
       const cols = Math.ceil(Math.sqrt(s.buildings));
       const bldgSize = Math.max(2, 4 - cols * 0.2);
       const startX = s.x * scale - (cols * (bldgSize + 1)) / 2;
@@ -141,6 +133,7 @@ function SettlementStats() {
   const { data } = useSimulation<typeof settlementSim>();
   const totalPop = data.settlements.reduce((s, c) => s + c.population, 0);
   const totalBuildings = data.settlements.reduce((s, c) => s + c.buildings, 0);
+  const vagabonds = data.agents.filter((a) => a.home < 0).length;
   return (
     <div className='group'>
       <div className='g-lbl'>Status</div>
@@ -152,6 +145,10 @@ function SettlementStats() {
         <div className={styles.row}>
           <span className={styles.label}>settled pop.</span>
           <span className={styles.value}>{totalPop}</span>
+        </div>
+        <div className={styles.row}>
+          <span className={styles.label}>vagabonds</span>
+          <span className={styles.value}>{vagabonds}</span>
         </div>
         <div className={styles.row}>
           <span className={styles.label}>buildings</span>
