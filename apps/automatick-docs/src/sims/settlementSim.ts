@@ -81,20 +81,24 @@ function bestResourceDirection(
 
 export default defineSim<SettlementData, SettlementParams>({
   defaultParams: {
-    numAgents: 60,
-    resourceGrowback: 0.02,
-    settlementThreshold: 30,
-    buildCost: 20,
-    agentSpeed: 0.8,
-    gatherRadius: 6,
+    numAgents: 80,
+    resourceGrowback: 0.06,
+    settlementThreshold: 15,
+    buildCost: 10,
+    agentSpeed: 1.0,
+    gatherRadius: 8,
   },
 
   init: (params) => {
     const capacity = new Float32Array(GRID * GRID);
-    gaussianPeak(capacity, GRID * 0.3, GRID * 0.3, 1, 18);
-    gaussianPeak(capacity, GRID * 0.7, GRID * 0.7, 1, 18);
-    gaussianPeak(capacity, GRID * 0.2, GRID * 0.75, 0.6, 12);
-    gaussianPeak(capacity, GRID * 0.8, GRID * 0.25, 0.6, 12);
+    gaussianPeak(capacity, GRID * 0.25, GRID * 0.3, 1, 12);
+    gaussianPeak(capacity, GRID * 0.45, GRID * 0.2, 0.8, 10);
+    gaussianPeak(capacity, GRID * 0.7, GRID * 0.25, 0.9, 11);
+    gaussianPeak(capacity, GRID * 0.2, GRID * 0.6, 0.7, 10);
+    gaussianPeak(capacity, GRID * 0.5, GRID * 0.5, 1, 14);
+    gaussianPeak(capacity, GRID * 0.75, GRID * 0.55, 0.8, 11);
+    gaussianPeak(capacity, GRID * 0.35, GRID * 0.8, 0.9, 12);
+    gaussianPeak(capacity, GRID * 0.65, GRID * 0.75, 0.7, 10);
 
     const resourceGrid = new Float32Array(capacity);
 

@@ -108,7 +108,7 @@ function SettlementCanvas() {
       for (let sj = si + 1; sj < data.settlements.length; sj++) {
         const other = data.settlements[sj];
         const dist = Math.sqrt((s.x - other.x) ** 2 + (s.y - other.y) ** 2);
-        if (dist < 40) {
+        if (dist < 60) {
           ctx.beginPath();
           ctx.moveTo(s.x * scale, s.y * scale);
           ctx.lineTo(other.x * scale, other.y * scale);
@@ -205,7 +205,7 @@ const SETTLEMENT_GROUPS: DemoControlGroup[] = [
 
 export function SettlementDemo() {
   return (
-    <Simulation sim={settlementSim} delayMs={30} autoplay>
+    <Simulation sim={settlementSim} delayMs={0} autoplay>
       <DemoSplit
         preview={<SettlementCanvas />}
         controls={
