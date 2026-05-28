@@ -33,6 +33,7 @@ import { DicePage } from './pages/examples/DicePage';
 import { SimpleModelPage } from './pages/examples/SimpleModelPage';
 import { Automata1dPage } from './pages/examples/Automata1dPage';
 import { EpidemicPage } from './pages/examples/EpidemicPage';
+import { PredatorPreyPage } from './pages/examples/PredatorPreyPage';
 import { LangtonAntPage } from './pages/examples/LangtonAntPage';
 import { BoidsPage } from './pages/examples/BoidsPage';
 import { SnakePage } from './pages/examples/SnakePage';
@@ -100,6 +101,7 @@ export function App() {
           <Route path='examples/snake' element={<SnakePage />} />
           <Route path='examples/mazes' element={<MazePage />} />
           <Route path='examples/epidemic' element={<EpidemicPage />} />
+          <Route path='examples/predator-prey' element={<PredatorPreyPage />} />
           <Route path='examples/segregation' element={<SegregationPage />} />
           <Route path='examples/segregation-local' element={<SegregationLocalPage />} />
           <Route path='examples/gray-scott' element={<GrayScottPage />} />
