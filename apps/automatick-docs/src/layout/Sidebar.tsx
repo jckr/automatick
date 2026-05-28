@@ -42,6 +42,7 @@ const EXAMPLES: Item[] = [
   { to: '/examples/boids', label: 'Boids' },
   { to: '/examples/predator-prey', label: 'Predator–Prey' },
   { to: '/examples/crowd', label: 'Crowd' },
+  { to: '/examples/crowd-compare', label: 'Crowd: selfish vs coordinated' },
   { to: '/examples/snake', label: 'Snake' },
   { to: '/examples/mazes', label: 'Mazes' },
   { to: '/examples/chaos-game', label: 'Chaos game' },
