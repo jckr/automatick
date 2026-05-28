@@ -51,6 +51,7 @@ import { AutomatickHeroPage } from './pages/examples/AutomatickHeroPage';
 import { WorldSpinnerPage } from './pages/examples/WorldSpinnerPage';
 import { AutomatickBubblesPage } from './pages/examples/AutomatickBubblesPage';
 import { FallingSandPage } from './pages/examples/FallingSandPage';
+import { SettlementPage } from './pages/examples/SettlementPage';
 
 export function App() {
   return (
@@ -109,6 +110,7 @@ export function App() {
           <Route path='examples/ant-colony' element={<AntColonyPage />} />
           <Route path='examples/traffic' element={<TrafficPage />} />
           <Route path='examples/falling-sand' element={<FallingSandPage />} />
+          <Route path='examples/settlement' element={<SettlementPage />} />
           <Route path='examples/automatick-hero' element={<AutomatickHeroPage />} />
           <Route path='examples/automatick-bubbles' element={<AutomatickBubblesPage />} />
           <Route path='examples/world-spinner' element={<WorldSpinnerPage />} />
