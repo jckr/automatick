@@ -22,17 +22,30 @@ const PREDATOR_COLOR = '#e74c3c';
 
 function PredatorPreyCanvas() {
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const lastTickRef = React.useRef(-1);
   const canvasRef = useSimulationCanvas<typeof predatorPreySim>(
-    (ctx, { data, params }) => {
+    (ctx, { data, params, tick }) => {
       const scale = CSS_SIZE / params.worldWidth;
       const cssStyles = getComputedStyle(document.documentElement);
       const bg = cssStyles.getPropertyValue('--bg3').trim() || '#14181f';
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
 
-      // Prey first (small green dots), predators on top (larger red dots).
+      if (tick === 0 || tick < lastTickRef.current) {
+        // Fresh start or reset: wipe to a clean background.
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
+      } else {
+        // Fade the previous frame toward the background so agents leave trails.
+        ctx.globalAlpha = 0.14;
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
+        ctx.globalAlpha = 1;
+      }
+      lastTickRef.current = tick;
+
+      // Prey: small green dots.
       ctx.fillStyle = PREY_COLOR;
       for (const a of data.agents) {
         if (a.type !== 'prey') continue;
@@ -41,12 +54,22 @@ function PredatorPreyCanvas() {
         ctx.fill();
       }
 
+      // Predators: triangles pointing in their direction of travel.
+      const tip = PREDATOR_RADIUS + 2;
       ctx.fillStyle = PREDATOR_COLOR;
       for (const a of data.agents) {
         if (a.type !== 'predator') continue;
+        const angle = Math.atan2(a.vy, a.vx);
+        ctx.save();
+        ctx.translate(a.x * scale, a.y * scale);
+        ctx.rotate(angle);
         ctx.beginPath();
-        ctx.arc(a.x * scale, a.y * scale, PREDATOR_RADIUS, 0, Math.PI * 2);
+        ctx.moveTo(tip, 0);
+        ctx.lineTo(-tip * 0.7, tip * 0.7);
+        ctx.lineTo(-tip * 0.7, -tip * 0.7);
+        ctx.closePath();
         ctx.fill();
+        ctx.restore();
       }
 
       ctx.setTransform(1, 0, 0, 1, 0, 0);
