@@ -53,6 +53,7 @@ const EXAMPLES: Item[] = [
   { to: '/examples/traffic', label: 'Traffic' },
   { to: '/examples/falling-sand', label: 'Falling sand' },
   { to: '/examples/settlement', label: 'Settlement growth' },
+  { to: '/examples/erosion', label: 'Hydraulic erosion' },
 ];
 
 const GROUPS: Group[] = [
