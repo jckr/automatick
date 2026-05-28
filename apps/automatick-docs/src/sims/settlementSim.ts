@@ -84,7 +84,7 @@ function bestResourceDirection(
 export default defineSim<SettlementData, SettlementParams>({
   defaultParams: {
     numAgents: 80,
-    resourceGrowback: 0.06,
+    resourceGrowback: 0.01,
     settlementThreshold: 15,
     buildCost: 10,
     agentSpeed: 1.0,
