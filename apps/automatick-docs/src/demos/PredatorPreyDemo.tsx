@@ -20,7 +20,7 @@ const CSS_SIZE = 600;
 const PREY_COLOR = '#2ecc71';
 const PREDATOR_COLOR = '#e74c3c';
 /** How many recent positions to keep per agent for its trail. */
-const TRAIL_LEN = 12;
+const TRAIL_LEN = 20;
 
 type TrailAgent = { x: number; y: number; vx: number; vy: number; type: string };
 
