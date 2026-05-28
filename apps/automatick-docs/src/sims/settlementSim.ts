@@ -7,6 +7,8 @@ export type Agent = {
   y: number;
   resources: number;
   home: number;
+  avoidSettlement: number;
+  cooldown: number;
 };
 
 export type Settlement = {
@@ -109,6 +111,8 @@ export default defineSim<SettlementData, SettlementParams>({
         y: Math.random() * GRID,
         resources: 0,
         home: -1,
+        avoidSettlement: -1,
+        cooldown: 0,
       });
     }
 
@@ -193,6 +197,7 @@ export default defineSim<SettlementData, SettlementParams>({
         let nearestSettlement = -1;
         let nearestDist = 15;
         for (let si = 0; si < settlements.length; si++) {
+          if (si === agent.avoidSettlement && agent.cooldown > 0) continue;
           const s = settlements[si];
           const d = Math.sqrt(
             (s.x - agent.x) ** 2 + (s.y - agent.y) ** 2,
@@ -248,10 +253,15 @@ export default defineSim<SettlementData, SettlementParams>({
     }
 
     for (const agent of agents) {
-      if (agent.home < 0) continue;
+      if (agent.home < 0) {
+        if (agent.cooldown > 0) agent.cooldown--;
+        continue;
+      }
       const s = settlements[agent.home];
       if (s.storedResources < 1 && Math.random() < 0.08) {
         s.population = Math.max(0, s.population - 1);
+        agent.avoidSettlement = agent.home;
+        agent.cooldown = 150;
         agent.home = -1;
         const angle = Math.random() * Math.PI * 2;
         agent.x += Math.cos(angle) * 15;
@@ -266,6 +276,7 @@ export default defineSim<SettlementData, SettlementParams>({
       let nearestSettlement = -1;
       let nearestDist = 20;
       for (let si = 0; si < settlements.length; si++) {
+        if (si === agent.avoidSettlement && agent.cooldown > 0) continue;
         const s = settlements[si];
         const d = Math.sqrt((s.x - agent.x) ** 2 + (s.y - agent.y) ** 2);
         if (d < nearestDist) {
