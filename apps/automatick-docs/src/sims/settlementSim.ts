@@ -231,6 +231,11 @@ export default defineSim<SettlementData, SettlementParams>({
       if (s.storedResources < 1 && Math.random() < 0.08) {
         s.population = Math.max(0, s.population - 1);
         agent.home = -1;
+        const angle = Math.random() * Math.PI * 2;
+        agent.x += Math.cos(angle) * 15;
+        agent.y += Math.sin(angle) * 15;
+        agent.x = Math.max(0, Math.min(GRID - 1, agent.x));
+        agent.y = Math.max(0, Math.min(GRID - 1, agent.y));
       }
     }
 

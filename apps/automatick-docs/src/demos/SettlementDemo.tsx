@@ -70,12 +70,15 @@ function SettlementCanvas() {
       if (agent.home >= 0) {
         const color = SETTLEMENT_COLORS[agent.home % SETTLEMENT_COLORS.length];
         ctx.fillStyle = color;
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(agent.x * scale - 1.5, agent.y * scale - 1.5, 3, 3);
       } else {
-        ctx.fillStyle = '#ccc';
-        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#e0d6c0';
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.arc(agent.x * scale, agent.y * scale, 2.5, 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.fillRect(agent.x * scale - 1, agent.y * scale - 1, 3, 3);
     }
     ctx.globalAlpha = 1;
 
