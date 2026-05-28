@@ -263,11 +263,6 @@ export default defineSim<SettlementData, SettlementParams>({
         agent.avoidSettlement = agent.home;
         agent.cooldown = 150;
         agent.home = -1;
-        const angle = Math.random() * Math.PI * 2;
-        agent.x += Math.cos(angle) * 15;
-        agent.y += Math.sin(angle) * 15;
-        agent.x = Math.max(0, Math.min(GRID - 1, agent.x));
-        agent.y = Math.max(0, Math.min(GRID - 1, agent.y));
       }
     }
 
