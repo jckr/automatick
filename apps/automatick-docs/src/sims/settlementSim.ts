@@ -203,17 +203,18 @@ export default defineSim<SettlementData, SettlementParams>({
     }
 
     for (const s of settlements) {
+      s.storedResources -= s.population * 0.3;
       if (s.storedResources >= params.buildCost) {
         s.storedResources -= params.buildCost;
         s.buildings++;
       }
+      if (s.storedResources < 0) s.storedResources = 0;
     }
 
     for (const agent of agents) {
       if (agent.home < 0) continue;
       const s = settlements[agent.home];
-      const resourcesPerCapita = s.population > 0 ? s.storedResources / s.population : 0;
-      if (resourcesPerCapita < 1 && Math.random() < 0.03) {
+      if (s.storedResources < 1 && Math.random() < 0.08) {
         s.population = Math.max(0, s.population - 1);
         agent.home = -1;
       }
