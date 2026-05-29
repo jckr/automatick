@@ -7,7 +7,9 @@ type Variant = 'full' | 'no-toc' | 'no-sidebar' | 'flush' | 'playground';
 export function ShellRoute({ variant }: { variant: Variant }) {
   return (
     <DocShell variant={variant}>
-      <Outlet />
+      <React.Suspense fallback={null}>
+        <Outlet />
+      </React.Suspense>
     </DocShell>
   );
 }
