@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { EXAMPLES as EXAMPLE_MANIFEST, examplePath } from '../examples';
 
 type Item = { to: string; label: string; badge?: 'new' };
 type Group = { label: string; items: Item[]; collapsible?: boolean };
@@ -30,34 +31,13 @@ const API: Item[] = [
   { to: '/api/create-engine', label: 'createEngine' },
 ];
 
-const EXAMPLES: Item[] = [
-  { to: '/examples/dice', label: 'Dice' },
-  { to: '/examples/game-of-life', label: 'Game of Life' },
-  { to: '/examples/automata-1d', label: '1D automata' },
-  { to: '/examples/percolation', label: 'Percolation' },
-  { to: '/examples/activators', label: 'Activators' },
-  { to: '/examples/langton-ant', label: "Langton's ant" },
-  { to: '/examples/segregation', label: 'Segregation' },
-  { to: '/examples/gravity', label: 'N-body gravity' },
-  { to: '/examples/boids', label: 'Boids' },
-  { to: '/examples/predator-prey', label: 'Predator–Prey' },
-  { to: '/examples/crowd-compare', label: 'Crowd: selfish vs coordinated' },
-  { to: '/examples/snake', label: 'Snake' },
-  { to: '/examples/mazes', label: 'Mazes' },
-  { to: '/examples/chaos-game', label: 'Chaos game' },
-  { to: '/examples/worker-canvas', label: 'XOR ring' },
-  { to: '/examples/gray-scott', label: 'Gray-Scott' },
-  { to: '/examples/stable-fluids', label: 'Stable fluids' },
-  { to: '/examples/sandpile', label: 'Abelian sandpile' },
-  { to: '/examples/sph-fluid', label: 'SPH fluid' },
-  { to: '/examples/ising', label: 'Ising model' },
-  { to: '/examples/ant-colony', label: 'Ant colony' },
-  { to: '/examples/traffic', label: 'Traffic' },
-  { to: '/examples/falling-sand', label: 'Falling sand' },
-  { to: '/examples/settlement', label: 'Settlement growth' },
-  { to: '/examples/erosion', label: 'Hydraulic erosion' },
-  { to: '/examples/electric-field', label: 'Electric field' },
-];
+// Examples are sourced from the shared manifest (src/examples.ts) so the
+// sidebar and the examples gallery never drift.
+const EXAMPLES: Item[] = EXAMPLE_MANIFEST.map((ex) => ({
+  to: examplePath(ex),
+  label: ex.label,
+  ...(ex.badge ? { badge: ex.badge } : {}),
+}));
 
 const GROUPS: Group[] = [
   { label: 'Getting started', items: GETTING_STARTED },
