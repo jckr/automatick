@@ -131,6 +131,51 @@ const ErosionPage = React.lazy(() =>
 const EMFieldPage = React.lazy(() =>
   import('./pages/examples/EMFieldPage').then((m) => ({ default: m.EMFieldPage }))
 );
+const MaterialCAPage = React.lazy(() =>
+  import('./pages/examples/MaterialCAPage').then((m) => ({ default: m.MaterialCAPage }))
+);
+const WavePage = React.lazy(() =>
+  import('./pages/examples/WavePage').then((m) => ({ default: m.WavePage }))
+);
+const PhysarumPage = React.lazy(() =>
+  import('./pages/examples/PhysarumPage').then((m) => ({ default: m.PhysarumPage }))
+);
+const SugarscapePage = React.lazy(() =>
+  import('./pages/examples/SugarscapePage').then((m) => ({ default: m.SugarscapePage }))
+);
+const OpinionDynamicsPage = React.lazy(() =>
+  import('./pages/examples/OpinionDynamicsPage').then((m) => ({ default: m.OpinionDynamicsPage }))
+);
+const MarketPage = React.lazy(() =>
+  import('./pages/examples/MarketPage').then((m) => ({ default: m.MarketPage }))
+);
+const ParticleLifePage = React.lazy(() =>
+  import('./pages/examples/ParticleLifePage').then((m) => ({ default: m.ParticleLifePage }))
+);
+const FireworksPage = React.lazy(() =>
+  import('./pages/examples/FireworksPage').then((m) => ({ default: m.FireworksPage }))
+);
+const SpringMassPage = React.lazy(() =>
+  import('./pages/examples/SpringMassPage').then((m) => ({ default: m.SpringMassPage }))
+);
+const ClothPage = React.lazy(() =>
+  import('./pages/examples/ClothPage').then((m) => ({ default: m.ClothPage }))
+);
+const RigidBodyPage = React.lazy(() =>
+  import('./pages/examples/RigidBodyPage').then((m) => ({ default: m.RigidBodyPage }))
+);
+const DoublePendulumPage = React.lazy(() =>
+  import('./pages/examples/DoublePendulumPage').then((m) => ({ default: m.DoublePendulumPage }))
+);
+const ForceGraphPage = React.lazy(() =>
+  import('./pages/examples/ForceGraphPage').then((m) => ({ default: m.ForceGraphPage }))
+);
+const LSystemPage = React.lazy(() =>
+  import('./pages/examples/LSystemPage').then((m) => ({ default: m.LSystemPage }))
+);
+const TerrainPage = React.lazy(() =>
+  import('./pages/examples/TerrainPage').then((m) => ({ default: m.TerrainPage }))
+);
 
 export function App() {
   return (
@@ -194,6 +239,21 @@ export function App() {
           <Route path='examples/settlement' element={<SettlementPage />} />
           <Route path='examples/erosion' element={<ErosionPage />} />
           <Route path='examples/electric-field' element={<EMFieldPage />} />
+          <Route path='examples/material-ca' element={<MaterialCAPage />} />
+          <Route path='examples/wave' element={<WavePage />} />
+          <Route path='examples/physarum' element={<PhysarumPage />} />
+          <Route path='examples/sugarscape' element={<SugarscapePage />} />
+          <Route path='examples/opinion-dynamics' element={<OpinionDynamicsPage />} />
+          <Route path='examples/market' element={<MarketPage />} />
+          <Route path='examples/particle-life' element={<ParticleLifePage />} />
+          <Route path='examples/fireworks' element={<FireworksPage />} />
+          <Route path='examples/spring-mass' element={<SpringMassPage />} />
+          <Route path='examples/cloth' element={<ClothPage />} />
+          <Route path='examples/rigid-body' element={<RigidBodyPage />} />
+          <Route path='examples/double-pendulum' element={<DoublePendulumPage />} />
+          <Route path='examples/force-graph' element={<ForceGraphPage />} />
+          <Route path='examples/l-systems' element={<LSystemPage />} />
+          <Route path='examples/terrain' element={<TerrainPage />} />
           <Route path='examples/automatick-hero' element={<AutomatickHeroPage />} />
           <Route path='examples/automatick-bubbles' element={<AutomatickBubblesPage />} />
           <Route path='examples/world-spinner' element={<WorldSpinnerPage />} />
