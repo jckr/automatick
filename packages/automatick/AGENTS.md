@@ -102,21 +102,22 @@ import { Simulation } from 'automatick/react/simulation';
 import { useSimulationCanvas } from 'automatick/react/canvas';
 
 function MyCanvas() {
-  const dpr = window.devicePixelRatio || 1;
-  const canvasRef = useSimulationCanvas<typeof mySim>((ctx, { data, params }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // draw here using ctx
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
-  return <canvas ref={canvasRef} width={WIDTH * dpr} height={HEIGHT * dpr} />;
+  const canvasRef = useSimulationCanvas<typeof mySim>(
+    (ctx, { data, params }, view) => {
+      view.clear('--bg2');
+      // draw here using ctx, in CSS pixels
+    },
+    { width: WIDTH, height: HEIGHT }
+  );
+  return <canvas ref={canvasRef} style={{ width: WIDTH, height: HEIGHT }} />;
 }
 ```
 
 Key patterns:
 - `useSimulationCanvas` subscribes directly to the engine — drawing bypasses React's render cycle entirely.
-- Always handle device pixel ratio: set canvas dimensions to `width * dpr`, then `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)` at the start of draw and reset at the end.
-- For pixel-level rendering (grids, fields), use an offscreen canvas + `ImageData` for best performance.
-- For shape-based rendering (agents, particles), use `ctx.fillRect`, `ctx.arc`, etc. directly.
+- Pass `{ width, height }` (logical CSS pixels) to enter **ownership mode**: the hook sizes the canvas backing store (`width × dpr`), applies the devicePixelRatio transform around every draw, and tracks dpr changes. You draw in CSS pixels and never touch `dpr`. Don't set `width`/`height` attributes on the element — do set its CSS size.
+- The draw function receives a third argument, the injected `view` toolkit (`clear`, `fade`, `theme`, `blitGrid`) — see "Canvas Rendering Patterns" below.
+- View helpers depend only on the drawing context and values — never do direct DOM reads (`getComputedStyle`, `window.devicePixelRatio`) inside a draw function; use `view.theme()` / `view.dpr` instead.
 
 ### 2. React DOM (rare)
 
@@ -167,15 +168,46 @@ Most sims should start as local (canvas) and only move to worker if performance 
 
 ## Canvas Rendering Patterns
 
+The draw function signature is `(ctx, snapshot, view) => void`. The third
+argument is the injected **view toolkit** (`CanvasView` from
+`automatick/canvas`) — helpers are injected, never imported. Use it with
+ownership mode: `useSimulationCanvas(draw, { width, height })` in React, or
+`attachCanvas(engine, canvas, draw, { width, height })` framework-free.
+Existing two-argument draws `(ctx, snapshot)` keep working (legacy mode, no
+options — see below).
+
+### The view toolkit
+
+```ts
+view.width   // logical (CSS px) drawing width
+view.height  // logical (CSS px) drawing height
+view.dpr     // current devicePixelRatio (already applied to the transform)
+
+view.clear();                          // clearRect over the full logical area
+view.clear('--bg2');                   // fill with a CSS color or theme custom property
+view.fade(0.05);                       // trail effect: translucent black fill
+view.fade(0.05, '#fff');               // trail effect over a light background
+view.theme('--fg1', '#000');           // CSS custom property, cached per frame
+view.blitGrid(cols, rows, (px) => {…}); // pixel grid → scaled, crisp blit
+```
+
+All helpers restore any context state they touch (`fillStyle`, `globalAlpha`,
+`imageSmoothingEnabled`) — they never leak into your subsequent drawing.
+
+`clear`/`fade` color arguments accept either a CSS color (used as-is) or a
+theme custom property name (resolved via `view.theme`, so theme switches
+repaint). An unresolvable value logs an error once and paints nothing — no
+throw, mirroring how canvas contexts ignore invalid color assignments.
+
 ### Agent-based sims (boids, epidemic, ant colony)
 
 ```ts
 // Data is an array of agent objects
 type Data = { agents: Agent[] };
 
-// Draw: iterate agents, draw shapes
-(ctx, { data }) => {
-  ctx.clearRect(0, 0, W, H);
+// Draw: iterate agents, draw shapes (in CSS pixels — dpr is handled)
+(ctx, { data }, view) => {
+  view.clear('--bg2');
   for (const agent of data.agents) {
     ctx.beginPath();
     ctx.arc(agent.x, agent.y, agent.r, 0, Math.PI * 2);
@@ -184,56 +216,74 @@ type Data = { agents: Agent[] };
 }
 ```
 
+There are deliberately no shape helpers (`circle()`, etc.) on the view — the
+2D context is the drawing vocabulary.
+
 ### Grid/cellular automata (Game of Life, traffic, segregation)
 
 ```ts
 // Data uses flat arrays for performance
 type Data = { cells: Int8Array; width: number; height: number };
 
-// Draw: use ImageData for pixel-level control
-(ctx, { data }) => {
-  const imageData = ctx.createImageData(data.width, data.height);
-  for (let i = 0; i < data.cells.length; i++) {
-    const j = i * 4;
-    imageData.data[j] = data.cells[i] ? 255 : 0;     // R
-    imageData.data[j + 1] = 0;                         // G
-    imageData.data[j + 2] = 0;                         // B
-    imageData.data[j + 3] = 255;                       // A
-  }
-  ctx.putImageData(imageData, 0, 0);
+// Draw: blitGrid hands you a cols×rows RGBA buffer and scales it to the
+// canvas with smoothing off. The offscreen canvas + ImageData are cached
+// per attachment and only recreated when dimensions change.
+(ctx, { data }, view) => {
+  view.blitGrid(data.width, data.height, (px) => {
+    for (let i = 0; i < data.cells.length; i++) {
+      const j = i * 4;
+      px[j] = data.cells[i] ? 255 : 0; // R
+      px[j + 1] = 0;                   // G
+      px[j + 2] = 0;                   // B
+      px[j + 3] = 255;                 // A
+    }
+  });
 }
 ```
-
-For grids larger than the canvas, use an offscreen canvas:
-```ts
-const offscreen = document.createElement('canvas');
-offscreen.width = gridWidth;
-offscreen.height = gridHeight;
-const offCtx = offscreen.getContext('2d')!;
-offCtx.putImageData(imageData, 0, 0);
-ctx.imageSmoothingEnabled = false;
-ctx.drawImage(offscreen, 0, 0, canvasWidth, canvasHeight);
-```
-
-Store the offscreen canvas and ImageData in refs to avoid re-creating them each frame.
 
 ### Trail effects (gravity, particle systems)
 
 ```ts
-// Instead of clearing, overlay a semi-transparent rect
-ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-ctx.fillRect(0, 0, W, H);
-// Then draw current frame on top
+// Instead of clearing, overlay a semi-transparent rect, then draw on top
+(ctx, { data }, view) => {
+  view.fade(0.05);
+  // draw current frame
+}
 ```
 
 ### Theme-aware colors
 
-Read CSS custom properties for colors that adapt to light/dark mode:
+`view.theme(varName, fallback?)` reads a CSS custom property from
+`document.documentElement`, trimmed and cached per frame:
+
 ```ts
-const styles = getComputedStyle(document.documentElement);
-const fg = styles.getPropertyValue('--fg1').trim();
-const bg = styles.getPropertyValue('--bg2').trim();
+(ctx, { data }, view) => {
+  const fg = view.theme('--fg1', '#000');
+  const bg = view.theme('--bg2', '#fff');
+  view.clear(bg);
+  ctx.fillStyle = fg;
+  // …
+}
 ```
+
+On first use, `theme()` lazily wires theme-change observers (class /
+`data-theme` / `style` mutations on `<html>` plus `prefers-color-scheme`);
+when the theme flips, the last snapshot is redrawn immediately — even while
+the sim is paused — so the canvas never goes stale on a light/dark switch.
+Never call `getComputedStyle` directly inside a draw function.
+
+### Legacy recipes (superseded, still working)
+
+Pre-toolkit call sites pass a two-argument draw and no options. They keep
+compiling and behaving identically: the hook never resizes their canvas and
+applies no transform. The old manual recipes — `width={W * dpr}` attributes
+with a hand-rolled `ctx.setTransform(dpr, …)`, manually cached offscreen
+canvas + `ImageData` refs, raw `getComputedStyle` theme reads, and manual
+`fillRect` trail overlays — are superseded by ownership mode and the view
+toolkit. Don't use them in new code.
+
+Note: the docs-site demos have NOT yet been migrated to the view toolkit
+(separate follow-up); they still use the legacy patterns.
 
 ## Build & Test
 

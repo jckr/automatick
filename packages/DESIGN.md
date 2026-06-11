@@ -702,3 +702,54 @@ export default defineSim<GameOfLifeData, GameOfLifeParams>({
 **Decision:** Main-thread mode: React component owns RAF (via `useEffect`). Worker mode: worker owns its own `setTimeout` loop.
 
 **Rationale:** Main-thread sims should sync with the browser's render cycle. Workers don't have RAF and shouldn't depend on main-thread timing. The component in worker mode is a passive snapshot subscriber, not a tick driver.
+
+---
+
+## 12. Toolkit Convention & the Canvas View Toolkit
+
+### The convention: injected, never imported
+
+Author-written functions (`step`, draw callbacks) receive their helpers as **injected capability bags** — extra arguments supplied by the library — never as imports and never as return values. A draw function is `(ctx, snapshot, view) => void`: the `view` bag arrives as the third argument, exactly like `ctx` and `snapshot` do. The author's file imports nothing from the library to use the toolkit.
+
+Why injection:
+
+- **The function stays portable.** A draw function that closes over imported helpers or module state is welded to the environment it was written in. One that only consumes its arguments can be relocated — including, eventually, to a worker.
+- **The library controls lifetime and identity.** Caches (theme reads, blit buffers) and observers live in the attachment that created the bag, are shared across frames, and are torn down on detach. An imported helper has no attachment to belong to.
+- **Discoverability.** Typing `view.` in an editor enumerates the whole toolkit. There is no second place to look.
+
+One `CanvasView` object exists per attachment — stable identity, fields (`width`, `height`, `dpr`) mutated in place on resize/dpr change. Helpers never leak context state: anything they touch (`fillStyle`, `globalAlpha`, `imageSmoothingEnabled`, the transform) is restored before the author's next statement runs.
+
+### The two-tier inclusion test
+
+A member earns its place in the bag in one of two ways:
+
+1. **Capabilities** — the recipe is a correctness trap. If the obvious hand-written version is subtly wrong (wrong on zoom, wrong on theme switch, wrong on resize, leaks state), the library must own it. `theme()` is the canonical case: the naive `getComputedStyle` read is easy, but *redrawing a paused sim when the theme flips* is the part everyone forgets — so the canvas stays stale after a light/dark switch. Same for DPR ownership (`width × dpr` backing store + transform + `resolution:` media-query re-arm) and `blitGrid` (offscreen canvas + ImageData caching keyed by dimensions, smoothing toggled and restored).
+2. **Conveniences** — pure compositions of bag members that appear in essentially every sim. `clear()` and `fade()` are one-liners over `ctx` + `view.width/height`, but every single demo writes them, and `fade` has a state-leak footgun (`globalAlpha`) attached.
+
+Anything that fails both tests stays out.
+
+### Rejected: shape helpers
+
+There is no `view.circle()`, `view.line()`, or any drawing-vocabulary helper — and this is a deliberate reversal of precedent: the original library shipped a circle helper, and it was dropped. `ctx.arc()` is not a correctness trap; wrapping it saves zero bugs and starts an unbounded vocabulary (circle, then triangle, then arrow, then text-with-outline…). The 2D context *is* the drawing vocabulary. The bag only contains what the context can't safely express on its own.
+
+### Values, not DOM reads
+
+View helpers may depend only on the drawing context and on **values** (`width`, `height`, `dpr`, resolved theme strings). The author's draw function must never be forced into a direct DOM read (`getComputedStyle`, element measurement, `window.devicePixelRatio`). Where a DOM read is genuinely needed — theme variables — the *library* performs it, caches the resolved value, and hands the author a string.
+
+This is what keeps OffscreenCanvas rendering reachable: a draw function whose inputs are a context, a snapshot, and a bag of plain values can run anywhere a 2D context exists, including a worker where `document` does not. The main thread would resolve the values (size, dpr, theme strings) and ship them across; the draw function wouldn't change. A single sneaky `getComputedStyle` inside a draw function forecloses that path.
+
+### React/DOM mode gets no view toolkit
+
+`useSimulation()` rendering (JSX output) deliberately has no equivalent bag. CSS *is* the toolkit there: theme variables apply via ordinary cascade, the browser handles DPR, "clear" is reconciliation. Injecting a helper bag into JSX rendering would duplicate the platform. The view toolkit exists precisely because a 2D canvas context has none of those affordances built in.
+
+### Per-mode placement
+
+| Mode | How the sim runs | How drawing attaches | View toolkit |
+|------|------------------|----------------------|--------------|
+| Plain JS / vanilla | `createEngine()` | `attachCanvas(engine, canvas, draw, { width, height })` from `automatick/canvas` | Yes — injected `view` |
+| React canvas | `<Simulation>` | `useSimulationCanvas(draw, { width, height })` — a thin wrapper over `attachCanvas` | Yes — injected `view` |
+| React DOM | `<Simulation>` | `useSimulation()` + JSX | No — CSS is the toolkit |
+| Worker | sim steps in the worker; drawing stays on the main thread | same as React canvas / plain JS (the runner satisfies the same `CanvasSource` interface) | Yes — on the main thread |
+| Worker (future, OffscreenCanvas) | sim and draw both in worker | not yet implemented | Reachable because of the values-not-DOM-reads rule |
+
+The core lives framework-free in `automatick/canvas` (DOM, no React): `attachCanvas(source, canvas, draw, options) => detach`. `source` is a minimal structural interface — `{ subscribe, getSnapshot, recordDrawTime? }` — satisfied by `SimulationEngine`, the worker runner, and the React engine context, so every mode funnels through one implementation. The React hook adds nothing but ref plumbing and effect lifetime. Inside the worker itself there is no view toolkit — `step` gets the engine-side toolkit only; rendering concerns never enter the sim module.
