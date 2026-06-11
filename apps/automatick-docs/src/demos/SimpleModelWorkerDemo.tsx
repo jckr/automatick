@@ -13,21 +13,23 @@ const CELL_COLOR = 'rgba(215, 69, 30, 0.12)';
 import simUrl from '../sims/simpleModelWorkerSim.ts?worker-module';
 
 function Grid() {
-  const canvasRef = useSimulationCanvas<Data, Params>((ctx, { data }) => {
-    ctx.clearRect(0, 0, SIZE * CELL, SIZE * CELL);
-    ctx.fillStyle = CELL_COLOR;
-    for (let i = 0; i < TOTAL; i++) {
-      if (data.cells[i]) {
-        ctx.fillRect((i % SIZE) * CELL, Math.floor(i / SIZE) * CELL, CELL, CELL);
+  const canvasRef = useSimulationCanvas<Data, Params>(
+    (ctx, { data }, view) => {
+      view.clear();
+      ctx.fillStyle = CELL_COLOR;
+      for (let i = 0; i < TOTAL; i++) {
+        if (data.cells[i]) {
+          ctx.fillRect((i % SIZE) * CELL, Math.floor(i / SIZE) * CELL, CELL, CELL);
+        }
       }
-    }
-  });
+    },
+    { width: SIZE * CELL, height: SIZE * CELL }
+  );
   return (
     <canvas
       ref={canvasRef}
-      width={SIZE * CELL}
-      height={SIZE * CELL}
       className={styles.canvas}
+      style={{ width: SIZE * CELL, height: SIZE * CELL }}
     />
   );
 }

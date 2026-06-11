@@ -17,7 +17,7 @@ export type CircleCell = {
 
 export function initDataCircle(
   args: { height: number; width: number },
-  random: () => number = Math.random
+  random: () => number
 ): {
   cells: Record<string, CircleCell>;
   cellSize: number;

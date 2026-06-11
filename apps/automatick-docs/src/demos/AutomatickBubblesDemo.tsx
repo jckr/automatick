@@ -5,9 +5,7 @@ import { useSimulationCanvas } from 'automatick/react/canvas';
 import { PerformanceOverlay } from 'automatick/react/performance';
 import { DemoControlPanel, type DemoControlGroup } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
-import automatickBubblesSim, {
-  type BubblesParams,
-} from '../sims/automatickBubblesSim';
+import automatickBubblesSim from '../sims/automatickBubblesSim';
 import { getLetterMask, isInsideMask, maskFontString } from '../sims/automatickHeroMask';
 import styles from './AutomatickBubblesDemo.module.css';
 
@@ -92,6 +90,8 @@ export function AutomatickBubblesCanvas({
   const { setParams, resetWith } = useSimulation<typeof automatickBubblesSim>();
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const initializedRef = React.useRef(false);
+  // Logical canvas size follows the wrapper; the hook owns the backing store.
+  const [dims, setDims] = React.useState<{ width: number; height: number } | null>(null);
 
   // Two offscreen canvases + field buffers — one for outside-mask bubbles
   // (composited with the user-selected fun blend mode against the trail
@@ -114,27 +114,17 @@ export function AutomatickBubblesCanvas({
   const lastDimsRef = React.useRef<{ cols: number; rows: number }>({ cols: 0, rows: 0 });
 
   const canvasRef = useSimulationCanvas<typeof automatickBubblesSim>(
-    (ctx, { data, params }) => {
-      const cssStyles = getComputedStyle(document.documentElement);
-      const bg = cssStyles.getPropertyValue('--bg1').trim() || '#F7F3EA';
-      const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
-      const accentColor = parseHex(
-        cssStyles.getPropertyValue('--accent').trim() || '#D7451E',
-        [215, 69, 30]
-      );
-      const dpr = window.devicePixelRatio || 1;
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    (ctx, { data, params }, view) => {
+      const bg = view.theme('--bg1', '#F7F3EA');
+      const ink = view.theme('--fg1', '#0E1116');
+      const accentColor = parseHex(view.theme('--accent', '#D7451E'), [215, 69, 30]);
 
       // Trails: fade the previous frame toward bg instead of clearing.
       // Lower `trailFade` = longer-lived trails. Bubbles inside the
       // wordmark continuously repaint that region from the field render
       // below, so the wordmark stays crisp; outside, sparse moving bubbles
       // leave decaying chromatic trails.
-      ctx.fillStyle = bg;
-      ctx.globalAlpha = params.trailFade;
-      ctx.fillRect(0, 0, params.width, params.height);
-      ctx.globalAlpha = 1;
+      view.fade(params.trailFade, bg);
 
       const mask = getLetterMask(params.text, params.width, params.height);
 
@@ -307,30 +297,24 @@ export function AutomatickBubblesCanvas({
       ctx.drawImage(offOutRef.current!, 0, 0, params.width, params.height);
       ctx.globalCompositeOperation = 'source-over';
       ctx.drawImage(offInRef.current!, 0, 0, params.width, params.height);
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    dims ?? undefined
   );
 
   React.useEffect(() => {
     const wrap = wrapperRef.current;
-    const canvas = canvasRef.current;
-    if (!wrap || !canvas) return;
+    if (!wrap) return;
 
     const apply = () => {
-      const dpr = window.devicePixelRatio || 1;
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
       if (w === 0 || h === 0) return;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
+      setDims({ width: w, height: h });
       if (!initializedRef.current) {
         initializedRef.current = true;
-        resetWith({ width: w, height: h } as Partial<BubblesParams>);
+        resetWith({ width: w, height: h });
       } else {
-        setParams({ width: w, height: h } as Partial<BubblesParams>);
+        setParams({ width: w, height: h });
       }
     };
     apply();
@@ -338,7 +322,7 @@ export function AutomatickBubblesCanvas({
     const ro = new ResizeObserver(apply);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [canvasRef, setParams, resetWith]);
+  }, [setParams, resetWith]);
 
   return (
     <div ref={wrapperRef} className={styles.wrapper} style={{ minHeight }}>

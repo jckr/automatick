@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 import { getLetterMask, isInsideMask } from './automatickHeroMask';
 
 export type HeroNode = {
@@ -49,14 +50,14 @@ const DEFAULT_PARAMS: HeroParams = {
   showMask: false,
 };
 
-function seedNodes(params: HeroParams): HeroNode[] {
+function seedNodes(params: HeroParams, random: SimRandom): HeroNode[] {
   const { nbNodes, width, height, speed } = params;
   const nodes: HeroNode[] = new Array(nbNodes);
   for (let i = 0; i < nbNodes; i++) {
-    const angle = Math.random() * Math.PI * 2;
+    const angle = random() * Math.PI * 2;
     nodes[i] = {
-      x: Math.random() * width,
-      y: Math.random() * height,
+      x: random() * width,
+      y: random() * height,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
     };
@@ -66,11 +67,11 @@ function seedNodes(params: HeroParams): HeroNode[] {
 
 export default defineSim<HeroData, HeroParams>({
   defaultParams: DEFAULT_PARAMS,
-  init: (params) => ({
-    nodes: seedNodes(params),
+  init: (params, { random }) => ({
+    nodes: seedNodes(params, random),
     links: [],
   }),
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { width, height, speed, linkDistance, p, q, text } = params;
     const N = data.nodes.length;
     const linkDistanceSq = linkDistance * linkDistance;
@@ -140,7 +141,7 @@ export default defineSim<HeroData, HeroParams>({
             const insideI = isInsideMask(mask, ni.x, ni.y);
             const insideJ = isInsideMask(mask, nj.x, nj.y);
             const prob = insideI && insideJ ? q : p;
-            if (Math.random() < prob) {
+            if (random() < prob) {
               links.push({ a: i, b: j });
             }
           }

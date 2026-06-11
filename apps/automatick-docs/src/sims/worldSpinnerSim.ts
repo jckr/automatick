@@ -40,7 +40,7 @@ const DEFAULT_PARAMS: WorldSpinnerParams = {
 export default defineSim<WorldSpinnerData, WorldSpinnerParams>({
   defaultParams: DEFAULT_PARAMS,
   init: { angle: 0, pulses: [] },
-  step: ({ data, params, tick }) => {
+  step: ({ data, params, tick, random }) => {
     const { angularSpeed, pulseRate, pulseLifetime } = params;
 
     // Decay expired pulses.
@@ -48,9 +48,9 @@ export default defineSim<WorldSpinnerData, WorldSpinnerParams>({
     const pulses: Pulse[] = data.pulses.filter((p) => p.bornTick > cutoff);
 
     // Maybe spawn a new pulse.
-    if (Math.random() < pulseRate) {
+    if (random() < pulseRate) {
       pulses.push({
-        anchor: Math.floor(Math.random() * PULSE_ANCHORS.length),
+        anchor: random.int(0, PULSE_ANCHORS.length - 1),
         bornTick: tick,
       });
     }

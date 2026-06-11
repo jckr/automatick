@@ -17,19 +17,8 @@ export type ErosionParams = {
   capacityFactor: number;
   noiseScale: number;
   noiseOctaves: number;
-  seed: number;
   showWater: boolean;
 };
-
-function mulberry32(a: number) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 function valueNoiseLayer(size: number, freq: number, rand: () => number): Float32Array {
   const cells = freq + 1;
@@ -63,9 +52,8 @@ function generateTerrain(
   size: number,
   baseFreq: number,
   octaves: number,
-  seed: number,
+  rand: () => number,
 ): Float32Array {
-  const rand = mulberry32(seed);
   const height = new Float32Array(size * size);
   let amplitude = 1;
   let freq = Math.max(2, Math.round(baseFreq));
@@ -132,22 +120,21 @@ export default defineSim<ErosionData, ErosionParams>({
     capacityFactor: 4,
     noiseScale: 4,
     noiseOctaves: 5,
-    seed: 1,
     showWater: true,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const size = ERO_SIZE;
     const heightmap = generateTerrain(
       size,
       params.noiseScale,
       params.noiseOctaves,
-      params.seed,
+      random,
     );
     return { heightmap, water: new Float32Array(size * size), size };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { heightmap, water, size } = data;
     const {
       dropsPerTick,
@@ -161,8 +148,8 @@ export default defineSim<ErosionData, ErosionParams>({
     for (let i = 0; i < water.length; i++) water[i] *= 0.9;
 
     for (let d = 0; d < dropsPerTick; d++) {
-      let px = Math.random() * (size - 2) + 0.5;
-      let py = Math.random() * (size - 2) + 0.5;
+      let px = random() * (size - 2) + 0.5;
+      let py = random() * (size - 2) + 0.5;
       let dirX = 0;
       let dirY = 0;
       let speed = 1;

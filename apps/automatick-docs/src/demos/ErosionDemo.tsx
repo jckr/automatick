@@ -1,6 +1,5 @@
 import React from 'react';
 import { Simulation } from 'automatick/react/simulation';
-import { useSimulation } from 'automatick/react/hooks';
 import { useSimulationCanvas } from 'automatick/react/canvas';
 import {
   DemoControlPanel,
@@ -12,6 +11,15 @@ import erosionSim from '../sims/erosionSim';
 import styles from './ErosionDemo.module.css';
 
 const CSS_SIZE = 600;
+
+/**
+ * Fixed first-load seed, hand-picked so the initial terrain is a pleasant
+ * rolling landscape with a single peak — the closest match (by hypsometry)
+ * to the curated `seed: 1` terrain the demo had before the engine PRNG
+ * replaced the local mulberry32. "New terrain" swaps the seed and remounts
+ * the <Simulation>, which is the documented way to get a fresh world.
+ */
+const INITIAL_SEED = 196;
 
 // Elevation color ramp: low (dark green) → mid (tan) → high (gray/white).
 function terrainColor(h: number): [number, number, number] {
@@ -32,105 +40,76 @@ function terrainColor(h: number): [number, number, number] {
 }
 
 function ErosionCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
+  const canvasRef = useSimulationCanvas<typeof erosionSim>(
+    (ctx, { data, params }, view) => {
+      const { heightmap, water, size } = data;
+      const showWater = params.showWater;
 
-  const canvasRef = useSimulationCanvas<typeof erosionSim>((ctx, { data, params }) => {
-    const { heightmap, water, size } = data;
-    const showWater = params.showWater;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      view.blitGrid(size, size, (px) => {
+        // Light direction for hillshading (top-left).
+        const lx = -0.5;
+        const ly = -0.5;
+        const lz = 0.7;
 
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = size;
-      off.height = size;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-    if (!imageDataRef.current) {
-      imageDataRef.current = offCtx.createImageData(size, size);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const i = y * size + x;
+            const h = heightmap[i];
 
-    // Light direction for hillshading (top-left).
-    const lx = -0.5;
-    const ly = -0.5;
-    const lz = 0.7;
+            // Surface normal from height gradient.
+            const xL = x > 0 ? heightmap[i - 1] : h;
+            const xR = x < size - 1 ? heightmap[i + 1] : h;
+            const yU = y > 0 ? heightmap[i - size] : h;
+            const yD = y < size - 1 ? heightmap[i + size] : h;
+            const nx = (xL - xR) * 4;
+            const ny = (yU - yD) * 4;
+            const nz = 1;
+            const nlen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            let shade = (nx * lx + ny * ly + nz * lz) / nlen;
+            shade = 0.6 + shade * 0.5;
+            shade = Math.max(0.3, Math.min(1.25, shade));
 
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const i = y * size + x;
-        const h = heightmap[i];
+            let [r, g, b] = terrainColor(h);
+            r *= shade;
+            g *= shade;
+            b *= shade;
 
-        // Surface normal from height gradient.
-        const xL = x > 0 ? heightmap[i - 1] : h;
-        const xR = x < size - 1 ? heightmap[i + 1] : h;
-        const yU = y > 0 ? heightmap[i - size] : h;
-        const yD = y < size - 1 ? heightmap[i + size] : h;
-        const nx = (xL - xR) * 4;
-        const ny = (yU - yD) * 4;
-        const nz = 1;
-        const nlen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-        let shade = (nx * lx + ny * ly + nz * lz) / nlen;
-        shade = 0.6 + shade * 0.5;
-        shade = Math.max(0.3, Math.min(1.25, shade));
+            // Water overlay where droplets recently flowed.
+            const w = water[i];
+            if (showWater && w > 0.4) {
+              const wf = Math.min(w / 6, 0.7);
+              r = r * (1 - wf) + 40 * wf;
+              g = g * (1 - wf) + 90 * wf;
+              b = b * (1 - wf) + 200 * wf;
+            }
 
-        let [r, g, b] = terrainColor(h);
-        r *= shade;
-        g *= shade;
-        b *= shade;
-
-        // Water overlay where droplets recently flowed.
-        const w = water[i];
-        if (showWater && w > 0.4) {
-          const wf = Math.min(w / 6, 0.7);
-          r = r * (1 - wf) + 40 * wf;
-          g = g * (1 - wf) + 90 * wf;
-          b = b * (1 - wf) + 200 * wf;
+            const j = i * 4;
+            px[j] = Math.max(0, Math.min(255, r));
+            px[j + 1] = Math.max(0, Math.min(255, g));
+            px[j + 2] = Math.max(0, Math.min(255, b));
+            px[j + 3] = 255;
+          }
         }
-
-        const j = i * 4;
-        px[j] = Math.max(0, Math.min(255, r));
-        px[j + 1] = Math.max(0, Math.min(255, g));
-        px[j + 2] = Math.max(0, Math.min(255, b));
-        px[j + 3] = 255;
-      }
-    }
-
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, CSS_SIZE, CSS_SIZE);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      });
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <CanvasStage maxWidth={CSS_SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }
 
-function NewTerrainButton() {
-  const { resetWith } = useSimulation<typeof erosionSim>();
+function NewTerrainButton(props: { onNewTerrain: () => void }) {
   return (
     <div className='group'>
       <button
         type='button'
         className='chip'
         style={{ width: '100%' }}
-        onClick={() => resetWith({ seed: Math.floor(Math.random() * 1e9) })}
+        onClick={props.onNewTerrain}
       >
         New terrain
       </button>
@@ -210,14 +189,21 @@ const EROSION_GROUPS: DemoControlGroup[] = [
 ];
 
 export function ErosionDemo() {
+  // "Fresh world" = remount with a new seed: the seed is captured at mount,
+  // so swapping it requires a new <Simulation> instance (hence `key`).
+  const [seed, setSeed] = React.useState(INITIAL_SEED);
   return (
-    <Simulation sim={erosionSim} delayMs={0} autoplay>
+    <Simulation key={seed} sim={erosionSim} seed={seed} delayMs={0} autoplay>
       <DemoSplit
         preview={<ErosionCanvas />}
         controls={
           <DemoControlPanel
             groups={EROSION_GROUPS}
-            extra={<NewTerrainButton />}
+            extra={
+              <NewTerrainButton
+                onNewTerrain={() => setSeed(Math.floor(Math.random() * 1e9))}
+              />
+            }
             showStep
           />
         }

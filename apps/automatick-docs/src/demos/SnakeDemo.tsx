@@ -23,40 +23,38 @@ const SPEED_CONFIG: Record<SpeedSetting, { delayMs: number; ticksPerFrame: numbe
 const CSS_WIDTH = 600;
 
 function SnakeCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { params } = useSimulation<typeof snakeSim>();
 
   const pixelWidth = params.width * params.cellSize;
   const pixelHeight = params.height * params.cellSize;
   const cssHeight = CSS_WIDTH * (pixelHeight / pixelWidth);
 
-  const canvasRef = useSimulationCanvas<typeof snakeSim>((ctx, { data, params }) => {
-    const pw = params.width * params.cellSize;
-    const scale = (CSS_WIDTH * dpr) / pw;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    drawSnakeFrame({
-      ctx,
-      pixelWidth: pw,
-      pixelHeight: params.height * params.cellSize,
-      cellSize: params.cellSize,
-      cols: params.width,
-      rows: params.height,
-      displayGrid: params.displayGrid,
-      displayCircuit: params.displayCircuit,
-      displayHead: params.displayHead,
-      data,
-    });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  const canvasRef = useSimulationCanvas<typeof snakeSim>(
+    (ctx, { data, params }, view) => {
+      const pw = params.width * params.cellSize;
+      const scale = view.width / pw;
+      ctx.save();
+      ctx.scale(scale, scale);
+      drawSnakeFrame({
+        ctx,
+        pixelWidth: pw,
+        pixelHeight: params.height * params.cellSize,
+        cellSize: params.cellSize,
+        cols: params.width,
+        rows: params.height,
+        displayGrid: params.displayGrid,
+        displayCircuit: params.displayCircuit,
+        displayHead: params.displayHead,
+        data,
+      });
+      ctx.restore();
+    },
+    { width: CSS_WIDTH, height: cssHeight }
+  );
 
   return (
     <CanvasStage maxWidth={CSS_WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_WIDTH * dpr}
-        height={cssHeight * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

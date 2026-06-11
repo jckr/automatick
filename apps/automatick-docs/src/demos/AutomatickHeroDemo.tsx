@@ -5,7 +5,7 @@ import { useSimulationCanvas } from 'automatick/react/canvas';
 import { PerformanceOverlay } from 'automatick/react/performance';
 import { DemoControlPanel, type DemoControlGroup } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
-import automatickHeroSim, { type HeroParams } from '../sims/automatickHeroSim';
+import automatickHeroSim from '../sims/automatickHeroSim';
 import { getLetterMask, maskFontString } from '../sims/automatickHeroMask';
 import styles from './AutomatickHeroDemo.module.css';
 
@@ -25,20 +25,17 @@ export function AutomatickHeroCanvas({
   const { setParams, resetWith } = useSimulation<typeof automatickHeroSim>();
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const initializedRef = React.useRef(false);
+  // Logical canvas size follows the wrapper; the hook owns the backing store.
+  const [dims, setDims] = React.useState<{ width: number; height: number } | null>(null);
 
   const canvasRef = useSimulationCanvas<typeof automatickHeroSim>(
-    (ctx, { data, params }) => {
-      const cssStyles = getComputedStyle(document.documentElement);
-      const bg = cssStyles.getPropertyValue('--bg1').trim() || '#F7F3EA';
-      const linkColor = cssStyles.getPropertyValue('--accent').trim() || '#D7451E';
-      const nodeColor = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
-      const dotColor = cssStyles.getPropertyValue('--fg3').trim() || '#5b6070';
-      const dpr = window.devicePixelRatio || 1;
+    (ctx, { data, params }, view) => {
+      const bg = view.theme('--bg1', '#F7F3EA');
+      const linkColor = view.theme('--accent', '#D7451E');
+      const nodeColor = view.theme('--fg1', '#0E1116');
+      const dotColor = view.theme('--fg3', '#5b6070');
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, params.width, params.height);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, params.width, params.height);
+      view.clear(bg);
 
       if (params.showMask) {
         const mask = getLetterMask(params.text, params.width, params.height);
@@ -81,30 +78,24 @@ export function AutomatickHeroCanvas({
         ctx.stroke();
         ctx.globalAlpha = 1;
       }
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    dims ?? undefined
   );
 
   React.useEffect(() => {
     const wrap = wrapperRef.current;
-    const canvas = canvasRef.current;
-    if (!wrap || !canvas) return;
+    if (!wrap) return;
 
     const apply = () => {
-      const dpr = window.devicePixelRatio || 1;
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
       if (w === 0 || h === 0) return;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
+      setDims({ width: w, height: h });
       if (!initializedRef.current) {
         initializedRef.current = true;
-        resetWith({ width: w, height: h } as Partial<HeroParams>);
+        resetWith({ width: w, height: h });
       } else {
-        setParams({ width: w, height: h } as Partial<HeroParams>);
+        setParams({ width: w, height: h });
       }
     };
     apply();
@@ -112,7 +103,7 @@ export function AutomatickHeroCanvas({
     const ro = new ResizeObserver(apply);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [canvasRef, setParams, resetWith]);
+  }, [setParams, resetWith]);
 
   return (
     <div ref={wrapperRef} className={styles.wrapper} style={{ minHeight }}>
