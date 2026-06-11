@@ -15,24 +15,20 @@ import styles from './SegregationDemo.module.css';
 const CSS_SIZE = 600;
 
 function SegregationCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-
-  const canvasRef = useSimulationCanvas<typeof segregationSim>((ctx, { data, params }) => {
-    const scale = (CSS_SIZE * dpr) / params.width;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    draw({ ctx, snapshot: { data, params } });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  const canvasRef = useSimulationCanvas<typeof segregationSim>(
+    (ctx, { data, params }, view) => {
+      // draw() works in sim coordinates (params.width × params.height);
+      // scale it to fill the logical canvas area.
+      ctx.scale(view.width / params.width, view.height / params.height);
+      draw({ ctx, snapshot: { data, params } });
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <div className={styles.stage}>
       <div className={styles.canvasWrap}>
-        <canvas
-          ref={canvasRef}
-          width={CSS_SIZE * dpr}
-          height={CSS_SIZE * dpr}
-          className={styles.canvas}
-        />
+        <canvas ref={canvasRef} className={styles.canvas} />
         <div className={styles.perf}>
           <PerformanceOverlay />
         </div>

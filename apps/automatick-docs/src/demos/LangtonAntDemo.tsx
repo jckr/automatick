@@ -10,47 +10,32 @@ import styles from './LangtonAntDemo.module.css';
 const CSS_SIZE = 600;
 
 function LangtonCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const canvasRef = useSimulationCanvas<typeof langtonAntSim>(
+    (ctx, { data }, view) => {
+      const { gridWidth: gw, gridHeight: gh, cells, antX, antY } = data;
+      const cellW = view.width / gw;
+      const cellH = view.height / gh;
 
-  const canvasRef = useSimulationCanvas<typeof langtonAntSim>((ctx, { data, params }) => {
-    const cssStyles = getComputedStyle(document.documentElement);
-    const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
-    const bg = cssStyles.getPropertyValue('--bg2').trim() || '#EFEADD';
-    const accent = cssStyles.getPropertyValue('--accent').trim() || '#D7451E';
+      view.clear(view.theme('--bg2', '#EFEADD'));
 
-    const scale = (CSS_SIZE * dpr) / params.width;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-
-    const { gridWidth: gw, gridHeight: gh, cells, antX, antY } = data;
-    const cellW = params.width / gw;
-    const cellH = params.height / gh;
-
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, params.width, params.height);
-
-    ctx.fillStyle = ink;
-    for (let y = 0; y < gh; y++) {
-      for (let x = 0; x < gw; x++) {
-        if (cells[y * gw + x]) {
-          ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+      ctx.fillStyle = view.theme('--fg1', '#0E1116');
+      for (let y = 0; y < gh; y++) {
+        for (let x = 0; x < gw; x++) {
+          if (cells[y * gw + x]) {
+            ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+          }
         }
       }
-    }
 
-    ctx.fillStyle = accent;
-    ctx.fillRect(antX * cellW, antY * cellH, cellW, cellH);
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      ctx.fillStyle = view.theme('--accent', '#D7451E');
+      ctx.fillRect(antX * cellW, antY * cellH, cellW, cellH);
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <CanvasStage maxWidth={CSS_SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }
