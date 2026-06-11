@@ -7,6 +7,12 @@ export type SimulationContextValue<Data, Params> = {
   params: Params;
   tick: number;
   status: SimulationStatus;
+  /**
+   * The resolved seed driving this simulation's `SimRandom` — the `seed`
+   * prop when one was given, otherwise the random default recorded at mount.
+   * Display or copy it to make a run reproducible.
+   */
+  seed: number | string;
 
   // Actions
   play: () => void;

@@ -30,7 +30,7 @@
     }
   },
   "scripts": {
-    "build": "tsup src/engine.ts src/sim.ts src/state.ts src/canvas.ts src/worker/workerRunner.ts src/worker/createSimWorker.ts src/worker/protocol.ts src/react/Simulation.tsx src/react/hooks.ts src/react/useSimulationCanvas.ts src/react/PerformanceOverlay.tsx src/react/SimulationContext.tsx src/react/EngineContext.tsx src/react/SimulationControls.tsx src/react/controlPrimitives.tsx src/react/stableCallback.ts --format esm,cjs --dts --clean --external react --external react-dom --external react/jsx-runtime && tsup src/engine.ts src/sim.ts --format esm --no-splitting --no-dts --outDir dist/standalone",
+    "build": "tsup src/engine.ts src/sim.ts src/state.ts src/random.ts src/canvas.ts src/worker/workerRunner.ts src/worker/createSimWorker.ts src/worker/protocol.ts src/react/Simulation.tsx src/react/hooks.ts src/react/useSimulationCanvas.ts src/react/PerformanceOverlay.tsx src/react/SimulationContext.tsx src/react/EngineContext.tsx src/react/SimulationControls.tsx src/react/controlPrimitives.tsx src/react/stableCallback.ts --format esm,cjs --dts --clean --external react --external react-dom --external react/jsx-runtime && tsup src/engine.ts src/sim.ts --format esm --no-splitting --no-dts --outDir dist/standalone",
     "test": "vitest run"
   },
   "exports": {
@@ -43,6 +43,11 @@
       "types": "./dist/sim.d.ts",
       "import": "./dist/sim.js",
       "require": "./dist/sim.cjs"
+    },
+    "./random": {
+      "types": "./dist/random.d.ts",
+      "import": "./dist/random.js",
+      "require": "./dist/random.cjs"
     },
     "./canvas": {
       "types": "./dist/canvas.d.ts",

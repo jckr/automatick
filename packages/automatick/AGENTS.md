@@ -65,6 +65,31 @@ export default defineSim<MyData, MyParams>({
 - Optional. Checked after each step. Return `true` to transition to `stopped` status.
 - Use for sims that reach equilibrium (Game of Life with no changes, segregation above happiness threshold).
 - Most sims don't need this — omit it.
+- It does not receive `random` — termination must be a deterministic function of state.
+
+### Rules for randomness
+
+- Use `random` from the step context instead of `Math.random`, so runs are
+  reproducible from their seed:
+
+  ```ts
+  init: (params, { random }) => ({ x: random() * params.width }),
+  step: ({ data, params, random }) => {
+    const dx = random() - 0.5;            // uniform [0, 1), like Math.random
+    const lane = random.int(0, 3);        // integer, BOTH bounds inclusive
+    const dir = random.pick(['N', 'E', 'S', 'W'] as const);
+    // ...
+  },
+  ```
+
+- `init` receives the same toolkit as an optional second argument — use it
+  for randomized initial state (random grids, agent positions, …).
+- Seed a run from the component: `<Simulation sim={mySim} seed={42}>` (numbers
+  or strings; captured at mount). When omitted, a random seed is generated and
+  recorded — read it back as `seed` from `useSimulation()` to display or copy.
+- Same seed ⇒ same run, and `resetWith()` replays the run from the same seed.
+- Avoid other ambient nondeterminism in `init`/`step`: no `Date.now()`,
+  `performance.now()`, or environment-dependent reads.
 
 ## Three Rendering Flavors
 

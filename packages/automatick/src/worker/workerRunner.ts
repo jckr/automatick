@@ -12,11 +12,18 @@ import { deserializeWorkerMessage, serializeMainMessage } from './serialize';
 
 export type WorkerRunnerConfig<Params> = {
   initialParams: Params;
+  /**
+   * The seed the worker engine was constructed with. Resolved on the main
+   * thread (see createSimWorker) so this side always knows it.
+   */
+  seed: number | string;
   config: WorkerConfig;
 };
 
 export type WorkerRunner<Data, Params> = {
   getSnapshot: () => State<Data, Params>;
+  /** The seed of the worker-side engine — known main-thread, never fetched over the wire. */
+  getSeed: () => number | string;
   subscribe: (
     listener: (snapshot: State<Data, Params>) => void
   ) => () => void;
@@ -101,6 +108,7 @@ export function createWorkerRunner<Data, Params>(
 
   return {
     getSnapshot: () => currentSnapshot,
+    getSeed: () => config.seed,
 
     subscribe(listener) {
       listeners.add(listener);
