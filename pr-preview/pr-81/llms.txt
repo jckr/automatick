@@ -1,0 +1,65 @@
+# automatick
+
+> automatick is a library for building tick-based simulations in React. You provide `init` (initial state), `step` (state → next state), and a renderer; the library runs the animation loop, the play/pause/stop state machine, timing, controls, and optional Web Worker offloading.
+
+Core model: a simulation is a single `defineSim({ defaultParams, init, step, shouldStop? })` module. Render it three ways — direct canvas (`useSimulationCanvas`, the common case), React DOM (`useSimulation` hook), or in a Web Worker for heavy `step` functions. The `<Simulation>` component wires state, controls, and timing together.
+
+Install: `npm install automatick` (React 18+ peer dependency, optional). Import paths: `automatick/sim`, `automatick/react/simulation`, `automatick/react/hooks`, `automatick/react/canvas`.
+
+## Getting started
+
+- [Getting started](https://jckr.github.io/automatick/guide/getting-started): Install and first simulation.
+- [Without React](https://jckr.github.io/automatick/guide/without-react): Use the engine standalone, no React.
+- [With React](https://jckr.github.io/automatick/guide/with-react): Render simulation state as JSX via the hook.
+- [With Canvas](https://jckr.github.io/automatick/guide/with-canvas): Render to a canvas with `useSimulationCanvas` (most common).
+- [With Worker](https://jckr.github.io/automatick/guide/with-worker): Offload an expensive `step` to a Web Worker.
+
+## Guide
+
+- [Tutorial](https://jckr.github.io/automatick/guide/tutorial): End-to-end build of a simulation.
+- [Defining a simulation](https://jckr.github.io/automatick/guide/defining-a-sim): Rules for `init`, `step`, and `shouldStop`.
+- [Simulation component](https://jckr.github.io/automatick/guide/simulation-component): `<Simulation>` props and modes.
+- [Using the hook](https://jckr.github.io/automatick/guide/using-the-hook): Reading state with `useSimulation`.
+- [Controls](https://jckr.github.io/automatick/guide/controls): Wiring user-tweakable params to UI.
+- [Canvas rendering](https://jckr.github.io/automatick/guide/canvas-rendering): DPR handling, ImageData grids, draw loop.
+- [Visualization patterns](https://jckr.github.io/automatick/guide/visualization-patterns): Agent, grid, trail, and theme-aware rendering recipes.
+
+## API reference
+
+- [defineSim](https://jckr.github.io/automatick/api/define-sim): Define a simulation module.
+- [&lt;Simulation&gt;](https://jckr.github.io/automatick/api/simulation): The React component and its props.
+- [useSimulation](https://jckr.github.io/automatick/api/use-simulation): Hook for subscribing to simulation state.
+- [Controls](https://jckr.github.io/automatick/api/controls): Control primitives and the controls API.
+- [createEngine](https://jckr.github.io/automatick/api/create-engine): Low-level engine without React.
+
+## Examples
+
+- [Dice](https://jckr.github.io/automatick/examples/dice): Minimal React-DOM example.
+- [Game of Life](https://jckr.github.io/automatick/examples/game-of-life): Classic cellular automaton on a grid.
+- [1D automata](https://jckr.github.io/automatick/examples/automata-1d): Elementary one-dimensional rules.
+- [Percolation](https://jckr.github.io/automatick/examples/percolation): Cluster formation on a lattice.
+- [Activators](https://jckr.github.io/automatick/examples/activators): Reaction-style activation patterns.
+- [Langton's ant](https://jckr.github.io/automatick/examples/langton-ant): Turmite producing emergent highways.
+- [Segregation](https://jckr.github.io/automatick/examples/segregation): Schelling model with `shouldStop` at equilibrium.
+- [N-body gravity](https://jckr.github.io/automatick/examples/gravity): Particle gravity with trail rendering.
+- [Boids](https://jckr.github.io/automatick/examples/boids): Flocking agents.
+- [Predator–Prey](https://jckr.github.io/automatick/examples/predator-prey): Population dynamics.
+- [Snake](https://jckr.github.io/automatick/examples/snake): Grid game loop.
+- [Mazes](https://jckr.github.io/automatick/examples/mazes): Maze generation.
+- [Chaos game](https://jckr.github.io/automatick/examples/chaos-game): Fractal point plotting.
+- [XOR ring](https://jckr.github.io/automatick/examples/worker-canvas): Worker-mode canvas example.
+- [Gray-Scott](https://jckr.github.io/automatick/examples/gray-scott): Reaction-diffusion field.
+- [Stable fluids](https://jckr.github.io/automatick/examples/stable-fluids): Fluid solver.
+- [Abelian sandpile](https://jckr.github.io/automatick/examples/sandpile): Self-organized criticality.
+- [SPH fluid](https://jckr.github.io/automatick/examples/sph-fluid): Smoothed-particle hydrodynamics.
+- [Ising model](https://jckr.github.io/automatick/examples/ising): Statistical-mechanics spin lattice.
+- [Ant colony](https://jckr.github.io/automatick/examples/ant-colony): Pheromone-based foraging.
+- [Traffic](https://jckr.github.io/automatick/examples/traffic): Cellular traffic flow.
+- [Falling sand](https://jckr.github.io/automatick/examples/falling-sand): Falling-sand cellular automaton.
+- [Settlement growth](https://jckr.github.io/automatick/examples/settlement): Procedural settlement expansion.
+- [Hydraulic erosion](https://jckr.github.io/automatick/examples/erosion): Terrain erosion simulation.
+
+## Optional
+
+- [npm package](https://www.npmjs.com/package/automatick): Released versions.
+- [GitHub repository](https://github.com/jckr/automatick): Source, issues, and contribution guide.
