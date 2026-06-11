@@ -106,19 +106,28 @@ When using `worker`, the type parameter on `useSimulation` must be provided expl
 An identity function that enables type inference. Returns its argument unchanged.
 
 ```ts
-type SimInit<Data, Params> = ((params: Params) => Data) | Data;
+/** Engine-provided tools handed to init/step. Future capabilities are added here. */
+type SimToolkit = { random: SimRandom };
+
+/** What `step` receives: the state snapshot plus the toolkit, flattened. */
+type StepContext<Data, Params> = State<Data, Params> & SimToolkit;
+
+type SimInit<Data, Params> =
+  | ((params: Params, toolkit: SimToolkit) => Data)
+  | Data;
 
 type SimModule<Data, Params = Record<string, never>> = {
   /**
    * Initial simulation state — either a value of type `Data`, or a function
-   * `(params) => Data`. Use the function form when init depends on params;
-   * otherwise pass the value directly. Called once at engine creation and on
-   * resetWith().
+   * `(params, toolkit) => Data`. Use the function form when init depends on
+   * params or needs seeded randomness; otherwise pass the value directly.
+   * The toolkit argument is optional to accept — one-arg `(params) => Data`
+   * functions remain valid. Called once at engine creation and on resetWith().
    */
   init: SimInit<Data, Params>;
 
   /** Advance the simulation by one tick. Must be pure and synchronous. */
-  step: (state: State<Data, Params>) => Data;
+  step: (ctx: StepContext<Data, Params>) => Data;
 
   /** Optional termination predicate. Checked after each step. */
   shouldStop?: (data: Data, params: Params) => boolean;
@@ -132,7 +141,9 @@ type SimModule<Data, Params = Record<string, never>> = {
 };
 ```
 
-`step`, `getSnapshot`, and the `render` callback all operate on the same engine state, so they share one type — `State<Data, Params>`. See section 7.
+`step`, `getSnapshot`, and the `render` callback all operate on the same engine state, so they share one type — `State<Data, Params>`. See section 7. `State` itself is unchanged by the toolkit: it remains the serializable snapshot/wire type. The toolkit is composed in at the `step` call site only (`StepContext = State & SimToolkit`) — it never crosses `postMessage` and never appears in `getSnapshot()`. Author-facing call sites read naturally: `step({ data, params, tick, random })`.
+
+`shouldStop` deliberately does **not** receive the toolkit — termination must be a deterministic function of state.
 
 `Data` must be structured-cloneable: it crosses the worker boundary via `postMessage` and the engine `structuredClone`s data-form `init` values on every (re)init. As a consequence, `Data` must not itself be a function.
 
@@ -297,12 +308,18 @@ type UseSimulationHistoryReturn<Data> = {
 
 ```ts
 type EngineConfig<Data, Params = Record<string, never>> = {
-  /** Value or `(params) => Data`. See SimInit in section 4. */
+  /** Value or `(params, toolkit) => Data`. See SimInit in section 4. */
   init: SimInit<Data, Params>;
-  step: (state: State<Data, Params>) => Data;
+  step: (ctx: StepContext<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   /** Optional — when omitted, the engine seeds `params` with `{}`. */
   initialParams?: Params;
+  /**
+   * Seed for the engine's SimRandom. Number or string. When omitted, the
+   * engine picks a random numeric seed at construction and records it —
+   * `getSeed()` always returns the seed that reproduces the run.
+   */
+  seed?: number | string;
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
@@ -328,6 +345,8 @@ type State<Data, Params> = {
 
 type SimulationEngine<Data, Params> = {
   getSnapshot: () => State<Data, Params>;
+  /** The seed driving this engine's SimRandom — configured or recorded default. */
+  getSeed: () => number | string;
   subscribe: (listener: (snapshot: State<Data, Params>) => void) => () => void;
   subscribeHistory: (listener: (entry: { tick: number; data: Data }) => void) => () => void;
 
@@ -349,6 +368,36 @@ type SimulationEngine<Data, Params> = {
 **Data-form init cloning:** When `init` is a value, the engine `structuredClone`s it once at construction (so later mutations to the source can't leak in) and again on every (re)init (so step mutations don't persist across resets).
 
 **`render` config option (vanilla DX sugar):** When `config.render` is provided, the engine subscribes it as a listener and invokes it once with the initial state at construction time. From then on it fires on every emit, identically to a manually-wired `subscribe(render)`. This eliminates the two-line boilerplate (`engine.subscribe(render); render(engine.getSnapshot())`) for callers who don't have another reactive layer driving rendering. `subscribe` remains the lower-level primitive; React adapter and worker callers wire their own subscribers explicitly and should not pass `render`.
+
+### Seeded randomness & determinism
+
+The engine derives one `SimRandom` per run from `config.seed` (a vendored
+splitmix32 PRNG; string seeds are hashed to a 32-bit int) and hands it to
+`init` and `step`. The rules that make runs reproducible:
+
+- **Same-seed reset semantics.** `resetWith()` re-derives the generator from
+  the same seed, so a reset replays the original run exactly. This is a
+  resolved design decision: reset means "run it again", not "run a different
+  one". To get a different run, construct a new engine (or remount
+  `<Simulation>` via `key`) with a different seed.
+- **The recorded-default-seed trick.** When `seed` is omitted, the engine picks
+  a random numeric seed at construction and *records* it. `getSeed()` returns
+  it, so any run — even an unseeded one — can be reproduced after the fact by
+  passing the recorded seed back in. In worker mode the default seed is
+  resolved on the main thread before the init message, so the main thread
+  always knows it (exposed as `seed` on the React context).
+- **Per-JS-engine reproducibility caveat.** The PRNG itself is exact integer
+  arithmetic and bit-identical everywhere, but transcendental `Math`
+  functions (`Math.sin`, `Math.exp`, `Math.pow`, …) are implementation-defined
+  and may differ in the last ulp across JS engines. Same seed + same JS engine
+  ⇒ bit-identical run; across engines, sims using transcendentals may diverge.
+- **Sim-authoring rule.** A sim is only as deterministic as its inputs: draw
+  all randomness from the toolkit's `random` (never `Math.random`) and avoid
+  ambient nondeterminism — `Date.now()`, `performance.now()`, locale- or
+  environment-dependent APIs — inside `init`/`step`.
+
+Deferred (out of scope for now): a `reseed()` API, replay/backward-seek, and
+input recording.
 
 ### State Machine
 
@@ -421,7 +470,10 @@ The worker is a black box that produces snapshots on its own schedule. Communica
 
 ```ts
 type MainToWorkerMessage =
-  | { kind: 'init'; params: Params; config: WorkerConfig }
+  // `seed` is resolved on the main thread (random default generated there
+  // when absent) so the main thread always knows it. Only the seed — plain
+  // data — crosses the wire; the SimRandom it derives lives worker-side.
+  | { kind: 'init'; params: Params; seed: number | string; config: WorkerConfig }
   | { kind: 'play' }
   | { kind: 'pause' }
   | { kind: 'stop' }

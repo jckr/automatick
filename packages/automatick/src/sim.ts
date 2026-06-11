@@ -1,16 +1,39 @@
 import type { State } from './state';
+import type { SimRandom } from './random';
+
+export type { SimRandom } from './random';
+
+/**
+ * Engine-provided tools handed to `init` and `step` alongside the state.
+ * Currently just seeded randomness; future capabilities (e.g. recorded
+ * inputs) will be added here without changing the `init`/`step` signatures.
+ *
+ * The toolkit is composed in at the call site only — it is not part of
+ * `State`, never crosses the worker wire, and never appears in snapshots.
+ */
+export type SimToolkit = { random: SimRandom };
+
+/**
+ * The argument `step` receives: the engine state snapshot plus the toolkit.
+ * Author-facing call sites destructure it as `{ data, params, tick, random }`.
+ */
+export type StepContext<Data, Params> = State<Data, Params> & SimToolkit;
 
 /**
  * Initial state for a simulation. Either a value of type `Data`, or a function
- * `(params) => Data`. The function form is required when the initial state
- * depends on params; otherwise pass the value directly.
+ * `(params, toolkit) => Data`. The function form is required when the initial
+ * state depends on params or needs seeded randomness; otherwise pass the value
+ * directly. The `toolkit` argument is optional to accept — one-arg
+ * `(params) => Data` functions remain valid.
  *
  * `Data` itself must not be a function — it has to be structured-cloneable so
  * it can cross the worker boundary and be safely re-emitted on resetWith.
  * That's what makes this union unambiguous: a `function` value is always the
- * `(params) => Data` branch.
+ * `(params, toolkit) => Data` branch.
  */
-export type SimInit<Data, Params> = ((params: Params) => Data) | Data;
+export type SimInit<Data, Params> =
+  | ((params: Params, toolkit: SimToolkit) => Data)
+  | Data;
 
 /**
  * Type guard that narrows a `SimInit` to its function branch. Defined as a
@@ -18,7 +41,7 @@ export type SimInit<Data, Params> = ((params: Params) => Data) | Data;
  */
 export function isInitFn<Data, Params>(
   init: SimInit<Data, Params>
-): init is (params: Params) => Data {
+): init is (params: Params, toolkit: SimToolkit) => Data {
   return typeof init === 'function';
 }
 
@@ -31,10 +54,18 @@ export type SimModule<Data, Params = Record<string, never>> = {
    */
   init: SimInit<Data, Params>;
 
-  /** Advance the simulation by one tick. Must be pure and synchronous. */
-  step: (state: State<Data, Params>) => Data;
+  /**
+   * Advance the simulation by one tick. Must be pure and synchronous —
+   * draw randomness from `ctx.random`, never `Math.random`, so runs are
+   * reproducible from their seed.
+   */
+  step: (ctx: StepContext<Data, Params>) => Data;
 
-  /** Optional termination predicate. Checked after each step. If it returns true, the simulation stops. */
+  /**
+   * Optional termination predicate. Checked after each step. If it returns
+   * true, the simulation stops. Deliberately receives no toolkit —
+   * termination must be a deterministic function of state.
+   */
   shouldStop?: (data: Data, params: Params) => boolean;
 
   /**

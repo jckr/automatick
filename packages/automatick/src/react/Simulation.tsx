@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SimInit, SimModule } from '../sim';
+import type { SimInit, SimModule, StepContext } from '../sim';
 import { createEngine } from '../engine';
 import type { SimulationEngine, TickPerformance } from '../engine';
 import type { State } from '../state';
@@ -19,6 +19,14 @@ type SimulationPropsCommon<Params> = {
   delayMs?: number;
   ticksPerFrame?: number;
   autoplay?: boolean;
+  /**
+   * Seed for the simulation's `SimRandom`. When omitted, a random numeric
+   * seed is generated and recorded — read it back as `seed` from
+   * `useSimulation()`. Captured at mount (like `sim`): changing it
+   * mid-session is not live-applied. Change the component's `key` to remount
+   * with a new seed.
+   */
+  seed?: number | string;
   children?: React.ReactNode;
 };
 
@@ -56,7 +64,7 @@ type SimulationPropsInline<Data, Params> = SimulationPropsCommon<Params> & {
   sim?: never;
   worker?: never;
   init: SimInit<Data, Params>;
-  step: (state: State<Data, Params>) => Data;
+  step: (ctx: StepContext<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   defaultParams?: Params;
 };
@@ -71,6 +79,7 @@ export type SimulationProps<Data, Params = Record<string, never>> =
  */
 type Backend<Data, Params> = {
   getSnapshot: () => State<Data, Params>;
+  getSeed: () => number | string;
   subscribe: (
     listener: (snapshot: State<Data, Params>) => void
   ) => () => void;
@@ -98,7 +107,7 @@ type Backend<Data, Params> = {
  */
 type LocalSimulationProps<Data, Params> = SimulationPropsCommon<Params> & {
   init: SimInit<Data, Params>;
-  step: (state: State<Data, Params>) => Data;
+  step: (ctx: StepContext<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   defaultParams?: Params;
 };
@@ -134,6 +143,8 @@ function LocalSimulation<Data, Params>(props: LocalSimulationProps<Data, Params>
       step,
       shouldStop,
       initialParams,
+      // Captured at mount — later changes to the seed prop are not applied.
+      seed: props.seed,
       maxTime: props.maxTime,
       delayMs: props.delayMs,
       ticksPerFrame: props.ticksPerFrame,
@@ -224,11 +235,17 @@ function WorkerSimulation<Data, Params>(
   React.useEffect(() => {
     const moduleUrl = props.worker.toString();
     const initialParams = (props.params ?? {}) as Params;
+    // Resolve the seed on the main thread (captured at mount, like the
+    // module URL) so this side always knows it — it goes out in the init
+    // message and is exposed on the context for display/copy. The SimRandom
+    // it derives lives worker-side.
+    const seed = props.seed ?? Math.floor(Math.random() * 0x100000000);
 
     const worker = createSimWorker<Params>({
       moduleUrl,
       engineUrl: engineUrl(),
       initialParams,
+      seed,
       config: {
         maxTime: props.maxTime,
         delayMs: props.delayMs,
@@ -239,6 +256,7 @@ function WorkerSimulation<Data, Params>(
 
     const r = createWorkerRunner<Data, Params>(worker, {
       initialParams,
+      seed,
       config: {
         maxTime: props.maxTime,
         delayMs: props.delayMs,
@@ -328,6 +346,7 @@ function SimulationProvider<Data, Params>({
       params: snapshot.params,
       tick: snapshot.tick,
       status: snapshot.status,
+      seed: backend.getSeed(),
       play,
       pause,
       stop,
@@ -336,7 +355,7 @@ function SimulationProvider<Data, Params>({
       setParams,
       resetWith,
     }),
-    [snapshot, play, pause, stop, seek, advance, setParams, resetWith]
+    [snapshot, backend, play, pause, stop, seek, advance, setParams, resetWith]
   );
 
   // Engine context for direct subscription (used by useSimulationCanvas)
