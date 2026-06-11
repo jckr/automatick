@@ -1257,3 +1257,225 @@ describe('seeded randomness', () => {
     expect(engine.getSnapshot().data).toBe(5);
   });
 });
+
+// ===========================================================================
+// Category 13: Inputs (per-tick perturbation channel)
+// ===========================================================================
+
+describe('inputs', () => {
+  type Stroke = { x: number; y: number };
+
+  /**
+   * Sim that records, per tick, the exact `inputs` array reference it was
+   * handed — lets tests assert delivery order, emptiness, and identity.
+   */
+  function recordingConfig(overrides?: {
+    ticksPerFrame?: number;
+    maxQueuedInputs?: number;
+  }) {
+    const perTick: Array<{ tick: number; inputs: readonly Stroke[] }> = [];
+    return {
+      config: {
+        init: () => 0,
+        step: ({
+          data,
+          tick,
+          inputs,
+        }: StepContext<number, Record<string, never>, Stroke>) => {
+          perTick.push({ tick, inputs });
+          return data + 1;
+        },
+        ...overrides,
+      },
+      perTick,
+    };
+  }
+
+  it('multiple sends between ticks all arrive on the next tick, in send order', () => {
+    const { config, perTick } = recordingConfig();
+    const engine = createEngine(config);
+    engine.send({ x: 1, y: 1 });
+    engine.send({ x: 2, y: 2 });
+    engine.send({ x: 3, y: 3 });
+    engine.advance(1);
+    expect(perTick).toHaveLength(1);
+    expect(perTick[0].inputs).toEqual([
+      { x: 1, y: 1 },
+      { x: 2, y: 2 },
+      { x: 3, y: 3 },
+    ]);
+  });
+
+  it('ticks with nothing queued receive the same shared empty array (identity)', () => {
+    const { config, perTick } = recordingConfig();
+    const engine = createEngine(config);
+    engine.advance(1);
+    engine.advance(1);
+    expect(perTick[0].inputs).toEqual([]);
+    expect(perTick[1].inputs).toBe(perTick[0].inputs);
+    expect(Object.isFrozen(perTick[0].inputs)).toBe(true);
+  });
+
+  it('inputs are consumed once: every tick after delivery sees the empty array', () => {
+    const { config, perTick } = recordingConfig();
+    const engine = createEngine(config);
+    engine.send({ x: 1, y: 1 });
+    engine.advance(1);
+    engine.advance(3);
+    expect(perTick[0].inputs).toEqual([{ x: 1, y: 1 }]);
+    for (const entry of perTick.slice(1)) {
+      expect(entry.inputs).toEqual([]);
+      expect(entry.inputs).toBe(perTick[1].inputs); // shared identity
+    }
+  });
+
+  it('ticksPerFrame > 1: the whole queue goes to the first tick of the batch only', () => {
+    const { config, perTick } = recordingConfig({ ticksPerFrame: 4 });
+    const engine = createEngine(config);
+    engine.send({ x: 1, y: 1 });
+    engine.send({ x: 2, y: 2 });
+    engine.play();
+    engine.handleAnimationFrame(0); // baseline
+    engine.handleAnimationFrame(16); // batch of 4 ticks
+    expect(perTick).toHaveLength(4);
+    expect(perTick[0].inputs).toEqual([
+      { x: 1, y: 1 },
+      { x: 2, y: 2 },
+    ]);
+    expect(perTick[1].inputs).toEqual([]);
+    expect(perTick[2].inputs).toEqual([]);
+    expect(perTick[3].inputs).toEqual([]);
+  });
+
+  it('advance(n) is one batch: queue delivered to its first tick only', () => {
+    const { config, perTick } = recordingConfig();
+    const engine = createEngine(config);
+    engine.send({ x: 9, y: 9 });
+    engine.advance(3);
+    expect(perTick[0].inputs).toEqual([{ x: 9, y: 9 }]);
+    expect(perTick[1].inputs).toEqual([]);
+    expect(perTick[2].inputs).toEqual([]);
+  });
+
+  it('inputs sent while idle queue up and deliver on the next advance()', () => {
+    const { config, perTick } = recordingConfig();
+    const engine = createEngine(config);
+    expect(engine.getStatus()).toBe('idle');
+    engine.send({ x: 5, y: 5 });
+    engine.advance(1);
+    expect(perTick[0].inputs).toEqual([{ x: 5, y: 5 }]);
+  });
+
+  it('inputs sent while paused queue up and deliver on the next play() tick', () => {
+    const { config, perTick } = recordingConfig();
+    const engine = createEngine(config);
+    engine.advance(1); // -> paused
+    expect(engine.getStatus()).toBe('paused');
+    engine.send({ x: 7, y: 7 });
+    engine.play();
+    engine.handleAnimationFrame(0); // baseline
+    engine.handleAnimationFrame(16); // first playing tick
+    expect(perTick).toHaveLength(2);
+    expect(perTick[1].inputs).toEqual([{ x: 7, y: 7 }]);
+  });
+
+  it('send while stopped is dropped silently', () => {
+    const { config, perTick } = recordingConfig();
+    const engine = createEngine(config);
+    engine.play();
+    engine.stop();
+    engine.send({ x: 1, y: 1 });
+    engine.resetWith();
+    engine.advance(1);
+    expect(perTick.at(-1)?.inputs).toEqual([]);
+  });
+
+  it('resetWith() clears the queue', () => {
+    const { config, perTick } = recordingConfig();
+    const engine = createEngine(config);
+    engine.send({ x: 1, y: 1 });
+    engine.send({ x: 2, y: 2 });
+    engine.resetWith();
+    engine.advance(1);
+    expect(perTick[0].inputs).toEqual([]);
+  });
+
+  it('bounded queue drops the oldest inputs beyond maxQueuedInputs', () => {
+    const { config, perTick } = recordingConfig({ maxQueuedInputs: 3 });
+    const engine = createEngine(config);
+    for (let i = 1; i <= 5; i++) {
+      engine.send({ x: i, y: i });
+    }
+    engine.advance(1);
+    expect(perTick[0].inputs).toEqual([
+      { x: 3, y: 3 },
+      { x: 4, y: 4 },
+      { x: 5, y: 5 },
+    ]);
+  });
+
+  it('init receives the toolkit with empty inputs', () => {
+    const initSpy = vi.fn(() => 0);
+    const engine = createEngine({
+      init: initSpy,
+      step: ({ data }: StepContext<number, Record<string, never>, Stroke>) =>
+        data,
+    });
+    engine.send({ x: 1, y: 1 });
+    expect(initSpy).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ random: expect.any(Function), inputs: [] })
+    );
+    engine.resetWith(); // re-init with a (cleared) queue — still empty inputs
+    expect(initSpy).toHaveBeenLastCalledWith(
+      {},
+      expect.objectContaining({ inputs: [] })
+    );
+  });
+
+  it('inputs never appear in snapshots (State is unchanged)', () => {
+    const { config } = recordingConfig();
+    const engine = createEngine(config);
+    engine.send({ x: 1, y: 1 });
+    engine.advance(1);
+    const snap = engine.getSnapshot();
+    expect(Object.keys(snap).sort()).toEqual([
+      'data',
+      'params',
+      'status',
+      'stepDurationMs',
+      'tick',
+    ]);
+  });
+
+  it('same seed + same send sequence (interleaved with advances) => identical run', () => {
+    function run(seed: number) {
+      const engine = createEngine({
+        init: (): { trail: number[] } => ({ trail: [] }),
+        step: ({
+          data,
+          random,
+          inputs,
+        }: StepContext<
+          { trail: number[] },
+          Record<string, never>,
+          Stroke
+        >) => {
+          const jitter = random();
+          const pushed = inputs.map((s) => s.x + s.y + jitter);
+          return { trail: [...data.trail, ...pushed, random()] };
+        },
+        seed,
+      });
+      engine.advance(2);
+      engine.send({ x: 1, y: 2 });
+      engine.advance(1);
+      engine.send({ x: 3, y: 4 });
+      engine.send({ x: 5, y: 6 });
+      engine.advance(3);
+      return engine.getSnapshot().data;
+    }
+    expect(run(42)).toEqual(run(42));
+    expect(run(42)).not.toEqual(run(43));
+  });
+});

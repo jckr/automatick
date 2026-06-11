@@ -20,7 +20,7 @@ export type WorkerRunnerConfig<Params> = {
   config: WorkerConfig;
 };
 
-export type WorkerRunner<Data, Params> = {
+export type WorkerRunner<Data, Params, Input = never> = {
   getSnapshot: () => State<Data, Params>;
   /** The seed of the worker-side engine — known main-thread, never fetched over the wire. */
   getSeed: () => number | string;
@@ -36,6 +36,12 @@ export type WorkerRunner<Data, Params> = {
   setParams: (patch: Partial<Params>) => void;
   resetWith: (patch?: Partial<Params>) => void;
   setConfig: (patch: Partial<WorkerConfig>) => void;
+  /**
+   * Queue a transient perturbation event on the worker-side engine. One
+   * postMessage per input — inputs are never coalesced, so every send
+   * reaches the sim even though snapshots coming back are throttled.
+   */
+  send: (input: Input) => void;
 
   /**
    * Record a draw time for a tick. Draws happen on the main thread, so
@@ -49,10 +55,10 @@ export type WorkerRunner<Data, Params> = {
 
 const PERF_BUFFER_SIZE = 120;
 
-export function createWorkerRunner<Data, Params>(
+export function createWorkerRunner<Data, Params, Input = never>(
   worker: Worker,
   config: WorkerRunnerConfig<Params>
-): WorkerRunner<Data, Params> {
+): WorkerRunner<Data, Params, Input> {
   const listeners = new Set<(snapshot: State<Data, Params>) => void>();
 
   let currentSnapshot: State<Data, Params> = {
@@ -67,7 +73,7 @@ export function createWorkerRunner<Data, Params>(
   // buffer holds one entry per emitted snapshot — not per tick.
   const perfBuffer: TickPerformance[] = [];
 
-  function send(msg: MainToWorkerMessage<Params>) {
+  function post(msg: MainToWorkerMessage<Params, Input>) {
     worker.postMessage(serializeMainMessage(msg));
   }
 
@@ -117,17 +123,18 @@ export function createWorkerRunner<Data, Params>(
       };
     },
 
-    play: () => send({ kind: 'play' }),
-    pause: () => send({ kind: 'pause' }),
-    stop: () => send({ kind: 'stop' }),
-    seek: (tick: number) => send({ kind: 'seek', tick }),
-    advance: (count = 1) => send({ kind: 'advance', count }),
+    play: () => post({ kind: 'play' }),
+    pause: () => post({ kind: 'pause' }),
+    stop: () => post({ kind: 'stop' }),
+    seek: (tick: number) => post({ kind: 'seek', tick }),
+    advance: (count = 1) => post({ kind: 'advance', count }),
     setParams: (patch: Partial<Params>) =>
-      send({ kind: 'setParams', patch }),
+      post({ kind: 'setParams', patch }),
     resetWith: (patch?: Partial<Params>) =>
-      send({ kind: 'resetWith', patch }),
+      post({ kind: 'resetWith', patch }),
     setConfig: (patch: Partial<WorkerConfig>) =>
-      send({ kind: 'setConfig', patch }),
+      post({ kind: 'setConfig', patch }),
+    send: (input: Input) => post({ kind: 'input', input }),
 
     recordDrawTime(tick, ms) {
       for (let i = perfBuffer.length - 1; i >= 0; i--) {
@@ -141,7 +148,7 @@ export function createWorkerRunner<Data, Params>(
 
     destroy() {
       listeners.clear();
-      send({ kind: 'destroy' });
+      post({ kind: 'destroy' });
       worker.terminate();
     },
   };

@@ -91,6 +91,54 @@ export default defineSim<MyData, MyParams>({
 - Avoid other ambient nondeterminism in `init`/`step`: no `Date.now()`,
   `performance.now()`, or environment-dependent reads.
 
+### Rules for inputs
+
+- **Params vs inputs:** params are persistent configuration the sim consults
+  every tick (`setParams`); inputs are transient, consumed-once perturbation
+  events delivered to exactly one tick (`send`). Brush *size* is a param;
+  brush *strokes* are inputs. Direction changes, cell toggles, paint strokes —
+  if it happens once and perturbs the run, it's an input.
+- Declare the input type as `defineSim`'s third generic and read `inputs`
+  from the step context:
+
+  ```ts
+  type Stroke = { x: number; y: number };
+
+  export default defineSim<PaintData, PaintParams, Stroke>({
+    defaultParams: { brushSize: 2 },        // persistent config: a param
+    init: (params) => ({ grid: makeGrid(params) }),
+    step: ({ data, params, inputs }) => {
+      for (const stroke of inputs) {        // consumed-once events: inputs
+        paint(data.grid, stroke, params.brushSize);
+      }
+      return diffuse(data);
+    },
+  });
+  ```
+
+  In the component, translate browser events yourself and call the `send`
+  action from `useSimulation()` — the library has no DOM awareness:
+
+  ```tsx
+  const { send } = useSimulation<typeof paintSim>();
+  // e.g. in a canvas onPointerMove handler:
+  send({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
+  ```
+
+- Delivery is tick-based: everything sent since the last tick advance arrives
+  in the next tick's `inputs`, in send order; ticks with nothing queued see an
+  empty array. Inputs are never coalesced — every `send` reaches the sim —
+  but there are no latency guarantees (an input lands on the next tick,
+  whenever that is). Sent while `paused`/`idle` they queue; while `stopped`
+  they're dropped; `resetWith()` clears the queue. The queue is bounded
+  (`maxQueuedInputs` prop, default 1024, drop-oldest).
+- `Input` values must be structured-cloneable, same as `Data` — in worker
+  mode each one crosses `postMessage`.
+- The old params-as-signal pattern — smuggling events through `setParams`
+  with sentinel values like `paintX: -1` for "no stroke" — is **unblessed**:
+  don't use it in new code. Existing docs-site demos that do are slated for
+  migration to `send`/`inputs` (#79).
+
 ## Three Rendering Flavors
 
 ### 1. Canvas (most common)

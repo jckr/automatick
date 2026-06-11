@@ -101,33 +101,37 @@ When using `worker`, the type parameter on `useSimulation` must be provided expl
 
 ## 4. The Sim Module Contract
 
-### `defineSim<Data, Params>(module): SimModule<Data, Params>`
+### `defineSim<Data, Params, Input>(module): SimModule<Data, Params, Input>`
 
 An identity function that enables type inference. Returns its argument unchanged.
 
 ```ts
-/** Engine-provided tools handed to init/step. Future capabilities are added here. */
-type SimToolkit = { random: SimRandom };
+/**
+ * Engine-provided tools handed to init/step. Seeded randomness plus the
+ * inputs delivered for the current tick. Future capabilities are added here.
+ */
+type SimToolkit<Input = never> = { random: SimRandom; inputs: readonly Input[] };
 
 /** What `step` receives: the state snapshot plus the toolkit, flattened. */
-type StepContext<Data, Params> = State<Data, Params> & SimToolkit;
+type StepContext<Data, Params, Input = never> = State<Data, Params> & SimToolkit<Input>;
 
-type SimInit<Data, Params> =
-  | ((params: Params, toolkit: SimToolkit) => Data)
+type SimInit<Data, Params, Input = never> =
+  | ((params: Params, toolkit: SimToolkit<Input>) => Data)
   | Data;
 
-type SimModule<Data, Params = Record<string, never>> = {
+type SimModule<Data, Params = Record<string, never>, Input = never> = {
   /**
    * Initial simulation state — either a value of type `Data`, or a function
    * `(params, toolkit) => Data`. Use the function form when init depends on
    * params or needs seeded randomness; otherwise pass the value directly.
    * The toolkit argument is optional to accept — one-arg `(params) => Data`
    * functions remain valid. Called once at engine creation and on resetWith().
+   * The toolkit's `inputs` is always the empty array at init time.
    */
-  init: SimInit<Data, Params>;
+  init: SimInit<Data, Params, Input>;
 
   /** Advance the simulation by one tick. Must be pure and synchronous. */
-  step: (ctx: StepContext<Data, Params>) => Data;
+  step: (ctx: StepContext<Data, Params, Input>) => Data;
 
   /** Optional termination predicate. Checked after each step. */
   shouldStop?: (data: Data, params: Params) => boolean;
@@ -141,11 +145,13 @@ type SimModule<Data, Params = Record<string, never>> = {
 };
 ```
 
-`step`, `getSnapshot`, and the `render` callback all operate on the same engine state, so they share one type — `State<Data, Params>`. See section 7. `State` itself is unchanged by the toolkit: it remains the serializable snapshot/wire type. The toolkit is composed in at the `step` call site only (`StepContext = State & SimToolkit`) — it never crosses `postMessage` and never appears in `getSnapshot()`. Author-facing call sites read naturally: `step({ data, params, tick, random })`.
+`step`, `getSnapshot`, and the `render` callback all operate on the same engine state, so they share one type — `State<Data, Params>`. See section 7. `State` itself is unchanged by the toolkit: it remains the serializable snapshot/wire type. The toolkit is composed in at the `step` call site only (`StepContext = State & SimToolkit`) — it never crosses `postMessage` and never appears in `getSnapshot()`. Author-facing call sites read naturally: `step({ data, params, tick, random, inputs })`.
+
+**Params vs inputs.** Params are persistent configuration — they stay set until changed and live in `State`. Inputs are transient, consumed-once perturbation events — delivered to exactly one tick's `inputs` array and then gone, never appearing in snapshots. Stated crisply: **brush size is a param; brush strokes are inputs.** A direction change, a cell toggle, a paint stroke — anything that *happens once* and perturbs the run — is an input, sent via `engine.send()` (or the React `send()` action) and read from `ctx.inputs`. Anything the sim *consults every tick* is a param. `Input` defaults to `never`, so all two-generic sims compile unchanged and cannot be sent anything. Delivery semantics live in section 7.
 
 `shouldStop` deliberately does **not** receive the toolkit — termination must be a deterministic function of state.
 
-`Data` must be structured-cloneable: it crosses the worker boundary via `postMessage` and the engine `structuredClone`s data-form `init` values on every (re)init. As a consequence, `Data` must not itself be a function.
+`Data` must be structured-cloneable: it crosses the worker boundary via `postMessage` and the engine `structuredClone`s data-form `init` values on every (re)init. As a consequence, `Data` must not itself be a function. The same structured-cloneable rule applies to `Input`: in worker mode each input crosses the wire via `postMessage` on its own.
 
 **Why this shape:**
 
@@ -169,6 +175,7 @@ type SimulationPropsCommon<Params> = {
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
+  maxQueuedInputs?: number;
   autoplay?: boolean;
   children?: React.ReactNode;
 };
@@ -233,6 +240,7 @@ The inline form is main-thread only — worker mode requires a module file the b
 | `maxTime` | `number` | `undefined` | If set, engine stops when tick reaches this value. |
 | `delayMs` | `number` | `0` | Minimum wall-clock milliseconds between tick advances. |
 | `ticksPerFrame` | `number` | `1` | How many ticks to advance per animation frame (main-thread) or timer call (worker). |
+| `maxQueuedInputs` | `number` | `1024` | Bound on the engine's input queue (drop-oldest). All three modes; in worker mode it rides in the init message. |
 | `snapshotIntervalMs` | `number` | `16` | Worker only. Minimum interval between snapshot messages to main thread. |
 | `autoplay` | `boolean` | `false` | If true, start playing immediately on mount. |
 | `children` | `ReactNode` | — | Child components that consume simulation state via hooks. |
@@ -247,12 +255,12 @@ The inline form is main-thread only — worker mode requires a module file the b
 
 ## 6. The Hook API
 
-### `useSimulation<Data, Params>()`
+### `useSimulation<Data, Params, Input>()`
 
-Returns simulation state and actions from the nearest `<Simulation>` provider.
+Returns simulation state and actions from the nearest `<Simulation>` provider. `send` is an *action*, like `setParams` — component authors call `send`, sim authors read `inputs`; neither sees the other's side. With `Input = never` (the default), `send` is effectively uncallable, which is correct for sims that declare no input type.
 
 ```ts
-type UseSimulationReturn<Data, Params> = {
+type UseSimulationReturn<Data, Params, Input = never> = {
   // State
   data: Data;
   params: Params;
@@ -267,6 +275,7 @@ type UseSimulationReturn<Data, Params> = {
   advance: (count?: number) => void;
   setParams: (patch: Partial<Params>) => void;
   resetWith: (patch?: Partial<Params>) => void;
+  send: (input: Input) => void;
 };
 
 type SimulationStatus = 'idle' | 'playing' | 'paused' | 'stopped';
@@ -280,7 +289,7 @@ const { data } = useSimulation<typeof counterSim>();
 // data is inferred as { count: number }
 ```
 
-This works via a conditional type that extracts `Data` and `Params` from `SimModule<Data, Params>`.
+This works via a conditional type that extracts `Data`, `Params`, and `Input` from `SimModule<Data, Params, Input>` — `send` arrives typed as `(input: Input) => void` with no annotation at the call site.
 
 ### `useSimulationHistory<Data>(policy?)`
 
@@ -304,13 +313,13 @@ type UseSimulationHistoryReturn<Data> = {
 
 ## 7. The Engine API
 
-### `createEngine<Data, Params>(config): SimulationEngine<Data, Params>`
+### `createEngine<Data, Params, Input>(config): SimulationEngine<Data, Params, Input>`
 
 ```ts
-type EngineConfig<Data, Params = Record<string, never>> = {
+type EngineConfig<Data, Params = Record<string, never>, Input = never> = {
   /** Value or `(params, toolkit) => Data`. See SimInit in section 4. */
-  init: SimInit<Data, Params>;
-  step: (ctx: StepContext<Data, Params>) => Data;
+  init: SimInit<Data, Params, Input>;
+  step: (ctx: StepContext<Data, Params, Input>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   /** Optional — when omitted, the engine seeds `params` with `{}`. */
   initialParams?: Params;
@@ -323,6 +332,11 @@ type EngineConfig<Data, Params = Record<string, never>> = {
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
+  /**
+   * Bound on the input queue filled by `send()` (default 1024). Beyond the
+   * bound the queue drops its oldest entry — recent perturbations win.
+   */
+  maxQueuedInputs?: number;
   /** Optional render callback — sugar for `subscribe` + initial paint, scoped to the vanilla path. */
   render?: (snapshot: State<Data, Params>) => void;
   /**
@@ -343,7 +357,7 @@ type State<Data, Params> = {
   stepDurationMs: number;
 };
 
-type SimulationEngine<Data, Params> = {
+type SimulationEngine<Data, Params, Input = never> = {
   getSnapshot: () => State<Data, Params>;
   /** The seed driving this engine's SimRandom — configured or recorded default. */
   getSeed: () => number | string;
@@ -357,6 +371,8 @@ type SimulationEngine<Data, Params> = {
   advance: (count?: number) => void;
   setParams: (patch: Partial<Params>) => void;
   resetWith: (patch?: Partial<Params>) => void;
+  /** Queue a transient perturbation event — see "Inputs & perturbation" below. */
+  send: (input: Input) => void;
 
   handleAnimationFrame: (nowMs: number) => void;
   destroy: () => void;
@@ -398,6 +414,46 @@ splitmix32 PRNG; string seeds are hashed to a 32-bit int) and hands it to
 
 Deferred (out of scope for now): a `reseed()` API, replay/backward-seek, and
 input recording.
+
+### Inputs & perturbation
+
+`send(input)` is the engine's input channel: an explicit path for transient,
+consumed-once perturbation events (paint strokes, direction changes, cell
+toggles) that previously had to be smuggled through `setParams` with sentinel
+values. The framing is **perturbation, not interaction** — the library never
+learns what a pointer is; translating browser events into `Input` values is
+the consuming component's job. The rules:
+
+- **Tick-based sampling.** Inputs queue between tick advances. At the next
+  advance, the entire queue is delivered, in send order, as the `inputs`
+  array of the **first tick** of the batch, then cleared; the remaining ticks
+  of a `ticksPerFrame` batch see a shared frozen empty array (no per-tick
+  allocation on the hot path).
+- **No coalescing.** Every `send` reaches the sim exactly once — multiple
+  sends between ticks all arrive in the next tick's `inputs`, in order. This
+  is the whole point of the channel: a snapshot can be skipped, an input
+  cannot.
+- **Status rules.** While `paused`/`idle`, inputs queue up and deliver on the
+  next `advance()`/`play()` tick. While `stopped`, `send` drops the input
+  silently. `resetWith()` clears the queue — pending perturbations belong to
+  the old run.
+- **Bounded queue.** The queue holds at most `maxQueuedInputs` entries
+  (default 1024) and drops the *oldest* beyond the bound — the most recent
+  perturbations win.
+- **Never in snapshots.** `State` is unchanged: inputs are per-tick
+  transients, not state. They never appear in `getSnapshot()` and never cross
+  the wire as part of a snapshot.
+
+Non-goals, stated explicitly: no DOM awareness (the library has no concept of
+pointers, keys, or elements), no latency guarantees (an input lands on the
+next tick, whenever that is — at `delayMs: 500` that's up to half a second
+away), and no sub-tick timing (inputs are sampled at tick boundaries; the sim
+cannot know *when* within the inter-tick window a send happened).
+
+Forward note: replay (deferred, above) will record inputs tagged with their
+delivery tick — `{ tick, input }` — so a recorded run can be reproduced by
+re-sending each input just before its tick. The engine drains its queue in a
+single place to keep that a local change.
 
 ### State Machine
 
@@ -451,6 +507,7 @@ input recording.
 | `stopped` | `seek(n)` | `stopped` | No-op. Cannot seek from stopped. |
 | `stopped` | `resetWith(patch?)` | `idle` | Merges patch with current params, calls `init()`. Only way out of stopped. |
 | any | `setParams(patch)` | (unchanged) | Live merge. Does not change status. |
+| any | `send(input)` | (unchanged) | Queues for the next tick. Dropped silently when `stopped`. |
 | any | `resetWith(patch?)` | `idle` | Merges patch with current params (or uses current params if no patch), calls `init()`, resets tick to 0. |
 
 **`resetWith` during `playing`:** Transitions to `idle`, not back to `playing`. Consumer calls `play()` themselves if they want to resume. Predictable over magical.
@@ -481,6 +538,12 @@ type MainToWorkerMessage =
   | { kind: 'advance'; count: number }
   | { kind: 'setParams'; patch: Partial<Params> }
   | { kind: 'resetWith'; patch?: Partial<Params> }
+  // One message per `send()` — only the input value (plain structured-
+  // cloneable data) crosses; the queue and its bound live worker-side,
+  // mirroring how the seed crosses in `init` while the SimRandom stays in
+  // the worker. Snapshots coming back are throttled, but inputs are never
+  // coalesced — every send reaches the sim.
+  | { kind: 'input'; input: Input }
   | { kind: 'destroy' };
 
 type WorkerConfig = {
@@ -488,6 +551,7 @@ type WorkerConfig = {
   delayMs?: number;
   ticksPerFrame?: number;
   snapshotIntervalMs?: number;
+  maxQueuedInputs?: number;
 };
 ```
 
