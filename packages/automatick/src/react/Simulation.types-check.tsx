@@ -12,7 +12,8 @@
 import * as React from 'react';
 import { Simulation } from './Simulation';
 import { defineSim } from '../sim';
-import type { SimRandom, SimToolkit } from '../sim';
+import type { SimRandom } from '../random';
+import type { SimToolkit } from '../sim';
 
 // ---------------------------------------------------------------------------
 // Type assertion helpers — no runtime cost.

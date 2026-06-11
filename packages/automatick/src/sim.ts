@@ -1,8 +1,6 @@
 import type { State } from './state';
 import type { SimRandom } from './random';
 
-export type { SimRandom } from './random';
-
 /**
  * Engine-provided tools handed to `init` and `step` alongside the state.
  * Currently just seeded randomness; future capabilities (e.g. recorded

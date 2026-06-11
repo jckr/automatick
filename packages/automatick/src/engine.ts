@@ -4,9 +4,6 @@ import { createSimRandom } from './random';
 import type { State, SimulationStatus } from './state';
 
 export type { SimulationStatus, State } from './state';
-export type { SimToolkit, StepContext } from './sim';
-export { createSimRandom } from './random';
-export type { SimRandom } from './random';
 
 export type TickPerformance = {
   tick: number;
