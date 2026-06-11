@@ -12,6 +12,8 @@
 import * as React from 'react';
 import { Simulation } from './Simulation';
 import { defineSim } from '../sim';
+import type { SimRandom } from '../random';
+import type { SimToolkit } from '../sim';
 
 // ---------------------------------------------------------------------------
 // Type assertion helpers — no runtime cost.
@@ -128,6 +130,60 @@ const _inlineMissingStep = <Simulation init={{ count: 0 }} />;
 // @ts-expect-error inline form requires both init and step
 const _inlineMissingInit = <Simulation step={({ data }: { data: { count: number } }) => data} />;
 
+// ---------------------------------------------------------------------------
+// 6. Seeded randomness (#74): toolkit in step/init, seed prop on all modes.
+// ---------------------------------------------------------------------------
+
+// The step context exposes the seeded generator as `random`.
+<Simulation
+  init={{ count: 0 }}
+  step={(state) => {
+    assertType<Equals<typeof state.random, SimRandom>>();
+    return { count: state.data.count + state.random.int(0, 1) };
+  }}
+/>;
+
+// Function-form init accepts an optional second toolkit argument…
+<Simulation
+  defaultParams={{ size: 10 }}
+  init={(params, toolkit) => {
+    assertType<Equals<typeof toolkit, SimToolkit>>();
+    return { count: toolkit.random.int(0, params.size) };
+  }}
+  step={({ data, random }) => ({ count: data.count + random.int(0, 1) })}
+/>;
+
+// …and one-arg init functions keep compiling unchanged (regression — also
+// covered by the sim-module and inline cases above).
+const _oneArgInit = (
+  <Simulation
+    defaultParams={{ start: 5 }}
+    init={(params) => ({ count: params.start })}
+    step={({ data }) => ({ count: data.count + 1 })}
+  />
+);
+
+// `seed` is accepted by all three modes, as a number or a string.
+const _seedSim = <Simulation sim={counterSim} seed={42} />;
+const _seedSimString = <Simulation sim={counterSim} seed='run-7' />;
+const _seedInline = (
+  <Simulation
+    seed={42}
+    init={{ count: 0 }}
+    step={({ data }) => ({ count: data.count + 1 })}
+  />
+);
+const _seedWorker = (
+  <Simulation<{ count: number }, { increment: number }>
+    worker={workerUrl}
+    seed='run-7'
+  />
+);
+
+// prettier-ignore
+// @ts-expect-error seed must be a number or string, not a boolean
+const _seedWrongType = <Simulation sim={counterSim} seed={true} />;
+
 // Suppress unused-binding lint by referencing the assertions module-level.
 export {
   _simForm,
@@ -140,4 +196,10 @@ export {
   _workerFormString,
   _inlineMissingStep,
   _inlineMissingInit,
+  _oneArgInit,
+  _seedSim,
+  _seedSimString,
+  _seedInline,
+  _seedWorker,
+  _seedWrongType,
 };

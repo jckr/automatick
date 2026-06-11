@@ -10,7 +10,13 @@ import type { State } from '../state';
 
 /** Messages sent from the main thread to the worker. */
 export type MainToWorkerMessage<Params> =
-  | { kind: 'init'; params: Params; config: WorkerConfig }
+  /**
+   * `seed` is resolved on the main thread (random default generated there
+   * when the consumer doesn't provide one) so the main thread always knows
+   * it. Only the seed crosses the wire — the `SimRandom` it derives lives
+   * worker-side.
+   */
+  | { kind: 'init'; params: Params; seed: number | string; config: WorkerConfig }
   | { kind: 'play' }
   | { kind: 'pause' }
   | { kind: 'stop' }

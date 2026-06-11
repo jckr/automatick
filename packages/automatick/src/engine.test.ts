@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createEngine } from './engine';
 import { defineSim } from './sim';
+import type { SimToolkit, StepContext } from './sim';
 
 // ---------------------------------------------------------------------------
 // Helpers — reusable sim configs for tests
@@ -52,7 +53,7 @@ describe('initialization', () => {
     expect(snap.status).toBe('idle');
   });
 
-  it('init receives exactly the initialParams', () => {
+  it('init receives the initialParams and the toolkit', () => {
     const initSpy = vi.fn((params: { start: number }) => params.start * 2);
     const engine = createEngine({
       init: initSpy,
@@ -60,7 +61,10 @@ describe('initialization', () => {
       initialParams: { start: 5 },
     });
     expect(initSpy).toHaveBeenCalledOnce();
-    expect(initSpy).toHaveBeenCalledWith({ start: 5 });
+    expect(initSpy).toHaveBeenCalledWith(
+      { start: 5 },
+      expect.objectContaining({ random: expect.any(Function) })
+    );
     expect(engine.getSnapshot().data).toBe(10);
   });
 
@@ -493,7 +497,10 @@ describe('resetWith', () => {
     engine.setParams({ a: 10 }); // now params = { a: 10, b: 2 }
     initSpy.mockClear();
     engine.resetWith({ b: 20 }); // merges with current: { a: 10, b: 20 }
-    expect(initSpy).toHaveBeenCalledWith({ a: 10, b: 20 });
+    expect(initSpy).toHaveBeenCalledWith(
+      { a: 10, b: 20 },
+      expect.objectContaining({ random: expect.any(Function) })
+    );
     expect(engine.getSnapshot().data).toBe(30);
   });
 
@@ -507,7 +514,10 @@ describe('resetWith', () => {
     engine.setParams({ x: 99 });
     initSpy.mockClear();
     engine.resetWith();
-    expect(initSpy).toHaveBeenCalledWith({ x: 99 });
+    expect(initSpy).toHaveBeenCalledWith(
+      { x: 99 },
+      expect.objectContaining({ random: expect.any(Function) })
+    );
   });
 
   it('resets tick to 0', () => {
@@ -1134,7 +1144,116 @@ describe('paramless engine', () => {
       init: initSpy,
       step: ({ data }) => ({ count: data.count + 1 }),
     });
-    expect(initSpy).toHaveBeenCalledWith({});
+    expect(initSpy).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ random: expect.any(Function) })
+    );
     expect(engine.getSnapshot().data).toEqual({ count: 7 });
+  });
+});
+
+// ===========================================================================
+// Category 12: Seeded randomness & determinism
+// ===========================================================================
+
+describe('seeded randomness', () => {
+  /**
+   * Random-walk sim: each tick appends a fresh draw from the toolkit's
+   * generator, so two runs only compare equal when every draw matched.
+   */
+  function walkConfig(seed?: number | string) {
+    return {
+      init: (_params: Record<string, never>, toolkit: SimToolkit) => ({
+        start: toolkit.random(),
+        steps: [] as number[],
+      }),
+      step: ({
+        data,
+        random,
+      }: StepContext<{ start: number; steps: number[] }, Record<string, never>>) => ({
+        start: data.start,
+        steps: [...data.steps, random()],
+      }),
+      seed,
+    };
+  }
+
+  it('same seed produces a bit-identical run', () => {
+    const a = createEngine(walkConfig(42));
+    const b = createEngine(walkConfig(42));
+    a.advance(50);
+    b.advance(50);
+    expect(a.getSnapshot().data).toEqual(b.getSnapshot().data);
+  });
+
+  it('different seeds produce different runs', () => {
+    const a = createEngine(walkConfig(1));
+    const b = createEngine(walkConfig(2));
+    a.advance(50);
+    b.advance(50);
+    expect(a.getSnapshot().data).not.toEqual(b.getSnapshot().data);
+  });
+
+  it('string seeds work and are stable', () => {
+    const a = createEngine(walkConfig('my-experiment'));
+    const b = createEngine(walkConfig('my-experiment'));
+    const c = createEngine(walkConfig('other-experiment'));
+    a.advance(20);
+    b.advance(20);
+    c.advance(20);
+    expect(a.getSnapshot().data).toEqual(b.getSnapshot().data);
+    expect(a.getSnapshot().data).not.toEqual(c.getSnapshot().data);
+    expect(a.getSeed()).toBe('my-experiment');
+  });
+
+  it('resetWith() reproduces the run from the same seed', () => {
+    const engine = createEngine(walkConfig(7));
+    engine.advance(30);
+    const firstRun = structuredClone(engine.getSnapshot().data);
+    engine.resetWith();
+    engine.advance(30);
+    expect(engine.getSnapshot().data).toEqual(firstRun);
+  });
+
+  it('getSeed() returns the configured seed', () => {
+    expect(createEngine(walkConfig(123)).getSeed()).toBe(123);
+    expect(createEngine(walkConfig('abc')).getSeed()).toBe('abc');
+    expect(createEngine(walkConfig(0)).getSeed()).toBe(0);
+  });
+
+  it('omitted seed: getSeed() records a numeric default that reproduces the run', () => {
+    const a = createEngine(walkConfig());
+    const recorded = a.getSeed();
+    expect(typeof recorded).toBe('number');
+
+    a.advance(25);
+    const b = createEngine(walkConfig(recorded));
+    b.advance(25);
+    expect(b.getSnapshot().data).toEqual(a.getSnapshot().data);
+  });
+
+  it('toolkit identity is stable across ticks within a run', () => {
+    const seen = new Set<unknown>();
+    const engine = createEngine({
+      init: () => 0,
+      step: ({ data, random }: StepContext<number, Record<string, never>>) => {
+        seen.add(random);
+        return data + 1;
+      },
+    });
+    engine.advance(10);
+    expect(seen.size).toBe(1);
+  });
+
+  it('one-arg init functions keep working (toolkit arg is optional to accept)', () => {
+    const engine = createEngine({
+      init: (params: { start: number }) => params.start,
+      step: ({ data }) => data + 1,
+      initialParams: { start: 3 },
+      seed: 1,
+    });
+    expect(engine.getSnapshot().data).toBe(3);
+    engine.advance(2);
+    expect(engine.getSnapshot().data).toBe(5);
   });
 });

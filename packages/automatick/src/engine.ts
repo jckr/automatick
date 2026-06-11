@@ -1,5 +1,6 @@
 import { isInitFn } from './sim';
-import type { SimInit } from './sim';
+import type { SimInit, SimToolkit, StepContext } from './sim';
+import { createSimRandom } from './random';
 import type { State, SimulationStatus } from './state';
 
 export type { SimulationStatus, State } from './state';
@@ -16,13 +17,21 @@ export type EngineConfig<Data, Params = Record<string, never>> = {
    * When a value is passed, the engine `structuredClone`s it on each (re)init.
    */
   init: SimInit<Data, Params>;
-  step: (state: State<Data, Params>) => Data;
+  step: (ctx: StepContext<Data, Params>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   /**
    * Initial param values. Optional — when omitted, the engine seeds an empty
    * params object and `Params` defaults to `Record<string, never>`.
    */
   initialParams?: Params;
+  /**
+   * Seed for the engine's `SimRandom` (see `random.ts`). Number or string.
+   * When omitted, the engine picks a random numeric seed at construction and
+   * records it — `getSeed()` always returns the seed that reproduces the run.
+   * `resetWith()` re-derives the generator from this same seed, so a reset
+   * replays the run exactly.
+   */
+  seed?: number | string;
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
@@ -59,12 +68,19 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
   private lastUpdateMs: number | null = null;
   private lastStepMs: number = 0;
 
-  private readonly initFn: (params: Params) => Data;
-  private readonly stepFn: (state: State<Data, Params>) => Data;
+  private readonly initFn: (params: Params, toolkit: SimToolkit) => Data;
+  private readonly stepFn: (ctx: StepContext<Data, Params>) => Data;
   private readonly shouldStopFn?: (data: Data, params: Params) => boolean;
   private readonly maxTime?: number;
   private delayMs: number;
   private ticksPerFrame: number;
+  private readonly seed: number | string;
+  /**
+   * One toolkit per run — stable identity between resets (no per-tick
+   * allocation), recreated by `resetWith()` so the generator restarts from
+   * the same seed and the reset run replays the original exactly.
+   */
+  private toolkit: SimToolkit;
 
   private readonly listeners = new Set<
     (snapshot: State<Data, Params>) => void
@@ -97,6 +113,11 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
     this.delayMs = config.delayMs ?? 0;
     this.ticksPerFrame = config.ticksPerFrame ?? 1;
 
+    // When no seed is given, pick a random one and record it so the run is
+    // still reproducible: read it back via getSeed().
+    this.seed = config.seed ?? Math.floor(Math.random() * 0x100000000);
+    this.toolkit = { random: createSimRandom(this.seed) };
+
     // `initialParams` is optional; when absent we seed an empty params object.
     // The `as Params` is the one cast at this boundary: `Params` defaults to
     // `Record<string, never>`, so `{}` is structurally exact for the default
@@ -104,7 +125,7 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
     this.params = config.initialParams
       ? { ...config.initialParams }
       : ({} as Params);
-    this.data = this.initFn(this.params);
+    this.data = this.initFn(this.params, this.toolkit);
 
     if (config.render) {
       this.listeners.add(config.render);
@@ -138,6 +159,15 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
 
   getStatus(): SimulationStatus {
     return this.status;
+  }
+
+  /**
+   * The seed this engine's `SimRandom` was derived from — the one passed in
+   * `config.seed`, or the recorded random default when none was given.
+   * Constructing another engine with this seed reproduces the run.
+   */
+  getSeed(): number | string {
+    return this.seed;
   }
 
   getPerformance(): readonly TickPerformance[] {
@@ -238,7 +268,10 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
     if (patch) {
       this.params = { ...this.params, ...patch };
     }
-    this.data = this.initFn(this.params);
+    // Re-derive the generator from the same seed so the reset run replays
+    // the original exactly. (A fresh toolkit object, same seed.)
+    this.toolkit = { random: createSimRandom(this.seed) };
+    this.data = this.initFn(this.params, this.toolkit);
     this.tick = 0;
     this.status = 'idle';
     this.lastUpdateMs = null;
@@ -297,6 +330,7 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
         tick: this.tick,
         status: this.status,
         stepDurationMs: this.lastStepMs,
+        random: this.toolkit.random,
       });
       const t1 = performance.now();
       this.lastStepMs = t1 - t0;

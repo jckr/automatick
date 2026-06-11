@@ -74,6 +74,8 @@ self.onmessage = async (event) => {
           step: sim.step,
           shouldStop: sim.shouldStop,
           initialParams,
+          // Resolved on the main thread; the SimRandom lives worker-side.
+          seed: msg.seed,
           maxTime: msg.config.maxTime,
           // Worker host owns its own setTimeout-driven loop; rAF wouldn't exist here anyway.
           autoFrame: false,
@@ -130,6 +132,8 @@ export function createSimWorker<Params>(options: {
   moduleUrl: string;
   engineUrl: string;
   initialParams: Params;
+  /** Always resolved by the caller on the main thread — see protocol.ts. */
+  seed: number | string;
   config: WorkerConfig;
 }): Worker {
   const blob = new Blob([WORKER_SCRIPT], { type: 'text/javascript' });
@@ -149,6 +153,7 @@ export function createSimWorker<Params>(options: {
     moduleUrl: options.moduleUrl,
     engineUrl: options.engineUrl,
     params: options.initialParams,
+    seed: options.seed,
     config: options.config,
   });
 
