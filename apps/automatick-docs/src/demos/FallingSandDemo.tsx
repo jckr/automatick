@@ -29,10 +29,7 @@ const COLORS: Record<number, [number, number, number]> = {
 };
 
 function SandCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
-  const { setParams } = useSimulation<typeof fallingSandSim>();
+  const { send } = useSimulation<typeof fallingSandSim>();
 
   const toGrid = React.useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>): [number, number] => {
@@ -51,73 +48,43 @@ function SandCanvas() {
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       e.currentTarget.setPointerCapture(e.pointerId);
       const [gx, gy] = toGrid(e);
-      setParams({ paintX: gx, paintY: gy });
+      send({ kind: 'paint', x: gx, y: gy });
     },
-    [toGrid, setParams],
+    [toGrid, send],
   );
 
   const onMove = React.useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (e.buttons === 0) return;
       const [gx, gy] = toGrid(e);
-      setParams({ paintX: gx, paintY: gy });
+      send({ kind: 'paint', x: gx, y: gy });
     },
-    [toGrid, setParams],
+    [toGrid, send],
   );
 
-  const onUp = React.useCallback(
-    () => setParams({ paintX: -1, paintY: -1 }),
-    [setParams],
+  const onUp = React.useCallback(() => send({ kind: 'lift' }), [send]);
+
+  const canvasRef = useSimulationCanvas<typeof fallingSandSim>(
+    (ctx, { data }, view) => {
+      view.blitGrid(SAND_W, SAND_H, (px) => {
+        const { grid } = data;
+        for (let i = 0; i < SAND_W * SAND_H; i++) {
+          const c = COLORS[grid[i]] ?? COLORS[EMPTY];
+          const j = i * 4;
+          px[j] = c[0];
+          px[j + 1] = c[1];
+          px[j + 2] = c[2];
+          px[j + 3] = 255;
+        }
+      });
+    },
+    { width: CSS_WIDTH, height: CSS_HEIGHT },
   );
-
-  const canvasRef = useSimulationCanvas<typeof fallingSandSim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = SAND_W;
-      off.height = SAND_H;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-
-    if (
-      !imageDataRef.current ||
-      imageDataRef.current.width !== SAND_W ||
-      imageDataRef.current.height !== SAND_H
-    ) {
-      imageDataRef.current = offCtx.createImageData(SAND_W, SAND_H);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
-    const { grid } = data;
-
-    for (let i = 0; i < SAND_W * SAND_H; i++) {
-      const c = COLORS[grid[i]] ?? COLORS[EMPTY];
-      const j = i * 4;
-      px[j] = c[0];
-      px[j + 1] = c[1];
-      px[j + 2] = c[2];
-      px[j + 3] = 255;
-    }
-
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, CSS_WIDTH, CSS_HEIGHT);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
 
   return (
     <CanvasStage maxWidth={CSS_WIDTH}>
       <canvas
         ref={canvasRef}
-        width={CSS_WIDTH * dpr}
-        height={CSS_HEIGHT * dpr}
         className={styles.canvas}
         onPointerDown={onDown}
         onPointerMove={onMove}

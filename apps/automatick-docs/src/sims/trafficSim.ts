@@ -40,15 +40,15 @@ export default defineSim<TrafficData, TrafficParams>({
     pSlow: 0.15,
   },
 
-  init: ({ density, vMax }) => {
+  init: ({ density, vMax }, { random }) => {
     const size = TRAFFIC_ROAD_LENGTH * TRAFFIC_LANES;
     const lanes = new Int8Array(size);
     lanes.fill(-1);
     let carCount = 0;
     let speedSum = 0;
     for (let i = 0; i < size; i++) {
-      if (Math.random() < density) {
-        const v = Math.floor(Math.random() * (vMax + 1));
+      if (random() < density) {
+        const v = random.int(0, vMax);
         lanes[i] = v;
         carCount++;
         speedSum += v;
@@ -61,7 +61,7 @@ export default defineSim<TrafficData, TrafficParams>({
     };
   },
 
-  step: ({ data, params, tick }) => {
+  step: ({ data, params, tick, random }) => {
     const { vMax, pSlow } = params;
     const L = TRAFFIC_ROAD_LENGTH;
     const N = TRAFFIC_LANES;
@@ -110,7 +110,7 @@ export default defineSim<TrafficData, TrafficParams>({
         const gap = gapAhead(scratch, lane, x);
         if (v > gap) v = gap;
 
-        if (v > 0 && Math.random() < pSlow) v -= 1;
+        if (v > 0 && random() < pSlow) v -= 1;
 
         const nx = (x + v) % L;
         next[cellIdx(lane, nx)] = v;

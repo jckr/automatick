@@ -14,7 +14,7 @@ export type Automata1dData = number[];
 export default defineSim<Automata1dData, Automata1dParams>({
   defaultParams: { rule: 30, cols: 28, rows: 28, firstLine: 'blank' },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const { cols, firstLine } = params;
     const data = Array<number>(cols).fill(0);
     data[Math.floor(data.length / 2)] = 1;
@@ -24,7 +24,7 @@ export default defineSim<Automata1dData, Automata1dParams>({
     if (firstLine === 'full') {
       return data.map(() => 1);
     }
-    return data.map(() => (Math.random() > 0.5 ? 1 : 0));
+    return data.map(() => (random() > 0.5 ? 1 : 0));
   },
 
   step: ({ data, params }) => {

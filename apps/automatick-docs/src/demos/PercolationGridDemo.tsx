@@ -35,7 +35,6 @@ function cellColor(cell: number): string {
 }
 
 function GridCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { params } = useSimulation<typeof percolationGridSim>();
 
   const miniW = params.width * CELL_PX;
@@ -44,14 +43,12 @@ function GridCanvas() {
   const cssH = HEADER_H + params.rows * miniH + (params.rows - 1) * GAP + FOOTER_H;
 
   const canvasRef = useSimulationCanvas<typeof percolationGridSim>(
-    (ctx, { data }) => {
-      const cssStyles = getComputedStyle(document.documentElement);
-      const fg1 = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
-      const fg3 = cssStyles.getPropertyValue('--fg3').trim() || '#5B6070';
-      const success = cssStyles.getPropertyValue('--info').trim() || '#2B6E8F';
+    (ctx, { data }, view) => {
+      const fg1 = view.theme('--fg1', '#0E1116');
+      const fg3 = view.theme('--fg3', '#5B6070');
+      const success = view.theme('--info', '#2B6E8F');
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, cssW, cssH);
+      view.clear();
 
       // Column headers (porosity values)
       ctx.font = '10px var(--font-mono, monospace)';
@@ -113,17 +110,14 @@ function GridCanvas() {
         ctx.fillStyle = fg1;
         ctx.fillText(`${c.result}/${c.total}`, cx, footerTop + 14);
       });
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: cssW, height: cssH }
   );
 
   return (
     <div className={styles.stage}>
       <canvas
         ref={canvasRef}
-        width={cssW * dpr}
-        height={cssH * dpr}
         className={styles.canvas}
         style={{ width: cssW }}
       />

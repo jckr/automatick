@@ -14,66 +14,61 @@ const WIDTH = 600;
 const HEIGHT = 600;
 
 function StableFluidsCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
   const imageDataRef = React.useRef<ImageData | null>(null);
 
-  const canvasRef = useSimulationCanvas<typeof stableFluidsSim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const N = GRID_N;
+  // Deliberately NOT view.blitGrid(): blitGrid always disables image
+  // smoothing (crisp cells), but this demo upscales the density field with
+  // smoothing enabled for the soft fluid look.
+  const canvasRef = useSimulationCanvas<typeof stableFluidsSim>(
+    (ctx, { data }, view) => {
+      const N = GRID_N;
 
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = N;
-      off.height = N;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-
-    if (
-      !imageDataRef.current ||
-      imageDataRef.current.width !== N ||
-      imageDataRef.current.height !== N
-    ) {
-      imageDataRef.current = offCtx.createImageData(N, N);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
-    const { densR, densG, densB } = data;
-    const stride = N + 2;
-
-    for (let j = 0; j < N; j++) {
-      for (let i = 0; i < N; i++) {
-        const src = i + 1 + (j + 1) * stride;
-        const tr = 1 - Math.exp(-densR[src] * 0.12);
-        const tg = 1 - Math.exp(-densG[src] * 0.12);
-        const tb = 1 - Math.exp(-densB[src] * 0.12);
-        const k = (i + j * N) * 4;
-        px[k] = Math.floor(tr * 255);
-        px[k + 1] = Math.floor(tg * 255);
-        px[k + 2] = Math.floor(tb * 255);
-        px[k + 3] = 255;
+      if (!offscreenRef.current) {
+        const off = document.createElement('canvas');
+        off.width = N;
+        off.height = N;
+        offscreenRef.current = off;
       }
-    }
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(off, 0, 0, WIDTH, HEIGHT);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      const off = offscreenRef.current;
+      const offCtx = off.getContext('2d');
+      if (!offCtx) return;
+
+      if (
+        !imageDataRef.current ||
+        imageDataRef.current.width !== N ||
+        imageDataRef.current.height !== N
+      ) {
+        imageDataRef.current = offCtx.createImageData(N, N);
+      }
+      const imageData = imageDataRef.current;
+      const px = imageData.data;
+      const { densR, densG, densB } = data;
+      const stride = N + 2;
+
+      for (let j = 0; j < N; j++) {
+        for (let i = 0; i < N; i++) {
+          const src = i + 1 + (j + 1) * stride;
+          const tr = 1 - Math.exp(-densR[src] * 0.12);
+          const tg = 1 - Math.exp(-densG[src] * 0.12);
+          const tb = 1 - Math.exp(-densB[src] * 0.12);
+          const k = (i + j * N) * 4;
+          px[k] = Math.floor(tr * 255);
+          px[k + 1] = Math.floor(tg * 255);
+          px[k + 2] = Math.floor(tb * 255);
+          px[k + 3] = 255;
+        }
+      }
+      offCtx.putImageData(imageData, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(off, 0, 0, view.width, view.height);
+    },
+    { width: WIDTH, height: HEIGHT }
+  );
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }
