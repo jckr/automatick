@@ -56,8 +56,7 @@ export default defineSim<ChaosData, ChaosParams>({
     rules: '1001100'
   },
 
-  init: (params) => {
-    const random = Math.random;
+  init: (params, { random }) => {
     const angleOffset = params.angle === undefined ? random() * 2 * Math.PI : params.angle;
     const attractors = updateAttractors({
       angleOffset,
@@ -81,7 +80,7 @@ export default defineSim<ChaosData, ChaosParams>({
     };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { nbAttractors, height, width } = params;
     let attractors = data.attractors;
     if (attractors.length !== nbAttractors) {
@@ -100,8 +99,7 @@ export default defineSim<ChaosData, ChaosParams>({
         return prev;
       }, []);
     const pick = rules.length ? rules : [...Array(nbAttractors).keys()];
-    const random = Math.random;
-    const direction = (data.prevDirection + pick[Math.floor(random() * pick.length)]) % nbAttractors;
+    const direction = (data.prevDirection + random.pick(pick)) % nbAttractors;
     const lastPoint = data.points[data.points.length - 1];
     const attractor = attractors[direction];
     const newPoint: ChaosPoint = {

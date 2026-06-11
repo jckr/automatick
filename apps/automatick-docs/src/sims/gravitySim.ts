@@ -35,15 +35,15 @@ export default defineSim<GravityData, GravityParams>({
     dt: 0.5,
   },
 
-  init: ({ count, width, height }) => {
+  init: ({ count, width, height }, { random }) => {
     const particles: Particle[] = [];
     for (let i = 0; i < count; i++) {
-      const mass = 1 + Math.random() * 4;
+      const mass = 1 + random() * 4;
       particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 2,
-        vy: (Math.random() - 0.5) * 2,
+        x: random() * width,
+        y: random() * height,
+        vx: (random() - 0.5) * 2,
+        vy: (random() - 0.5) * 2,
         mass,
         radius: Math.sqrt(mass) * 1.5,
         generation: 0,
@@ -52,7 +52,7 @@ export default defineSim<GravityData, GravityParams>({
     return { particles };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { G, damping, width, height, softening, dt } = params;
     const n = data.particles.length;
     const soft2 = softening * softening;
@@ -127,11 +127,11 @@ export default defineSim<GravityData, GravityParams>({
     for (let i = 0; i < n; i++) {
       if (!destroyed[i]) continue;
       const p = particles[i];
-      const mass = 1 + Math.random() * 4;
-      p.x = Math.random() * width;
-      p.y = Math.random() * height;
-      p.vx = (Math.random() - 0.5) * 2;
-      p.vy = (Math.random() - 0.5) * 2;
+      const mass = 1 + random() * 4;
+      p.x = random() * width;
+      p.y = random() * height;
+      p.vx = (random() - 0.5) * 2;
+      p.vy = (random() - 0.5) * 2;
       p.mass = mass;
       p.radius = Math.sqrt(mass) * 1.5;
       p.generation += 1;

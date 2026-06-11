@@ -78,9 +78,8 @@ export default defineSim<EpidemicData, EpidemicParams>({
     width: 332
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const { nbAgents, nbSick, maxSpeed, recoveryTicks, nbDistancing, r, height, width } = params;
-    const random = Math.random;
     const sick = chooseMAmongN(nbAgents, nbSick, random);
     const distancing = chooseMAmongN(nbAgents, nbDistancing, random);
     const agents: EpidemicAgent[] = [];
@@ -112,9 +111,8 @@ export default defineSim<EpidemicData, EpidemicParams>({
     };
   },
 
-  step: ({ data, params, tick }) => {
+  step: ({ data, params, tick, random }) => {
     const { contaminationRisk, deathRisk, r, recoveryTicks, height, width } = params;
-    const random = Math.random;
 
     const updatedAgents: EpidemicAgent[] = JSON.parse(JSON.stringify(data.agents)) as EpidemicAgent[];
     let nbSick = 0;

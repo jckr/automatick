@@ -91,7 +91,7 @@ export default defineSim<SettlementData, SettlementParams>({
     gatherRadius: 8,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const capacity = new Float32Array(GRID * GRID);
     gaussianPeak(capacity, GRID * 0.25, GRID * 0.3, 1, 9);
     gaussianPeak(capacity, GRID * 0.45, GRID * 0.2, 0.7, 7);
@@ -107,8 +107,8 @@ export default defineSim<SettlementData, SettlementParams>({
     const agents: Agent[] = [];
     for (let i = 0; i < params.numAgents; i++) {
       agents.push({
-        x: Math.random() * GRID,
-        y: Math.random() * GRID,
+        x: random() * GRID,
+        y: random() * GRID,
         resources: 0,
         home: -1,
         avoidSettlement: -1,
@@ -119,7 +119,7 @@ export default defineSim<SettlementData, SettlementParams>({
     return { resourceGrid, capacityGrid: capacity, agents, settlements: [] };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { resourceGrid, capacityGrid, agents, settlements } = data;
 
     for (let i = 0; i < GRID * GRID; i++) {
@@ -152,8 +152,8 @@ export default defineSim<SettlementData, SettlementParams>({
           agent.resources = 0;
         }
       } else {
-        agent.x += dx * params.agentSpeed + (Math.random() - 0.5) * 0.3;
-        agent.y += dy * params.agentSpeed + (Math.random() - 0.5) * 0.3;
+        agent.x += dx * params.agentSpeed + (random() - 0.5) * 0.3;
+        agent.y += dy * params.agentSpeed + (random() - 0.5) * 0.3;
       }
 
       agent.x = Math.max(0, Math.min(GRID - 1, agent.x));
@@ -260,7 +260,7 @@ export default defineSim<SettlementData, SettlementParams>({
         continue;
       }
       const s = settlements[agent.home];
-      if (s.storedResources < 1 && Math.random() < 0.08) {
+      if (s.storedResources < 1 && random() < 0.08) {
         s.population = Math.max(0, s.population - 1);
         agent.avoidSettlement = agent.home;
         agent.cooldown = 150;
@@ -281,7 +281,7 @@ export default defineSim<SettlementData, SettlementParams>({
           nearestSettlement = si;
         }
       }
-      if (nearestSettlement >= 0 && Math.random() < 0.02) {
+      if (nearestSettlement >= 0 && random() < 0.02) {
         settlements[nearestSettlement].population++;
         agent.home = nearestSettlement;
       }

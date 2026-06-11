@@ -45,46 +45,52 @@ function VertexRulesPanel() {
 }
 
 function ChaosCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const drawnCountRef = React.useRef(0);
   const bgRef = React.useRef<string | null>(null);
+  const dprRef = React.useRef<number | null>(null);
 
-  const canvasRef = useSimulationCanvas<typeof chaosGameSim>((ctx, { data, params }) => {
-    const scale = (CSS_SIZE * dpr) / params.width;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const canvasRef = useSimulationCanvas<typeof chaosGameSim>(
+    (ctx, { data, params }, view) => {
+      // Draw in sim coordinates scaled to the canvas. The renderer is
+      // incremental (only new points each frame), so when a dpr change
+      // resizes (and wipes) the backing store, redraw from point zero.
+      const scale = CSS_SIZE / params.width;
+      ctx.save();
+      ctx.scale(scale, scale);
 
-    const { points, background, color, attractors } = data;
+      const { points, background, color, attractors } = data;
 
-    if (background !== bgRef.current) {
-      drawnCountRef.current = 0;
-      bgRef.current = background;
-    }
-    if (drawnCountRef.current === 0) {
-      ctx.fillStyle = background;
-      ctx.fillRect(0, 0, params.width, params.height);
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      attractors.forEach((a) => {
-        ctx.beginPath();
-        ctx.arc(a.x, a.y, 3, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
-    ctx.fillStyle = color;
-    for (let i = drawnCountRef.current; i < points.length; i++) {
-      ctx.fillRect(points[i].x, points[i].y, 1, 1);
-    }
-    drawnCountRef.current = points.length;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      if (view.dpr !== dprRef.current) {
+        drawnCountRef.current = 0;
+        dprRef.current = view.dpr;
+      }
+      if (background !== bgRef.current) {
+        drawnCountRef.current = 0;
+        bgRef.current = background;
+      }
+      if (drawnCountRef.current === 0) {
+        ctx.fillStyle = background;
+        ctx.fillRect(0, 0, params.width, params.height);
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        attractors.forEach((a) => {
+          ctx.beginPath();
+          ctx.arc(a.x, a.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+      ctx.fillStyle = color;
+      for (let i = drawnCountRef.current; i < points.length; i++) {
+        ctx.fillRect(points[i].x, points[i].y, 1, 1);
+      }
+      drawnCountRef.current = points.length;
+      ctx.restore();
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <div className={styles.stage}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
       <div className={styles.perf}>
         <PerformanceOverlay />
       </div>
