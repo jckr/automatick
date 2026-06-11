@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 import { getLetterMask, isInsideMask } from './automatickHeroMask';
 
 /**
@@ -96,31 +97,31 @@ const VY_CAP_RATIO = 0.3;
  *  long bubble lifetimes. 0.97 = decays vy halfway in ~22 ticks. */
 const VY_DAMPING = 0.97;
 
-function spawnFresh(params: BubblesParams, atLeftEdge: boolean): Bubble {
+function spawnFresh(params: BubblesParams, atLeftEdge: boolean, random: SimRandom): Bubble {
   const { width, height, baseSpeed, blobSize, blobSizeVariance } = params;
-  const sizeR = blobSize * (1 + (Math.random() - 0.5) * 2 * blobSizeVariance);
-  const speed = baseSpeed * (0.85 + Math.random() * 0.3);
-  const angle = (Math.random() - 0.5) * 2 * SPAWN_HALF_ANGLE;
+  const sizeR = blobSize * (1 + (random() - 0.5) * 2 * blobSizeVariance);
+  const speed = baseSpeed * (0.85 + random() * 0.3);
+  const angle = (random() - 0.5) * 2 * SPAWN_HALF_ANGLE;
   return {
-    x: atLeftEdge ? -sizeR - Math.random() * 20 : Math.random() * width,
-    y: Math.random() * height,
+    x: atLeftEdge ? -sizeR - random() * 20 : random() * width,
+    y: random() * height,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     r: Math.max(8, sizeR),
-    hue: Math.random(),
+    hue: random(),
   };
 }
 
 export default defineSim<BubblesData, BubblesParams>({
   defaultParams: DEFAULT_PARAMS,
-  init: (params) => {
+  init: (params, { random }) => {
     const bubbles: Bubble[] = new Array(params.nbBubbles);
     for (let i = 0; i < params.nbBubbles; i++) {
-      bubbles[i] = spawnFresh(params, false);
+      bubbles[i] = spawnFresh(params, false, random);
     }
     return { bubbles };
   },
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { width, height, minSpeedFactor, vyJitter, text } = params;
     const mask = getLetterMask(text, width, height);
     const N = data.bubbles.length;
@@ -136,7 +137,7 @@ export default defineSim<BubblesData, BubblesParams>({
       // horizontal. No center-pull — direction is independent of y so
       // top-spawned bubbles travel along the top, bottom-spawned along
       // the bottom, instead of all converging toward the middle.
-      const vyKick = (Math.random() - 0.5) * vyJitter;
+      const vyKick = (random() - 0.5) * vyJitter;
       let vy = b.vy * VY_DAMPING + vyKick;
       const vyCap = Math.abs(b.vx) * VY_CAP_RATIO;
       if (vy > vyCap) vy = vyCap;
@@ -148,7 +149,7 @@ export default defineSim<BubblesData, BubblesParams>({
       // Respawn at stage left when fully off the right edge (account for
       // blob radius so the disappearance is symmetric with how it appears).
       if (x - b.r > width) {
-        bubbles[i] = spawnFresh(params, true);
+        bubbles[i] = spawnFresh(params, true, random);
         continue;
       }
 

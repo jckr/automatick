@@ -46,8 +46,7 @@ export default defineSim<MazeData, MazeParams>({
     ticksPerAnimation: 20
   },
 
-  init: (params) => {
-    const random = Math.random;
+  init: (params, { random }) => {
     const { height, width, grid } = params;
     if (grid === 'circle') {
       const c = initDataCircle({ height, width }, random);
@@ -65,8 +64,7 @@ export default defineSim<MazeData, MazeParams>({
     return { grid, ...t };
   },
 
-  step: ({ data }) => {
-    const random = Math.random;
+  step: ({ data, random }) => {
     const { cells, links, stack, visited, ...rest } = data;
 
     if (visited.size === Object.values(cells).length || stack.length === 0) {
@@ -89,7 +87,7 @@ export default defineSim<MazeData, MazeParams>({
       return data;
     }
 
-    const nextMove = options[Math.floor(random() * options.length)]!;
+    const nextMove = random.pick(options);
     const nextVisited = new Set(visited);
     nextVisited.add(nextMove);
     const nextLinks: [string, string][] = [...links, [currentCell, nextMove]];
