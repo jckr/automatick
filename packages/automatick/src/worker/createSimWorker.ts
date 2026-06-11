@@ -15,7 +15,7 @@ import type { WorkerConfig } from './protocol';
  * 2. Dynamically imports both
  * 3. Creates engine from the sim module
  * 4. Drives tick loop via setTimeout with snapshot throttling
- * 5. Responds to play/pause/stop/seek/advance/setParams/resetWith/destroy
+ * 5. Responds to play/pause/stop/seek/advance/setParams/resetWith/input/destroy
  */
 const WORKER_SCRIPT = `
 let engine = null;
@@ -76,6 +76,9 @@ self.onmessage = async (event) => {
           initialParams,
           // Resolved on the main thread; the SimRandom lives worker-side.
           seed: msg.seed,
+          // The input queue (and its bound) lives worker-side too — only
+          // individual inputs cross the wire (see the 'input' case below).
+          maxQueuedInputs: msg.config.maxQueuedInputs,
           maxTime: msg.config.maxTime,
           // Worker host owns its own setTimeout-driven loop; rAF wouldn't exist here anyway.
           autoFrame: false,
@@ -110,6 +113,14 @@ self.onmessage = async (event) => {
       case 'resetWith':
         if (!engine) return;
         stopLoop(); engine.resetWith(msg.patch); emitSnapshot();
+        break;
+      case 'input':
+        // Worker caveat, stated honestly: snapshots back to the main thread
+        // are throttled (snapshotIntervalMs), but inputs are never coalesced
+        // — every send arrives as its own message and is queued on the
+        // worker-side engine for delivery to the next tick.
+        if (!engine) return;
+        engine.send(msg.input);
         break;
       case 'setConfig':
         if (msg.patch.delayMs !== undefined) delayMs = msg.patch.delayMs;

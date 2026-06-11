@@ -43,8 +43,8 @@ export function deserializeWorkerMessage<Data, Params>(
  * Cast a typed command to the wire format for postMessage.
  * Called on the main thread before posting to the worker.
  */
-export function serializeMainMessage<Params>(
-  msg: MainToWorkerMessage<Params>
+export function serializeMainMessage<Params, Input = never>(
+  msg: MainToWorkerMessage<Params, Input>
 ): unknown {
   return msg;
 }
@@ -53,9 +53,9 @@ export function serializeMainMessage<Params>(
  * Cast a raw message from main to typed form.
  * Called in the worker in the onmessage handler.
  */
-export function deserializeMainMessage<Params>(
+export function deserializeMainMessage<Params, Input = never>(
   raw: unknown
-): MainToWorkerMessage<Params> {
+): MainToWorkerMessage<Params, Input> {
   // Structured clone preserves shape; this cast marks the deserialization boundary.
-  return raw as MainToWorkerMessage<Params>;
+  return raw as MainToWorkerMessage<Params, Input>;
 }
