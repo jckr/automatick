@@ -1,45 +1,87 @@
 import React from 'react';
 import type { SimModule } from '../sim';
-import type { State } from '../state';
+import { attachCanvas, attachCanvasLegacy } from '../canvas/index';
+import type { CanvasDrawFn } from '../canvas/index';
 import { EngineContext } from './EngineContext';
 
 /**
- * Draw callback signature for useSimulationCanvas.
- * Called imperatively on every engine state emit — no React re-render involved.
+ * Draw callback signature for useSimulationCanvas — re-exported from
+ * `automatick/canvas`. Called imperatively on every engine state emit, no
+ * React re-render involved. The third {@link CanvasView} argument is the
+ * injected view toolkit; existing two-argument draw functions
+ * `(ctx, snapshot) => void` remain assignable and keep working unchanged.
  */
-export type CanvasDrawFn<Data, Params> = (
-  ctx: CanvasRenderingContext2D,
-  snapshot: State<Data, Params>
-) => void;
+export type { CanvasDrawFn, CanvasView } from '../canvas/index';
 
 type InferDraw<T, FallbackParams> = T extends SimModule<infer D, infer P>
   ? CanvasDrawFn<D, P>
   : CanvasDrawFn<T, FallbackParams>;
 
+/** Logical (CSS px) canvas size for ownership mode. */
+export type UseSimulationCanvasOptions = {
+  width: number;
+  height: number;
+};
+
 /**
  * Subscribe to simulation state and draw to a canvas without React re-renders.
  *
- * Returns a ref to attach to a `<canvas>` element. The `draw` callback is called
- * directly from the engine's subscription — it bypasses React's state/reconciliation
- * entirely. Draw timing is recorded automatically to the engine's performance buffer.
+ * Returns a ref to attach to a `<canvas>` element. The `draw` callback is
+ * called directly from the engine's subscription — it bypasses React's
+ * state/reconciliation entirely. Draw timing is recorded automatically to the
+ * engine's performance buffer.
+ *
+ * Two modes:
+ *
+ * **Ownership mode** (recommended) — pass `{ width, height }` options. The
+ * hook delegates to `attachCanvas` from `automatick/canvas`: it owns the
+ * canvas backing store (`width × dpr` / `height × dpr` attributes), applies
+ * the devicePixelRatio transform around every draw so you draw in CSS pixels,
+ * tracks dpr changes, and injects the full {@link CanvasView} toolkit
+ * (`clear`, `fade`, `theme`, `blitGrid`) as the draw function's third
+ * argument. Do not set `width`/`height` attributes on the `<canvas>` element
+ * yourself — but do set its CSS size (e.g. `style={{ width, height }}`).
+ *
+ * **Legacy mode** — omit options. The canvas is never resized and no
+ * transform is applied: you size the element (`width={W * dpr}`) and manage
+ * the dpr transform yourself, exactly as before this hook gained options.
+ * A `view` is still passed as a third argument (harmless to two-argument
+ * draw functions) with `width`/`height` derived from the backing store
+ * divided by `devicePixelRatio`.
  *
  * For DOM/React rendering, use `useSimulation()` instead.
  *
- * @example
+ * @example Ownership mode
  * ```tsx
  * function BoidsCanvas() {
- *   const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }) => {
- *     ctx.clearRect(0, 0, params.width, params.height);
- *     data.forEach(boid => {
- *       ctx.fillRect(boid.x, boid.y, 3, 3);
- *     });
+ *   const canvasRef = useSimulationCanvas<typeof boidsSim>(
+ *     (ctx, { data }, view) => {
+ *       view.clear(view.theme('--bg2', '#fff'));
+ *       data.boids.forEach((b) => ctx.fillRect(b.x, b.y, 3, 3));
+ *     },
+ *     { width: 400, height: 400 }
+ *   );
+ *   return <canvas ref={canvasRef} style={{ width: 400, height: 400 }} />;
+ * }
+ * ```
+ *
+ * @example Legacy mode (pre-existing call sites, unchanged behavior)
+ * ```tsx
+ * function BoidsCanvas() {
+ *   const dpr = window.devicePixelRatio || 1;
+ *   const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data }) => {
+ *     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+ *     ctx.clearRect(0, 0, 400, 400);
+ *     data.boids.forEach((b) => ctx.fillRect(b.x, b.y, 3, 3));
+ *     ctx.setTransform(1, 0, 0, 1, 0, 0);
  *   });
- *   return <canvas ref={canvasRef} width={400} height={400} />;
+ *   return <canvas ref={canvasRef} width={400 * dpr} height={400 * dpr} />;
  * }
  * ```
  */
 export function useSimulationCanvas<T = unknown, FallbackParams = unknown>(
-  draw: InferDraw<T, FallbackParams>
+  draw: InferDraw<T, FallbackParams>,
+  options?: UseSimulationCanvasOptions
 ): React.RefObject<HTMLCanvasElement> {
   const engineCtx = React.useContext(EngineContext);
   if (!engineCtx) {
@@ -52,39 +94,24 @@ export function useSimulationCanvas<T = unknown, FallbackParams = unknown>(
   const drawRef = React.useRef(draw);
   drawRef.current = draw;
 
+  const width = options?.width;
+  const height = options?.height;
+
   React.useEffect(() => {
-    // Draw the initial frame
     const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        const snap = engineCtx.getSnapshot();
-        const t0 = performance.now();
-        // TODO(#14): re-narrow from EngineContext's erased generics. Drop once
-        // EngineContext carries Data/Params.
-        (drawRef.current as CanvasDrawFn<unknown, unknown>)(ctx, snap);
-        engineCtx.recordDrawTime(snap.tick, performance.now() - t0);
-      }
+    if (!canvas) return;
+
+    // Stable wrapper so attachCanvas always sees the latest draw closure.
+    // TODO(#14): re-narrow from EngineContext's erased generics. Drop once
+    // EngineContext carries Data/Params.
+    const drawFn: CanvasDrawFn<unknown, unknown> = (ctx, snap, view) =>
+      (drawRef.current as CanvasDrawFn<unknown, unknown>)(ctx, snap, view);
+
+    if (width !== undefined && height !== undefined) {
+      return attachCanvas(engineCtx, canvas, drawFn, { width, height });
     }
-
-    // Subscribe to engine — draw on every state, no setState
-    const unsubscribe = engineCtx.subscribe(
-      (snap: State<unknown, unknown>) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const t0 = performance.now();
-        // TODO(#14): re-narrow from EngineContext's erased generics. Drop once
-        // EngineContext carries Data/Params.
-        (drawRef.current as CanvasDrawFn<unknown, unknown>)(ctx, snap);
-        engineCtx.recordDrawTime(snap.tick, performance.now() - t0);
-      }
-    );
-
-    return unsubscribe;
-  }, [engineCtx]);
+    return attachCanvasLegacy(engineCtx, canvas, drawFn);
+  }, [engineCtx, width, height]);
 
   return canvasRef;
 }
