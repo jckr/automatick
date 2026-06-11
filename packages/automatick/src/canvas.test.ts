@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { attachCanvas, attachCanvasLegacy } from './index';
-import type { CanvasSource, CanvasView } from './index';
-import type { State } from '../state';
+import { attachCanvas, attachCanvasLegacy } from './canvas';
+import type { CanvasSource, CanvasView } from './canvas';
+import type { State } from './state';
 
 // ---------------------------------------------------------------------------
 // Test doubles — vitest runs in a node environment, so every DOM surface the
@@ -429,6 +429,77 @@ describe('view.clear / view.fade', () => {
     );
     emit(makeSnapshot(1));
     expect(fillStyleDuring).toBe('#fff');
+  });
+});
+
+describe('view.clear / view.fade — color resolution', () => {
+  it("clear('--var') resolves through the theme and wires theme observers", () => {
+    const { ctx, draw, emit } = attachOwned();
+    let fillStyleDuring = '';
+    ctx.fillRect.mockImplementation(() => {
+      fillStyleDuring = String(ctx.fillStyle);
+    });
+    draw.mockImplementation((_c, _s, view: CanvasView) => view.clear('--fg1'));
+    emit(makeSnapshot(1));
+    expect(fillStyleDuring).toBe('#abc'); // themeValues['--fg1'], trimmed
+    // Resolving via the theme wires the observers, so theme switches repaint.
+    expect(MockMutationObserver.instances.length).toBeGreaterThan(0);
+  });
+
+  it('a non-color string falls back to a --prefixed theme lookup', () => {
+    vi.stubGlobal('CSS', { supports: vi.fn(() => false) });
+    const { ctx, draw, emit } = attachOwned();
+    let fillStyleDuring = '';
+    ctx.fillRect.mockImplementation(() => {
+      fillStyleDuring = String(ctx.fillStyle);
+    });
+    draw.mockImplementation((_c, _s, view: CanvasView) => view.clear('fg1'));
+    emit(makeSnapshot(1));
+    expect(fillStyleDuring).toBe('#abc');
+  });
+
+  it('a CSS.supports-validated color is used directly, no theme read', () => {
+    vi.stubGlobal('CSS', { supports: vi.fn(() => true) });
+    const { ctx, draw, emit } = attachOwned();
+    let fillStyleDuring = '';
+    ctx.fillRect.mockImplementation(() => {
+      fillStyleDuring = String(ctx.fillStyle);
+    });
+    draw.mockImplementation((_c, _s, view: CanvasView) => view.clear('red'));
+    emit(makeSnapshot(1));
+    expect(fillStyleDuring).toBe('red');
+    expect(getPropertyValueSpy).not.toHaveBeenCalled();
+  });
+
+  it('an unresolvable color paints nothing and logs once, not per frame', () => {
+    vi.stubGlobal('CSS', { supports: vi.fn(() => false) });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { ctx, draw, emit } = attachOwned();
+      draw.mockImplementation((_c, _s, view: CanvasView) =>
+        view.clear('not-a-color')
+      );
+      emit(makeSnapshot(1));
+      emit(makeSnapshot(2));
+      expect(ctx.fillRect).not.toHaveBeenCalled();
+      expect(ctx.clearRect).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('fade() resolves theme custom properties the same way', () => {
+    const { ctx, draw, emit } = attachOwned();
+    let fillStyleDuring = '';
+    ctx.fillRect.mockImplementation(() => {
+      fillStyleDuring = String(ctx.fillStyle);
+    });
+    draw.mockImplementation((_c, _s, view: CanvasView) =>
+      view.fade(0.1, '--fg1')
+    );
+    emit(makeSnapshot(1));
+    expect(fillStyleDuring).toBe('#abc');
   });
 });
 

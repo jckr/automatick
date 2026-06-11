@@ -79,7 +79,7 @@ import { useSimulationCanvas } from 'automatick/react/canvas';
 function MyCanvas() {
   const canvasRef = useSimulationCanvas<typeof mySim>(
     (ctx, { data, params }, view) => {
-      view.clear(view.theme('--bg2', '#fff'));
+      view.clear('--bg2');
       // draw here using ctx, in CSS pixels
     },
     { width: WIDTH, height: HEIGHT }
@@ -159,7 +159,7 @@ view.height  // logical (CSS px) drawing height
 view.dpr     // current devicePixelRatio (already applied to the transform)
 
 view.clear();                          // clearRect over the full logical area
-view.clear(view.theme('--bg2'));       // fill with a (theme) color instead
+view.clear('--bg2');                   // fill with a CSS color or theme custom property
 view.fade(0.05);                       // trail effect: translucent black fill
 view.fade(0.05, '#fff');               // trail effect over a light background
 view.theme('--fg1', '#000');           // CSS custom property, cached per frame
@@ -169,6 +169,11 @@ view.blitGrid(cols, rows, (px) => {…}); // pixel grid → scaled, crisp blit
 All helpers restore any context state they touch (`fillStyle`, `globalAlpha`,
 `imageSmoothingEnabled`) — they never leak into your subsequent drawing.
 
+`clear`/`fade` color arguments accept either a CSS color (used as-is) or a
+theme custom property name (resolved via `view.theme`, so theme switches
+repaint). An unresolvable value logs an error once and paints nothing — no
+throw, mirroring how canvas contexts ignore invalid color assignments.
+
 ### Agent-based sims (boids, epidemic, ant colony)
 
 ```ts
@@ -177,7 +182,7 @@ type Data = { agents: Agent[] };
 
 // Draw: iterate agents, draw shapes (in CSS pixels — dpr is handled)
 (ctx, { data }, view) => {
-  view.clear(view.theme('--bg2', '#fff'));
+  view.clear('--bg2');
   for (const agent of data.agents) {
     ctx.beginPath();
     ctx.arc(agent.x, agent.y, agent.r, 0, Math.PI * 2);

@@ -1,7 +1,7 @@
 import React from 'react';
 import type { SimModule } from '../sim';
-import { attachCanvas, attachCanvasLegacy } from '../canvas/index';
-import type { CanvasDrawFn } from '../canvas/index';
+import { attachCanvas, attachCanvasLegacy } from '../canvas';
+import type { CanvasDrawFn } from '../canvas';
 import { EngineContext } from './EngineContext';
 
 /**
@@ -11,7 +11,6 @@ import { EngineContext } from './EngineContext';
  * injected view toolkit; existing two-argument draw functions
  * `(ctx, snapshot) => void` remain assignable and keep working unchanged.
  */
-export type { CanvasDrawFn, CanvasView } from '../canvas/index';
 
 type InferDraw<T, FallbackParams> = T extends SimModule<infer D, infer P>
   ? CanvasDrawFn<D, P>

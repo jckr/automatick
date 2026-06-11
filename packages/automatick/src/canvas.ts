@@ -13,7 +13,7 @@
  * remains reachable).
  */
 
-import type { State } from '../state';
+import type { State } from './state';
 
 /**
  * Minimal structural interface for anything that can feed a canvas:
@@ -52,15 +52,18 @@ export type CanvasView = {
   /** Current devicePixelRatio applied to the backing store. */
   dpr: number;
   /**
-   * No-arg: `clearRect` over the full logical area. With a color: fills the
-   * full logical area with that color instead. For a theme-aware background,
-   * compose with {@link CanvasView.theme}: `view.clear(view.theme('--bg2'))`.
+   * No-arg: `clearRect` over the full logical area. With an argument: fills
+   * the full logical area instead. The argument is either a CSS color
+   * (`'#fff'`, `'rgb(20 20 20)'`) or a theme custom property to resolve
+   * (`view.clear('--bg2')`). Unresolvable values log an error once and paint
+   * nothing (no throw — mirrors the canvas convention for invalid colors).
    */
   clear(color?: string): void;
   /**
    * Translucent full-area fill — the classic trail effect. Fills the full
    * logical area with `color ?? '#000'` at `globalAlpha = alpha`, then
-   * restores both `globalAlpha` and `fillStyle`.
+   * restores both `globalAlpha` and `fillStyle`. `color` resolves like
+   * {@link CanvasView.clear}: CSS color or theme custom property.
    */
   fade(alpha: number, color?: string): void;
   /**
@@ -76,9 +79,12 @@ export type CanvasView = {
    */
   theme(varName: string, fallback?: string): string;
   /**
-   * Pixel-grid blit: hands `write` a `cols × rows` RGBA buffer
-   * (`Uint8ClampedArray`, 4 bytes per cell, row-major), then draws it scaled
-   * to the full logical area with image smoothing disabled (crisp cells).
+   * Render a `cols × rows` cell grid, scaled crisply to the full logical
+   * area. "Blit" is the standard graphics term (block image transfer) for
+   * copying a pixel buffer onto a surface — which is exactly the operation:
+   * `write` receives the grid's RGBA buffer (`Uint8ClampedArray`, 4 bytes
+   * per cell, row-major), fills in one pixel per cell, and the view blits
+   * the buffer to the canvas with image smoothing disabled (crisp cells).
    * The offscreen canvas and ImageData are cached per attachment and only
    * recreated when `cols`/`rows` change.
    */
@@ -164,7 +170,7 @@ function createBlitCache(cols: number, rows: number): BlitCache | null {
  *
  * const engine = createEngine({ init, step });
  * const detach = attachCanvas(engine, canvas, (ctx, { data }, view) => {
- *   view.clear(view.theme('--bg2', '#fff'));
+ *   view.clear('--bg2');
  *   for (const p of data.particles) ctx.fillRect(p.x, p.y, 2, 2);
  * }, { width: 400, height: 400 });
  * ```
@@ -228,17 +234,21 @@ function attachImpl<Data, Params>(
         ctx.clearRect(0, 0, view.width, view.height);
         return;
       }
+      const resolved = resolveColor(color);
+      if (resolved === null) return;
       const prevFill = ctx.fillStyle;
-      ctx.fillStyle = color;
+      ctx.fillStyle = resolved;
       ctx.fillRect(0, 0, view.width, view.height);
       ctx.fillStyle = prevFill;
     },
 
     fade(alpha: number, color?: string): void {
+      const resolved = color === undefined ? '#000' : resolveColor(color);
+      if (resolved === null) return;
       const prevFill = ctx.fillStyle;
       const prevAlpha = ctx.globalAlpha;
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = color ?? '#000';
+      ctx.fillStyle = resolved;
       ctx.fillRect(0, 0, view.width, view.height);
       ctx.globalAlpha = prevAlpha;
       ctx.fillStyle = prevFill;
@@ -281,6 +291,38 @@ function attachImpl<Data, Params>(
       ctx.imageSmoothingEnabled = prevSmoothing;
     },
   };
+
+  // Colors already reported as unresolvable — log once each, not per frame.
+  const warnedColors = new Set<string>();
+
+  /**
+   * Resolve a color argument for clear()/fade(): a CSS color is used as-is;
+   * anything else is looked up as a theme custom property (as given, then
+   * with a `--` prefix), which wires the theme observers so repaints track
+   * theme changes. Unresolvable values log once and paint nothing — the
+   * canvas convention of silently ignoring invalid color assignments, plus
+   * a log so the mistake is findable.
+   */
+  function resolveColor(color: string): string | null {
+    const isVar = color.startsWith('--');
+    if (!isVar) {
+      // Without CSS.supports (older engines, stub environments) we can't
+      // validate; pass through and let the canvas ignore invalid values.
+      if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') {
+        return color;
+      }
+      if (CSS.supports('color', color)) return color;
+    }
+    const themed = view.theme(color) || (isVar ? '' : view.theme('--' + color));
+    if (themed !== '') return themed;
+    if (!warnedColors.has(color)) {
+      warnedColors.add(color);
+      console.error(
+        `automatick/canvas: "${color}" is neither a CSS color nor a theme custom property; nothing painted.`
+      );
+    }
+    return null;
+  }
 
   /**
    * Sync the view's logical dims and dpr. Ownership mode also resizes the
