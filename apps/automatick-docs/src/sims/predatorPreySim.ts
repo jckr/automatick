@@ -47,8 +47,13 @@ function wrap(v: number, max: number): number {
   return v;
 }
 
-function makePrey(x: number, y: number, speed: number): PredatorPreyAgent {
-  const angle = Math.random() * Math.PI * 2;
+function makePrey(
+  x: number,
+  y: number,
+  speed: number,
+  random: () => number
+): PredatorPreyAgent {
+  const angle = random() * Math.PI * 2;
   return {
     x,
     y,
@@ -63,9 +68,10 @@ function makePredator(
   x: number,
   y: number,
   speed: number,
-  energy: number
+  energy: number,
+  random: () => number
 ): PredatorPreyAgent {
-  const angle = Math.random() * Math.PI * 2;
+  const angle = random() * Math.PI * 2;
   return {
     x,
     y,
@@ -92,7 +98,7 @@ export default defineSim<PredatorPreyData, PredatorPreyParams>({
     predatorReproduceEnergy: 55,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const {
       initialPrey,
       initialPredators,
@@ -106,21 +112,23 @@ export default defineSim<PredatorPreyData, PredatorPreyParams>({
     for (let i = 0; i < initialPrey; i++) {
       agents.push(
         makePrey(
-          Math.random() * worldWidth,
-          Math.random() * worldHeight,
-          preySpeed
+          random() * worldWidth,
+          random() * worldHeight,
+          preySpeed,
+          random
         )
       );
     }
     for (let i = 0; i < initialPredators; i++) {
       // Desynchronize starting energy so predators don't all starve at once.
-      const energy = PREDATOR_START_ENERGY * (0.6 + Math.random() * 0.8);
+      const energy = PREDATOR_START_ENERGY * (0.6 + random() * 0.8);
       agents.push(
         makePredator(
-          Math.random() * worldWidth,
-          Math.random() * worldHeight,
+          random() * worldWidth,
+          random() * worldHeight,
           predatorSpeed,
-          energy
+          energy,
+          random
         )
       );
     }
@@ -132,7 +140,7 @@ export default defineSim<PredatorPreyData, PredatorPreyParams>({
     };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const {
       worldWidth: W,
       worldHeight: H,
@@ -186,7 +194,7 @@ export default defineSim<PredatorPreyData, PredatorPreyParams>({
       } else {
         // Wander: nudge heading and keep moving.
         const angle =
-          Math.atan2(pred.vy, pred.vx) + (Math.random() - 0.5) * 0.8;
+          Math.atan2(pred.vy, pred.vx) + (random() - 0.5) * 0.8;
         pred.vx = Math.cos(angle) * predatorSpeed;
         pred.vy = Math.sin(angle) * predatorSpeed;
       }
@@ -200,7 +208,7 @@ export default defineSim<PredatorPreyData, PredatorPreyParams>({
       if (pred.energy >= predatorReproduceEnergy) {
         pred.energy /= 2;
         nextPredators.push(
-          makePredator(pred.x, pred.y, predatorSpeed, pred.energy)
+          makePredator(pred.x, pred.y, predatorSpeed, pred.energy, random)
         );
       }
       nextPredators.push(pred);
@@ -215,15 +223,15 @@ export default defineSim<PredatorPreyData, PredatorPreyParams>({
     for (let i = 0; i < prey.length; i++) {
       if (eaten[i]) continue;
       const p = prey[i];
-      const angle = Math.atan2(p.vy, p.vx) + (Math.random() - 0.5) * 1.0;
+      const angle = Math.atan2(p.vy, p.vx) + (random() - 0.5) * 1.0;
       p.vx = Math.cos(angle) * preySpeed;
       p.vy = Math.sin(angle) * preySpeed;
       p.x = wrap(p.x + p.vx, W);
       p.y = wrap(p.y + p.vy, H);
       nextPrey.push(p);
 
-      if (Math.random() < effChance) {
-        nextPrey.push(makePrey(p.x, p.y, preySpeed));
+      if (random() < effChance) {
+        nextPrey.push(makePrey(p.x, p.y, preySpeed, random));
       }
     }
 

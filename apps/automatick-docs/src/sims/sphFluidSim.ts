@@ -41,7 +41,7 @@ export default defineSim<SphFluidData, SphFluidParams>({
     gravityY: 2000,
   },
 
-  init: ({ count }) => {
+  init: ({ count }, { random }) => {
     const x = new Float32Array(count);
     const y = new Float32Array(count);
     const vx = new Float32Array(count);
@@ -58,10 +58,10 @@ export default defineSim<SphFluidData, SphFluidParams>({
     for (let i = 0; i < count; i++) {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const jitter = (Math.random() - 0.5) * spacing * 0.1;
+      const jitter = (random() - 0.5) * spacing * 0.1;
       x[i] = spacing + col * spacing + jitter;
       y[i] = spacing + row * spacing + jitter;
-      if (y[i] > regionH) y[i] = regionH - Math.random() * spacing;
+      if (y[i] > regionH) y[i] = regionH - random() * spacing;
     }
 
     return { x, y, vx, vy, rho, pressure, count };

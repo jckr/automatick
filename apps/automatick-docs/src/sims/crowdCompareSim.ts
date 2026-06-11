@@ -115,8 +115,7 @@ function gapLane(coord: number, span: number): number {
 }
 
 // ---- Selfish world: reactive social-force placement ----
-function placeSelfish(a: CmpAgent, scenario: CrowdScenario, W: number, H: number): void {
-  const r = Math.random;
+function placeSelfish(a: CmpAgent, scenario: CrowdScenario, W: number, H: number, r: () => number): void {
   if (scenario === 'bidirectional') {
     a.y = CORRIDOR_TOP + RADIUS + r() * (CORRIDOR_BOT - CORRIDOR_TOP - 2 * RADIUS);
     a.dirX = a.group === 0 ? 1 : -1;
@@ -163,8 +162,7 @@ function placeSelfish(a: CmpAgent, scenario: CrowdScenario, W: number, H: number
 }
 
 // ---- Coordinated world: assigned lanes + itinerary waypoints ----
-function placeCoordinated(a: CmpAgent, scenario: CrowdScenario, W: number, H: number): void {
-  const r = Math.random;
+function placeCoordinated(a: CmpAgent, scenario: CrowdScenario, W: number, H: number, r: () => number): void {
   a.vx = 0;
   a.vy = 0;
   a.stage = 0;
@@ -265,12 +263,13 @@ function reconcile(
   scenario: CrowdScenario,
   W: number,
   H: number,
-  place: (a: CmpAgent, s: CrowdScenario, W: number, H: number) => void
+  random: () => number,
+  place: (a: CmpAgent, s: CrowdScenario, W: number, H: number, r: () => number) => void
 ): void {
   const agents = world.agents;
   while (agents.length < target) {
     const a = blankAgent(groupFor(scenario, agents.length));
-    place(a, scenario, W, H);
+    place(a, scenario, W, H, random);
     agents.push(a);
   }
   if (agents.length > target) agents.length = target;
@@ -284,7 +283,7 @@ function reachedEdge(a: CmpAgent, W: number, H: number): boolean {
   return false;
 }
 
-function stepSelfish(world: World, obstacles: Obstacle[], p: CrowdCompareParams): void {
+function stepSelfish(world: World, obstacles: Obstacle[], p: CrowdCompareParams, random: () => number): void {
   const { width: W, height: H, desiredSpeed, personalSpace: B, scenario } = p;
   const agents = world.agents;
   const n = agents.length;
@@ -363,7 +362,7 @@ function stepSelfish(world: World, obstacles: Obstacle[], p: CrowdCompareParams)
     a.x = clamp(a.x, a.radius, W - a.radius);
     a.y = clamp(a.y, a.radius, H - a.radius);
     if (reachedEdge(a, W, H)) {
-      placeSelfish(a, scenario, W, H);
+      placeSelfish(a, scenario, W, H, random);
       world.completed++;
     }
   }
@@ -388,7 +387,7 @@ function mustHold(a: CmpAgent, scenario: CrowdScenario, tick: number, ds: number
   return false;
 }
 
-function stepCoordinated(world: World, p: CrowdCompareParams, tick: number): void {
+function stepCoordinated(world: World, p: CrowdCompareParams, tick: number, random: () => number): void {
   const { width: W, height: H, desiredSpeed, scenario } = p;
   const agents = world.agents;
   const n = agents.length;
@@ -435,7 +434,7 @@ function stepCoordinated(world: World, p: CrowdCompareParams, tick: number): voi
         ai.wx = ai.group === 0 ? W + 30 : -30;
       }
     } else if (reachedEdge(ai, W, H)) {
-      placeCoordinated(ai, scenario, W, H);
+      placeCoordinated(ai, scenario, W, H, random);
       world.completed++;
     }
   }
@@ -451,12 +450,12 @@ export default defineSim<CrowdCompareData, CrowdCompareParams>({
     scenario: 'bidirectional',
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const { numAgents, width, height, scenario } = params;
     const selfish: World = { agents: [], completed: 0 };
     const coordinated: World = { agents: [], completed: 0 };
-    reconcile(selfish, numAgents, scenario, width, height, placeSelfish);
-    reconcile(coordinated, numAgents, scenario, width, height, placeCoordinated);
+    reconcile(selfish, numAgents, scenario, width, height, random, placeSelfish);
+    reconcile(coordinated, numAgents, scenario, width, height, random, placeCoordinated);
     return {
       selfish,
       coordinated,
@@ -466,12 +465,12 @@ export default defineSim<CrowdCompareData, CrowdCompareParams>({
     };
   },
 
-  step: ({ data, params, tick }) => {
+  step: ({ data, params, tick, random }) => {
     const { numAgents, width, height, scenario } = params;
-    reconcile(data.selfish, numAgents, scenario, width, height, placeSelfish);
-    reconcile(data.coordinated, numAgents, scenario, width, height, placeCoordinated);
-    stepSelfish(data.selfish, data.obstacles, params);
-    stepCoordinated(data.coordinated, params, tick);
+    reconcile(data.selfish, numAgents, scenario, width, height, random, placeSelfish);
+    reconcile(data.coordinated, numAgents, scenario, width, height, random, placeCoordinated);
+    stepSelfish(data.selfish, data.obstacles, params, random);
+    stepCoordinated(data.coordinated, params, tick, random);
     return data;
   },
 });

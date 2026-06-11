@@ -35,8 +35,8 @@ export function draw({
 export default defineSim<XorRingData, XorRingParams>({
   defaultParams,
 
-  init: (params) =>
-    Array.from({ length: params.cells }, () => (Math.random() < params.density ? 1 : 0)),
+  init: (params, { random }) =>
+    Array.from({ length: params.cells }, () => (random() < params.density ? 1 : 0)),
 
   step: ({ data, params }) => {
     const n = params.cells;

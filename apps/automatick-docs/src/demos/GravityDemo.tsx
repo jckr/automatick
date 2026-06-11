@@ -25,42 +25,34 @@ const GENERATION_PALETTE: Array<{ h: number; s: number; l: number }> = [
 ];
 
 function GravityCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const initializedRef = React.useRef(false);
 
-  const canvasRef = useSimulationCanvas<typeof gravitySim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const canvasRef = useSimulationCanvas<typeof gravitySim>(
+    (ctx, { data }, view) => {
+      if (!initializedRef.current) {
+        view.clear('#0a0a1a');
+        initializedRef.current = true;
+      }
+      view.fade(0.15, '#0a0a1a');
 
-    if (!initializedRef.current) {
-      ctx.fillStyle = '#0a0a1a';
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
-      initializedRef.current = true;
-    }
-    ctx.fillStyle = 'rgba(10, 10, 26, 0.15)';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-    data.particles.forEach((p) => {
-      const c = GENERATION_PALETTE[p.generation % GENERATION_PALETTE.length];
-      ctx.fillStyle = `hsla(${c.h}, ${c.s}%, ${c.l}%, 0.3)`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius * 2.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = `hsl(${c.h}, ${c.s}%, ${c.l}%)`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      data.particles.forEach((p) => {
+        const c = GENERATION_PALETTE[p.generation % GENERATION_PALETTE.length];
+        ctx.fillStyle = `hsla(${c.h}, ${c.s}%, ${c.l}%, 0.3)`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `hsl(${c.h}, ${c.s}%, ${c.l}%)`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    },
+    { width: WIDTH, height: HEIGHT }
+  );
 
   return (
     <CanvasStage maxWidth={WIDTH} minHeight={420}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }
