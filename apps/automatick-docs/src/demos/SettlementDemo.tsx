@@ -25,106 +25,78 @@ const SETTLEMENT_COLORS = [
 ];
 
 function SettlementCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
+  const canvasRef = useSimulationCanvas<typeof settlementSim>(
+    (ctx, { data }, view) => {
+      const scale = CSS_SIZE / GRID;
 
-  const canvasRef = useSimulationCanvas<typeof settlementSim>((ctx, { data }) => {
-    const scale = CSS_SIZE / GRID;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      view.blitGrid(GRID, GRID, (px) => {
+        for (let i = 0; i < GRID * GRID; i++) {
+          const r = data.resourceGrid[i];
+          const cap = data.capacityGrid[i];
+          const fill = cap > 0 ? r / cap : 0;
+          const richness = cap > 0 ? Math.min(cap, 1) : 0;
+          const j = i * 4;
+          px[j] = Math.floor(18 + (1 - fill) * richness * 40);
+          px[j + 1] = Math.floor(18 + fill * richness * 140);
+          px[j + 2] = Math.floor(12 + fill * richness * 20);
+          px[j + 3] = 255;
+        }
+      });
 
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = GRID;
-      off.height = GRID;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-
-    if (!imageDataRef.current) {
-      imageDataRef.current = offCtx.createImageData(GRID, GRID);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
-
-    for (let i = 0; i < GRID * GRID; i++) {
-      const r = data.resourceGrid[i];
-      const cap = data.capacityGrid[i];
-      const fill = cap > 0 ? r / cap : 0;
-      const richness = cap > 0 ? Math.min(cap, 1) : 0;
-      const j = i * 4;
-      px[j] = Math.floor(18 + (1 - fill) * richness * 40);
-      px[j + 1] = Math.floor(18 + fill * richness * 140);
-      px[j + 2] = Math.floor(12 + fill * richness * 20);
-      px[j + 3] = 255;
-    }
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, CSS_SIZE, CSS_SIZE);
-
-    for (const agent of data.agents) {
-      if (agent.home >= 0) {
-        const color = SETTLEMENT_COLORS[agent.home % SETTLEMENT_COLORS.length];
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.7;
-        ctx.fillRect(agent.x * scale - 1.5, agent.y * scale - 1.5, 3, 3);
-      } else {
-        ctx.fillStyle = '#e0d6c0';
-        ctx.globalAlpha = 0.9;
-        ctx.beginPath();
-        ctx.arc(agent.x * scale, agent.y * scale, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.globalAlpha = 1;
-
-    for (let si = 0; si < data.settlements.length; si++) {
-      const s = data.settlements[si];
-      const color = SETTLEMENT_COLORS[si % SETTLEMENT_COLORS.length];
-
-      const cols = Math.ceil(Math.sqrt(s.buildings));
-      const bldgSize = Math.max(2, 4 - cols * 0.2);
-      const startX = s.x * scale - (cols * (bldgSize + 1)) / 2;
-      const startY = s.y * scale - (cols * (bldgSize + 1)) / 2;
-      ctx.fillStyle = color;
-      for (let b = 0; b < s.buildings && b < 40; b++) {
-        const bx = startX + (b % cols) * (bldgSize + 1);
-        const by = startY + Math.floor(b / cols) * (bldgSize + 1);
-        ctx.fillRect(bx, by, bldgSize, bldgSize);
-      }
-
-      ctx.lineWidth = 1.5;
-      for (let sj = si + 1; sj < data.settlements.length; sj++) {
-        const other = data.settlements[sj];
-        const dist = Math.sqrt((s.x - other.x) ** 2 + (s.y - other.y) ** 2);
-        if (dist < 60) {
-          ctx.strokeStyle = '#d4a843';
-          ctx.globalAlpha = 0.5;
+      for (const agent of data.agents) {
+        if (agent.home >= 0) {
+          const color = SETTLEMENT_COLORS[agent.home % SETTLEMENT_COLORS.length];
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.7;
+          ctx.fillRect(agent.x * scale - 1.5, agent.y * scale - 1.5, 3, 3);
+        } else {
+          ctx.fillStyle = '#e0d6c0';
+          ctx.globalAlpha = 0.9;
           ctx.beginPath();
-          ctx.moveTo(s.x * scale, s.y * scale);
-          ctx.lineTo(other.x * scale, other.y * scale);
-          ctx.stroke();
+          ctx.arc(agent.x * scale, agent.y * scale, 2.5, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
-    }
+      ctx.globalAlpha = 1;
 
-    ctx.globalAlpha = 1;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      for (let si = 0; si < data.settlements.length; si++) {
+        const s = data.settlements[si];
+        const color = SETTLEMENT_COLORS[si % SETTLEMENT_COLORS.length];
+
+        const cols = Math.ceil(Math.sqrt(s.buildings));
+        const bldgSize = Math.max(2, 4 - cols * 0.2);
+        const startX = s.x * scale - (cols * (bldgSize + 1)) / 2;
+        const startY = s.y * scale - (cols * (bldgSize + 1)) / 2;
+        ctx.fillStyle = color;
+        for (let b = 0; b < s.buildings && b < 40; b++) {
+          const bx = startX + (b % cols) * (bldgSize + 1);
+          const by = startY + Math.floor(b / cols) * (bldgSize + 1);
+          ctx.fillRect(bx, by, bldgSize, bldgSize);
+        }
+
+        ctx.lineWidth = 1.5;
+        for (let sj = si + 1; sj < data.settlements.length; sj++) {
+          const other = data.settlements[sj];
+          const dist = Math.sqrt((s.x - other.x) ** 2 + (s.y - other.y) ** 2);
+          if (dist < 60) {
+            ctx.strokeStyle = '#d4a843';
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(s.x * scale, s.y * scale);
+            ctx.lineTo(other.x * scale, other.y * scale);
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.globalAlpha = 1;
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <CanvasStage maxWidth={CSS_SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

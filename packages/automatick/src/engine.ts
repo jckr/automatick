@@ -1,5 +1,6 @@
 import { isInitFn } from './sim';
-import type { SimInit } from './sim';
+import type { SimInit, SimToolkit, StepContext } from './sim';
+import { createSimRandom } from './random';
 import type { State, SimulationStatus } from './state';
 
 export type { SimulationStatus, State } from './state';
@@ -10,22 +11,36 @@ export type TickPerformance = {
   drawMs?: number;
 };
 
-export type EngineConfig<Data, Params = Record<string, never>> = {
+export type EngineConfig<Data, Params = Record<string, never>, Input = never> = {
   /**
    * Initial simulation state — value or `(params) => Data`. See `SimInit`.
    * When a value is passed, the engine `structuredClone`s it on each (re)init.
    */
-  init: SimInit<Data, Params>;
-  step: (state: State<Data, Params>) => Data;
+  init: SimInit<Data, Params, Input>;
+  step: (ctx: StepContext<Data, Params, Input>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   /**
    * Initial param values. Optional — when omitted, the engine seeds an empty
    * params object and `Params` defaults to `Record<string, never>`.
    */
   initialParams?: Params;
+  /**
+   * Seed for the engine's `SimRandom` (see `random.ts`). Number or string.
+   * When omitted, the engine picks a random numeric seed at construction and
+   * records it — `getSeed()` always returns the seed that reproduces the run.
+   * `resetWith()` re-derives the generator from this same seed, so a reset
+   * replays the run exactly.
+   */
+  seed?: number | string;
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
+  /**
+   * Upper bound on the number of inputs queued by `send()` between tick
+   * advances (default 1024). Beyond the bound the queue drops its *oldest*
+   * entry — the most recent perturbations win.
+   */
+  maxQueuedInputs?: number;
   /**
    * Optional render callback — sugar for the vanilla path. When provided, the
    * engine calls it once with the initial state (right after init) and on
@@ -51,7 +66,21 @@ export type EngineConfig<Data, Params = Record<string, never>> = {
 
 const PERF_BUFFER_SIZE = 120;
 
-export class SimulationEngine<Data, Params = Record<string, never>> {
+const DEFAULT_MAX_QUEUED_INPUTS = 1024;
+
+/**
+ * The one shared "no inputs this tick" array — frozen so a sim can't mutate
+ * it, and a single module-level instance so the hot path (the overwhelmingly
+ * common no-inputs tick) allocates nothing. `readonly never[]` is assignable
+ * to `readonly Input[]` for every `Input`.
+ */
+const NO_INPUTS: readonly never[] = Object.freeze([]);
+
+export class SimulationEngine<
+  Data,
+  Params = Record<string, never>,
+  Input = never,
+> {
   private data: Data;
   private params: Params;
   private tick: number = 0;
@@ -59,12 +88,30 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
   private lastUpdateMs: number | null = null;
   private lastStepMs: number = 0;
 
-  private readonly initFn: (params: Params) => Data;
-  private readonly stepFn: (state: State<Data, Params>) => Data;
+  private readonly initFn: (
+    params: Params,
+    toolkit: SimToolkit<Input>
+  ) => Data;
+  private readonly stepFn: (ctx: StepContext<Data, Params, Input>) => Data;
   private readonly shouldStopFn?: (data: Data, params: Params) => boolean;
   private readonly maxTime?: number;
   private delayMs: number;
   private ticksPerFrame: number;
+  private readonly seed: number | string;
+  private readonly maxQueuedInputs: number;
+  /**
+   * Inputs sent via `send()` and not yet delivered to a tick. Drained whole
+   * into the first tick of the next batch (see `drainInputs`).
+   */
+  private inputQueue: Input[] = [];
+  /**
+   * One toolkit per run — stable identity between resets (no per-tick
+   * allocation), recreated by `resetWith()` so the generator restarts from
+   * the same seed and the reset run replays the original exactly. Its
+   * `inputs` field is the init-time view: always the empty array — per-tick
+   * inputs are composed into the step context at the `step` call site.
+   */
+  private toolkit: SimToolkit<Input>;
 
   private readonly listeners = new Set<
     (snapshot: State<Data, Params>) => void
@@ -78,7 +125,7 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
   private rafId: number | null = null;
   private rafCancel: ((id: number) => void) | null = null;
 
-  constructor(config: EngineConfig<Data, Params>) {
+  constructor(config: EngineConfig<Data, Params, Input>) {
     const init = config.init;
     if (isInitFn(init)) {
       this.initFn = init;
@@ -96,6 +143,12 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
     this.maxTime = config.maxTime;
     this.delayMs = config.delayMs ?? 0;
     this.ticksPerFrame = config.ticksPerFrame ?? 1;
+    this.maxQueuedInputs = config.maxQueuedInputs ?? DEFAULT_MAX_QUEUED_INPUTS;
+
+    // When no seed is given, pick a random one and record it so the run is
+    // still reproducible: read it back via getSeed().
+    this.seed = config.seed ?? Math.floor(Math.random() * 0x100000000);
+    this.toolkit = { random: createSimRandom(this.seed), inputs: NO_INPUTS };
 
     // `initialParams` is optional; when absent we seed an empty params object.
     // The `as Params` is the one cast at this boundary: `Params` defaults to
@@ -104,7 +157,7 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
     this.params = config.initialParams
       ? { ...config.initialParams }
       : ({} as Params);
-    this.data = this.initFn(this.params);
+    this.data = this.initFn(this.params, this.toolkit);
 
     if (config.render) {
       this.listeners.add(config.render);
@@ -138,6 +191,15 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
 
   getStatus(): SimulationStatus {
     return this.status;
+  }
+
+  /**
+   * The seed this engine's `SimRandom` was derived from — the one passed in
+   * `config.seed`, or the recorded random default when none was given.
+   * Constructing another engine with this seed reproduces the run.
+   */
+  getSeed(): number | string {
+    return this.seed;
   }
 
   getPerformance(): readonly TickPerformance[] {
@@ -234,11 +296,38 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
     this.emit();
   }
 
+  /**
+   * Queue a transient perturbation event for delivery to the simulation.
+   *
+   * Delivery semantics:
+   * - The whole queue is delivered, in send order, as `inputs` to the *first*
+   *   tick of the next batch; remaining ticks in a `ticksPerFrame` batch see
+   *   an empty array.
+   * - While `paused`/`idle`, inputs accumulate and deliver on the next
+   *   `advance()`/`play()` tick.
+   * - While `stopped`, inputs are dropped silently.
+   * - The queue is bounded by `maxQueuedInputs` (drop-oldest) and cleared by
+   *   `resetWith()`.
+   */
+  send(input: Input): void {
+    if (this.status === 'stopped') return;
+    if (this.inputQueue.length >= this.maxQueuedInputs) {
+      // Drop-oldest: the most recent perturbations win.
+      this.inputQueue.shift();
+    }
+    this.inputQueue.push(input);
+  }
+
   resetWith(patch?: Partial<Params>): void {
     if (patch) {
       this.params = { ...this.params, ...patch };
     }
-    this.data = this.initFn(this.params);
+    // Re-derive the generator from the same seed so the reset run replays
+    // the original exactly. (A fresh toolkit object, same seed.)
+    this.toolkit = { random: createSimRandom(this.seed), inputs: NO_INPUTS };
+    // A reset run starts clean: pending perturbations belong to the old run.
+    this.inputQueue = [];
+    this.data = this.initFn(this.params, this.toolkit);
     this.tick = 0;
     this.status = 'idle';
     this.lastUpdateMs = null;
@@ -275,8 +364,26 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
   }
 
   /**
+   * Hand the queued inputs over for delivery to the tick about to run, and
+   * clear the queue. This is the single drain point — when input recording
+   * lands (future work), entries are tagged `{ tick, input }` here.
+   *
+   * Returns the shared frozen `NO_INPUTS` array when nothing is queued, so
+   * the common case allocates nothing and keeps a stable identity.
+   */
+  private drainInputs(): readonly Input[] {
+    if (this.inputQueue.length === 0) return NO_INPUTS;
+    const drained = this.inputQueue;
+    this.inputQueue = [];
+    return drained;
+  }
+
+  /**
    * Run step up to `count` ticks. Returns true if all ticks completed
    * without termination, false if stopped early.
+   *
+   * The whole input queue is delivered to the first tick of the batch;
+   * subsequent ticks in the batch see the empty array.
    */
   private advanceTicks(count: number): boolean {
     for (let i = 0; i < count; i++) {
@@ -288,6 +395,8 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
 
       this.tick += 1;
 
+      const inputs = i === 0 ? this.drainInputs() : NO_INPUTS;
+
       const t0 = performance.now();
       // `stepDurationMs` is the *previous* tick's duration — the current one
       // hasn't been measured yet.
@@ -297,6 +406,8 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
         tick: this.tick,
         status: this.status,
         stepDurationMs: this.lastStepMs,
+        random: this.toolkit.random,
+        inputs,
       });
       const t1 = performance.now();
       this.lastStepMs = t1 - t0;
@@ -340,8 +451,12 @@ export class SimulationEngine<Data, Params = Record<string, never>> {
   }
 }
 
-export function createEngine<Data, Params = Record<string, never>>(
-  config: EngineConfig<Data, Params>
-): SimulationEngine<Data, Params> {
+export function createEngine<
+  Data,
+  Params = Record<string, never>,
+  Input = never,
+>(
+  config: EngineConfig<Data, Params, Input>
+): SimulationEngine<Data, Params, Input> {
   return new SimulationEngine(config);
 }

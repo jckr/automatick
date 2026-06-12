@@ -31,14 +31,14 @@ export { EMPTY, ROCK, WATER_FROM_TOP, WATER_FROM_LEFT, WATER_FROM_RIGHT };
 export default defineSim<PercolationData, PercolationParams>({
   defaultParams: { height: 60, width: 60, porosity: 0.6 },
 
-  init: ({ height, width, porosity }) => {
+  init: ({ height, width, porosity }, { random }) => {
     const grid: number[][] = [];
     const queue: { x: number; y: number }[] = [];
 
     for (let y = 0; y < height; y++) {
       const row: number[] = [];
       for (let x = 0; x < width; x++) {
-        row.push(Math.random() > porosity ? ROCK : EMPTY);
+        row.push(random() > porosity ? ROCK : EMPTY);
       }
       grid.push(row);
     }

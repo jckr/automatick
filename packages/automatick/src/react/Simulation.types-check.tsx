@@ -11,7 +11,10 @@
  */
 import * as React from 'react';
 import { Simulation } from './Simulation';
+import { useSimulation } from './hooks';
 import { defineSim } from '../sim';
+import type { SimRandom } from '../random';
+import type { SimToolkit } from '../sim';
 
 // ---------------------------------------------------------------------------
 // Type assertion helpers — no runtime cost.
@@ -128,6 +131,142 @@ const _inlineMissingStep = <Simulation init={{ count: 0 }} />;
 // @ts-expect-error inline form requires both init and step
 const _inlineMissingInit = <Simulation step={({ data }: { data: { count: number } }) => data} />;
 
+// ---------------------------------------------------------------------------
+// 6. Seeded randomness (#74): toolkit in step/init, seed prop on all modes.
+// ---------------------------------------------------------------------------
+
+// The step context exposes the seeded generator as `random`.
+<Simulation
+  init={{ count: 0 }}
+  step={(state) => {
+    assertType<Equals<typeof state.random, SimRandom>>();
+    return { count: state.data.count + state.random.int(0, 1) };
+  }}
+/>;
+
+// Function-form init accepts an optional second toolkit argument…
+<Simulation
+  defaultParams={{ size: 10 }}
+  init={(params, toolkit) => {
+    assertType<Equals<typeof toolkit, SimToolkit>>();
+    return { count: toolkit.random.int(0, params.size) };
+  }}
+  step={({ data, random }) => ({ count: data.count + random.int(0, 1) })}
+/>;
+
+// …and one-arg init functions keep compiling unchanged (regression — also
+// covered by the sim-module and inline cases above).
+const _oneArgInit = (
+  <Simulation
+    defaultParams={{ start: 5 }}
+    init={(params) => ({ count: params.start })}
+    step={({ data }) => ({ count: data.count + 1 })}
+  />
+);
+
+// `seed` is accepted by all three modes, as a number or a string.
+const _seedSim = <Simulation sim={counterSim} seed={42} />;
+const _seedSimString = <Simulation sim={counterSim} seed='run-7' />;
+const _seedInline = (
+  <Simulation
+    seed={42}
+    init={{ count: 0 }}
+    step={({ data }) => ({ count: data.count + 1 })}
+  />
+);
+const _seedWorker = (
+  <Simulation<{ count: number }, { increment: number }>
+    worker={workerUrl}
+    seed='run-7'
+  />
+);
+
+// prettier-ignore
+// @ts-expect-error seed must be a number or string, not a boolean
+const _seedWrongType = <Simulation sim={counterSim} seed={true} />;
+
+// ---------------------------------------------------------------------------
+// 7. Input channel (#73): third generic, `inputs` in step, `send` action.
+// ---------------------------------------------------------------------------
+
+type Stroke = { x: number; y: number };
+
+// Three-generic defineSim: the step context exposes `inputs` as readonly
+// Stroke[], and init's toolkit always has (empty) inputs.
+const paintSim = defineSim<{ painted: Stroke[] }, { brushSize: number }, Stroke>({
+  defaultParams: { brushSize: 2 },
+  init: (_params, toolkit) => {
+    assertType<Equals<typeof toolkit.inputs, readonly Stroke[]>>();
+    // inputs is always [] at init — spreading it is a (typed) no-op.
+    return { painted: [...toolkit.inputs] };
+  },
+  step: ({ data, inputs }) => {
+    assertType<Equals<typeof inputs, readonly Stroke[]>>();
+    return { painted: [...data.painted, ...inputs] };
+  },
+});
+
+// Two-generic sim modules (no Input) still satisfy the sim prop (regression).
+const _paintForm = <Simulation sim={paintSim} />;
+
+// `maxQueuedInputs` is accepted by all three modes.
+const _maxQueuedSim = <Simulation sim={paintSim} maxQueuedInputs={64} />;
+const _maxQueuedInline = (
+  <Simulation
+    init={{ count: 0 }}
+    step={({ data }) => ({ count: data.count + 1 })}
+    maxQueuedInputs={64}
+  />
+);
+
+// Worker mode with explicit three-generic parameters.
+const _workerThreeGenerics = (
+  <Simulation<{ painted: Stroke[] }, { brushSize: number }, Stroke>
+    worker={workerUrl}
+    maxQueuedInputs={64}
+  />
+);
+
+// …and existing two-generic worker call sites keep compiling (Input
+// defaults to never) — also covered by _workerFormUrl above.
+const _workerTwoGenerics = (
+  <Simulation<{ count: number }, { increment: number }> worker={workerUrl} />
+);
+
+// `useSimulation<typeof sim>()` infers Input from the module and types `send`.
+function PaintControls() {
+  const { send } = useSimulation<typeof paintSim>();
+  assertType<Equals<typeof send, (input: Stroke) => void>>();
+  send({ x: 1, y: 2 });
+  // @ts-expect-error wrong input shape — missing y
+  send({ x: 1 });
+  // @ts-expect-error wrong input shape — not a Stroke at all
+  send('paint here');
+  return null;
+}
+
+// For sims without an Input type, `send` is `(input: never) => void` —
+// effectively uncallable, which is correct.
+function CounterControls() {
+  const { send } = useSimulation<typeof counterSim>();
+  assertType<Equals<typeof send, (input: never) => void>>();
+  // @ts-expect-error send is uncallable when the sim declares no Input type
+  send({ x: 1, y: 2 });
+  return null;
+}
+
+// Explicit three-generic hook form (worker mode, no module to infer from).
+function WorkerPaintControls() {
+  const { send } = useSimulation<
+    { painted: Stroke[] },
+    { brushSize: number },
+    Stroke
+  >();
+  assertType<Equals<typeof send, (input: Stroke) => void>>();
+  send({ x: 3, y: 4 });
+  return null;
+}
+
 // Suppress unused-binding lint by referencing the assertions module-level.
 export {
   _simForm,
@@ -140,4 +279,18 @@ export {
   _workerFormString,
   _inlineMissingStep,
   _inlineMissingInit,
+  _oneArgInit,
+  _seedSim,
+  _seedSimString,
+  _seedInline,
+  _seedWorker,
+  _seedWrongType,
+  _paintForm,
+  _maxQueuedSim,
+  _maxQueuedInline,
+  _workerThreeGenerics,
+  _workerTwoGenerics,
+  PaintControls,
+  CounterControls,
+  WorkerPaintControls,
 };

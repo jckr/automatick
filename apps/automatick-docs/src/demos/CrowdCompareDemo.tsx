@@ -42,45 +42,35 @@ function drawWorld(
 }
 
 function CrowdCompareCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const canvasRef = useSimulationCanvas<typeof crowdCompareSim>((ctx, { data }) => {
-    const scale = PANEL / data.width;
-    const cssStyles = getComputedStyle(document.documentElement);
-    const bg = cssStyles.getPropertyValue('--bg3').trim() || '#1b1f27';
+  const canvasRef = useSimulationCanvas<typeof crowdCompareSim>(
+    (ctx, { data }, view) => {
+      const scale = PANEL / data.width;
+      view.clear(view.theme('--bg3', '#1b1f27'));
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, PANEL * 2, PANEL);
+      drawWorld(ctx, data.selfish, data.obstacles, 0, scale);
+      drawWorld(ctx, data.coordinated, data.obstacles, PANEL, scale);
 
-    drawWorld(ctx, data.selfish, data.obstacles, 0, scale);
-    drawWorld(ctx, data.coordinated, data.obstacles, PANEL, scale);
+      // Divider + labels.
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(PANEL, 0);
+      ctx.lineTo(PANEL, PANEL);
+      ctx.stroke();
 
-    // Divider + labels.
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PANEL, 0);
-    ctx.lineTo(PANEL, PANEL);
-    ctx.stroke();
-
-    ctx.font = '600 12px var(--font-mono, monospace)';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = SELFISH_COLOR;
-    ctx.fillText(`Selfish · ${data.selfish.completed}`, 8, 8);
-    ctx.fillStyle = COORD_COLOR;
-    ctx.fillText(`Coordinated · ${data.coordinated.completed}`, PANEL + 8, 8);
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      ctx.font = '600 12px var(--font-mono, monospace)';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = SELFISH_COLOR;
+      ctx.fillText(`Selfish · ${data.selfish.completed}`, 8, 8);
+      ctx.fillStyle = COORD_COLOR;
+      ctx.fillText(`Coordinated · ${data.coordinated.completed}`, PANEL + 8, 8);
+    },
+    { width: PANEL * 2, height: PANEL }
+  );
 
   return (
     <div className={styles.stage}>
-      <canvas
-        ref={canvasRef}
-        width={PANEL * 2 * dpr}
-        height={PANEL * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
       <div className={styles.chartWrap}>
         <TimeSeries<CrowdCompareData>
           mode='line'

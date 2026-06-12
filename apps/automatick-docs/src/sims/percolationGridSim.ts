@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 import {
   EMPTY,
   ROCK,
@@ -34,14 +35,19 @@ export type PercGridData = {
   colsMeta: PercGridColMeta[];
 };
 
-function initOne(width: number, height: number, porosity: number): PercolationData {
+function initOne(
+  width: number,
+  height: number,
+  porosity: number,
+  random: SimRandom
+): PercolationData {
   const grid: number[][] = [];
   const queue: { x: number; y: number }[] = [];
 
   for (let y = 0; y < height; y++) {
     const row: number[] = [];
     for (let x = 0; x < width; x++) {
-      row.push(Math.random() > porosity ? ROCK : EMPTY);
+      row.push(random() > porosity ? ROCK : EMPTY);
     }
     grid.push(row);
   }
@@ -95,14 +101,16 @@ export default defineSim<PercGridData, PercGridParams>({
     stepP: 0.02,
   },
 
-  init: ({ rows, cols, width, height, minP, stepP }) => {
+  init: ({ rows, cols, width, height, minP, stepP }, { random }) => {
     const colsMeta: PercGridColMeta[] = Array.from({ length: cols }, (_, c) => ({
       p: minP + c * stepP,
       result: 0,
       total: rows,
     }));
     const cells: PercolationData[][] = Array.from({ length: rows }, () =>
-      Array.from({ length: cols }, (_, c) => initOne(width, height, colsMeta[c].p))
+      Array.from({ length: cols }, (_, c) =>
+        initOne(width, height, colsMeta[c].p, random)
+      )
     );
     return { cells, colsMeta };
   },

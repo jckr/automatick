@@ -12,23 +12,20 @@ import styles from './FibonacciSpiralDemo.module.css';
 const SIZE = 600;
 
 function SpiralCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-
-  const canvasRef = useSimulationCanvas<typeof fibonacciSpiralSim>((ctx, { params, tick }) => {
-    const scale = (SIZE * dpr) / params.size;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    drawFibonacciSpiral(ctx, { size: params.size, tick });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  const canvasRef = useSimulationCanvas<typeof fibonacciSpiralSim>(
+    (ctx, { params, tick }, view) => {
+      const scale = view.width / params.size;
+      ctx.save();
+      ctx.scale(scale, scale);
+      drawFibonacciSpiral(ctx, { size: params.size, tick });
+      ctx.restore();
+    },
+    { width: SIZE, height: SIZE }
+  );
 
   return (
     <CanvasStage maxWidth={SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={SIZE * dpr}
-        height={SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

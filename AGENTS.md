@@ -40,8 +40,8 @@ apps/automatick-docs/         — Documentation site (Vite + React)
 ### 1. Simulation file (`src/sims/myExampleSim.ts`)
 
 A standard `defineSim` module — see the library guide for the rules on `init`,
-`step`, and `shouldStop`. Export the `Data`/`Params` types if the demo component
-needs them for explicit typing.
+`step`, `shouldStop`, randomness, and inputs. Export the `Data`/`Params` types
+if the demo component needs them for explicit typing.
 
 ```ts
 import { defineSim } from 'automatick/sim';
@@ -51,10 +51,29 @@ export type MyParams = { /* ... */ };
 
 export default defineSim<MyData, MyParams>({
   defaultParams: { /* ... */ },
-  init: (params) => { /* ... */ },
-  step: ({ data, params, tick }) => { /* ... */ },
+  init: (params, { random }) => { /* ... */ },
+  step: ({ data, params, tick, random }) => { /* ... */ },
 });
 ```
+
+- Draw all randomness from the injected `random` (`random()`, `random.int`,
+  `random.pick`) — never `Math.random` — so runs replay from their seed.
+  Sims without randomness can keep the one-arg `init: (params) => ...` form.
+- If the sim consumes transient user events (paint strokes, direction
+  changes, cell toggles), declare the input type as `defineSim`'s third
+  generic and read `inputs` from the step context:
+
+  ```ts
+  export default defineSim<MyData, MyParams, MyInput>({
+    // ...
+    step: ({ data, params, inputs }) => { /* apply inputs in order */ },
+  });
+  ```
+
+  The demo component translates DOM events and calls `send()` from
+  `useSimulation()`. Persistent configuration stays in params. Smuggling
+  events through `setParams` with sentinel values (params-as-signal) is
+  **unblessed** — don't write new code that way.
 
 ### 2. Demo component (`src/demos/MyExampleDemo.tsx`)
 
@@ -75,21 +94,16 @@ const WIDTH = 600;
 const HEIGHT = 600;
 
 function MyCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const canvasRef = useSimulationCanvas<typeof mySim>((ctx, { data, params }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
-    // ... draw ...
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  const canvasRef = useSimulationCanvas<typeof mySim>(
+    (ctx, { data, params }, view) => {
+      view.clear(view.theme('--bg2', '#fff'));
+      // ... draw in CSS pixels — the hook applies the dpr transform ...
+    },
+    { width: WIDTH, height: HEIGHT }
+  );
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }
@@ -118,12 +132,28 @@ export function MyExampleDemo() {
 ```
 
 Wrap the canvas in `<CanvasStage maxWidth={W}>` for consistent sizing and an
-optional perf overlay. (See the library guide for the canvas drawing patterns
-themselves — DPR handling, ImageData grids, trail effects, theme-aware colors.)
+optional perf overlay.
+
+Canvas rules (see the library guide for the full view-toolkit patterns —
+`clear`/`fade`/`theme`/`blitGrid`, grid blits, trail effects):
+
+- Always pass `{ width, height }` (logical CSS pixels) to
+  `useSimulationCanvas` — **ownership mode**. The hook owns the canvas
+  backing store and the devicePixelRatio transform; draw functions work in
+  CSS pixels and receive the injected `view` toolkit as third argument.
+- Do **not** set `width`/`height` attributes on the `<canvas>` element, and
+  do not do DPR math (`width={W * dpr}`, manual `setTransform(dpr, …)`) —
+  those legacy recipes are superseded and unblessed in new code.
+- Read theme colors with `view.theme('--fg1', '#000')` inside the draw —
+  never `getComputedStyle` (unblessed in draw functions; `view.theme` also
+  repaints on theme switches, even while paused).
+- For ImageData-style cell grids use `view.blitGrid(cols, rows, write)`
+  instead of hand-rolled offscreen canvas + `ImageData` refs.
 
 ### 3. CSS module (`src/demos/MyExampleDemo.module.css`)
 
-Minimal — typically just canvas sizing:
+Minimal — typically just canvas sizing. The hook owns the backing-store
+attributes; CSS owns the display size:
 
 ```css
 .canvas {
@@ -198,7 +228,11 @@ type DemoControlGroup = {
 { type: 'chips', param: 'mode', label: 'Mode', options: [{ value: 'a', label: 'A' }, ...] }
 ```
 
-The `param` field must match a key in the sim's `Params` type. Controls call `setParams()` internally.
+The `param` field must match a key in the sim's `Params` type. Controls call
+`setParams()` internally — they are for persistent configuration only. For
+transient gestures (canvas clicks, key presses, brush strokes) call `send()`
+from `useSimulation()` in a custom handler and consume them as `inputs` in the
+sim's `step` — don't route them through params.
 
 `DemoControlPanel` also accepts:
 - `showTransport` (default `true`) — play/pause + tick readout

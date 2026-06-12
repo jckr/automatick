@@ -14,31 +14,24 @@ const WIDTH = 600;
 const HEIGHT = 400;
 
 function SphFluidCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const canvasRef = useSimulationCanvas<typeof sphFluidSim>(
+    (ctx, { data }, view) => {
+      view.clear('#0a1020');
 
-  const canvasRef = useSimulationCanvas<typeof sphFluidSim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#0a1020';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-    const { x, y, vx, vy, count } = data;
-    for (let i = 0; i < count; i++) {
-      const speed = Math.hypot(vx[i], vy[i]);
-      const t = Math.min(speed / 300, 1);
-      ctx.fillStyle = `hsl(${220 - t * 180}, 80%, ${50 + t * 30}%)`;
-      ctx.fillRect(x[i] - 2, y[i] - 2, 4, 4);
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      const { x, y, vx, vy, count } = data;
+      for (let i = 0; i < count; i++) {
+        const speed = Math.hypot(vx[i], vy[i]);
+        const t = Math.min(speed / 300, 1);
+        ctx.fillStyle = `hsl(${220 - t * 180}, 80%, ${50 + t * 30}%)`;
+        ctx.fillRect(x[i] - 2, y[i] - 2, 4, 4);
+      }
+    },
+    { width: WIDTH, height: HEIGHT }
+  );
 
   return (
     <CanvasStage maxWidth={WIDTH} minHeight={420}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

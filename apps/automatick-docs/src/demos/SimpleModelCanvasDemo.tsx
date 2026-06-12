@@ -21,21 +21,23 @@ function step({ data, tick }: State<Data, Params>): Data {
 }
 
 function Grid() {
-  const canvasRef = useSimulationCanvas<Data, Params>((ctx, { data }) => {
-    ctx.clearRect(0, 0, SIZE * CELL, SIZE * CELL);
-    ctx.fillStyle = CELL_COLOR;
-    for (let i = 0; i < TOTAL; i++) {
-      if (data.cells[i]) {
-        ctx.fillRect((i % SIZE) * CELL, Math.floor(i / SIZE) * CELL, CELL, CELL);
+  const canvasRef = useSimulationCanvas<Data, Params>(
+    (ctx, { data }, view) => {
+      view.clear();
+      ctx.fillStyle = CELL_COLOR;
+      for (let i = 0; i < TOTAL; i++) {
+        if (data.cells[i]) {
+          ctx.fillRect((i % SIZE) * CELL, Math.floor(i / SIZE) * CELL, CELL, CELL);
+        }
       }
-    }
-  });
+    },
+    { width: SIZE * CELL, height: SIZE * CELL }
+  );
   return (
     <canvas
       ref={canvasRef}
-      width={SIZE * CELL}
-      height={SIZE * CELL}
       className={styles.canvas}
+      style={{ width: SIZE * CELL, height: SIZE * CELL }}
     />
   );
 }

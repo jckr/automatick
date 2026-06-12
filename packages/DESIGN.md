@@ -101,24 +101,37 @@ When using `worker`, the type parameter on `useSimulation` must be provided expl
 
 ## 4. The Sim Module Contract
 
-### `defineSim<Data, Params>(module): SimModule<Data, Params>`
+### `defineSim<Data, Params, Input>(module): SimModule<Data, Params, Input>`
 
 An identity function that enables type inference. Returns its argument unchanged.
 
 ```ts
-type SimInit<Data, Params> = ((params: Params) => Data) | Data;
+/**
+ * Engine-provided tools handed to init/step. Seeded randomness plus the
+ * inputs delivered for the current tick. Future capabilities are added here.
+ */
+type SimToolkit<Input = never> = { random: SimRandom; inputs: readonly Input[] };
 
-type SimModule<Data, Params = Record<string, never>> = {
+/** What `step` receives: the state snapshot plus the toolkit, flattened. */
+type StepContext<Data, Params, Input = never> = State<Data, Params> & SimToolkit<Input>;
+
+type SimInit<Data, Params, Input = never> =
+  | ((params: Params, toolkit: SimToolkit<Input>) => Data)
+  | Data;
+
+type SimModule<Data, Params = Record<string, never>, Input = never> = {
   /**
    * Initial simulation state — either a value of type `Data`, or a function
-   * `(params) => Data`. Use the function form when init depends on params;
-   * otherwise pass the value directly. Called once at engine creation and on
-   * resetWith().
+   * `(params, toolkit) => Data`. Use the function form when init depends on
+   * params or needs seeded randomness; otherwise pass the value directly.
+   * The toolkit argument is optional to accept — one-arg `(params) => Data`
+   * functions remain valid. Called once at engine creation and on resetWith().
+   * The toolkit's `inputs` is always the empty array at init time.
    */
-  init: SimInit<Data, Params>;
+  init: SimInit<Data, Params, Input>;
 
   /** Advance the simulation by one tick. Must be pure and synchronous. */
-  step: (state: State<Data, Params>) => Data;
+  step: (ctx: StepContext<Data, Params, Input>) => Data;
 
   /** Optional termination predicate. Checked after each step. */
   shouldStop?: (data: Data, params: Params) => boolean;
@@ -132,9 +145,13 @@ type SimModule<Data, Params = Record<string, never>> = {
 };
 ```
 
-`step`, `getSnapshot`, and the `render` callback all operate on the same engine state, so they share one type — `State<Data, Params>`. See section 7.
+`step`, `getSnapshot`, and the `render` callback all operate on the same engine state, so they share one type — `State<Data, Params>`. See section 7. `State` itself is unchanged by the toolkit: it remains the serializable snapshot/wire type. The toolkit is composed in at the `step` call site only (`StepContext = State & SimToolkit`) — it never crosses `postMessage` and never appears in `getSnapshot()`. Author-facing call sites read naturally: `step({ data, params, tick, random, inputs })`.
 
-`Data` must be structured-cloneable: it crosses the worker boundary via `postMessage` and the engine `structuredClone`s data-form `init` values on every (re)init. As a consequence, `Data` must not itself be a function.
+**Params vs inputs.** Params are persistent configuration — they stay set until changed and live in `State`. Inputs are transient, consumed-once perturbation events — delivered to exactly one tick's `inputs` array and then gone, never appearing in snapshots. Stated crisply: **brush size is a param; brush strokes are inputs.** A direction change, a cell toggle, a paint stroke — anything that *happens once* and perturbs the run — is an input, sent via `engine.send()` (or the React `send()` action) and read from `ctx.inputs`. Anything the sim *consults every tick* is a param. `Input` defaults to `never`, so all two-generic sims compile unchanged and cannot be sent anything. Delivery semantics live in section 7.
+
+`shouldStop` deliberately does **not** receive the toolkit — termination must be a deterministic function of state.
+
+`Data` must be structured-cloneable: it crosses the worker boundary via `postMessage` and the engine `structuredClone`s data-form `init` values on every (re)init. As a consequence, `Data` must not itself be a function. The same structured-cloneable rule applies to `Input`: in worker mode each input crosses the wire via `postMessage` on its own.
 
 **Why this shape:**
 
@@ -158,6 +175,7 @@ type SimulationPropsCommon<Params> = {
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
+  maxQueuedInputs?: number;
   autoplay?: boolean;
   children?: React.ReactNode;
 };
@@ -222,6 +240,7 @@ The inline form is main-thread only — worker mode requires a module file the b
 | `maxTime` | `number` | `undefined` | If set, engine stops when tick reaches this value. |
 | `delayMs` | `number` | `0` | Minimum wall-clock milliseconds between tick advances. |
 | `ticksPerFrame` | `number` | `1` | How many ticks to advance per animation frame (main-thread) or timer call (worker). |
+| `maxQueuedInputs` | `number` | `1024` | Bound on the engine's input queue (drop-oldest). All three modes; in worker mode it rides in the init message. |
 | `snapshotIntervalMs` | `number` | `16` | Worker only. Minimum interval between snapshot messages to main thread. |
 | `autoplay` | `boolean` | `false` | If true, start playing immediately on mount. |
 | `children` | `ReactNode` | — | Child components that consume simulation state via hooks. |
@@ -236,12 +255,12 @@ The inline form is main-thread only — worker mode requires a module file the b
 
 ## 6. The Hook API
 
-### `useSimulation<Data, Params>()`
+### `useSimulation<Data, Params, Input>()`
 
-Returns simulation state and actions from the nearest `<Simulation>` provider.
+Returns simulation state and actions from the nearest `<Simulation>` provider. `send` is an *action*, like `setParams` — component authors call `send`, sim authors read `inputs`; neither sees the other's side. With `Input = never` (the default), `send` is effectively uncallable, which is correct for sims that declare no input type.
 
 ```ts
-type UseSimulationReturn<Data, Params> = {
+type UseSimulationReturn<Data, Params, Input = never> = {
   // State
   data: Data;
   params: Params;
@@ -256,6 +275,7 @@ type UseSimulationReturn<Data, Params> = {
   advance: (count?: number) => void;
   setParams: (patch: Partial<Params>) => void;
   resetWith: (patch?: Partial<Params>) => void;
+  send: (input: Input) => void;
 };
 
 type SimulationStatus = 'idle' | 'playing' | 'paused' | 'stopped';
@@ -269,7 +289,7 @@ const { data } = useSimulation<typeof counterSim>();
 // data is inferred as { count: number }
 ```
 
-This works via a conditional type that extracts `Data` and `Params` from `SimModule<Data, Params>`.
+This works via a conditional type that extracts `Data`, `Params`, and `Input` from `SimModule<Data, Params, Input>` — `send` arrives typed as `(input: Input) => void` with no annotation at the call site.
 
 ### `useSimulationHistory<Data>(policy?)`
 
@@ -293,19 +313,30 @@ type UseSimulationHistoryReturn<Data> = {
 
 ## 7. The Engine API
 
-### `createEngine<Data, Params>(config): SimulationEngine<Data, Params>`
+### `createEngine<Data, Params, Input>(config): SimulationEngine<Data, Params, Input>`
 
 ```ts
-type EngineConfig<Data, Params = Record<string, never>> = {
-  /** Value or `(params) => Data`. See SimInit in section 4. */
-  init: SimInit<Data, Params>;
-  step: (state: State<Data, Params>) => Data;
+type EngineConfig<Data, Params = Record<string, never>, Input = never> = {
+  /** Value or `(params, toolkit) => Data`. See SimInit in section 4. */
+  init: SimInit<Data, Params, Input>;
+  step: (ctx: StepContext<Data, Params, Input>) => Data;
   shouldStop?: (data: Data, params: Params) => boolean;
   /** Optional — when omitted, the engine seeds `params` with `{}`. */
   initialParams?: Params;
+  /**
+   * Seed for the engine's SimRandom. Number or string. When omitted, the
+   * engine picks a random numeric seed at construction and records it —
+   * `getSeed()` always returns the seed that reproduces the run.
+   */
+  seed?: number | string;
   maxTime?: number;
   delayMs?: number;
   ticksPerFrame?: number;
+  /**
+   * Bound on the input queue filled by `send()` (default 1024). Beyond the
+   * bound the queue drops its oldest entry — recent perturbations win.
+   */
+  maxQueuedInputs?: number;
   /** Optional render callback — sugar for `subscribe` + initial paint, scoped to the vanilla path. */
   render?: (snapshot: State<Data, Params>) => void;
   /**
@@ -326,8 +357,10 @@ type State<Data, Params> = {
   stepDurationMs: number;
 };
 
-type SimulationEngine<Data, Params> = {
+type SimulationEngine<Data, Params, Input = never> = {
   getSnapshot: () => State<Data, Params>;
+  /** The seed driving this engine's SimRandom — configured or recorded default. */
+  getSeed: () => number | string;
   subscribe: (listener: (snapshot: State<Data, Params>) => void) => () => void;
   subscribeHistory: (listener: (entry: { tick: number; data: Data }) => void) => () => void;
 
@@ -338,6 +371,8 @@ type SimulationEngine<Data, Params> = {
   advance: (count?: number) => void;
   setParams: (patch: Partial<Params>) => void;
   resetWith: (patch?: Partial<Params>) => void;
+  /** Queue a transient perturbation event — see "Inputs & perturbation" below. */
+  send: (input: Input) => void;
 
   handleAnimationFrame: (nowMs: number) => void;
   destroy: () => void;
@@ -349,6 +384,76 @@ type SimulationEngine<Data, Params> = {
 **Data-form init cloning:** When `init` is a value, the engine `structuredClone`s it once at construction (so later mutations to the source can't leak in) and again on every (re)init (so step mutations don't persist across resets).
 
 **`render` config option (vanilla DX sugar):** When `config.render` is provided, the engine subscribes it as a listener and invokes it once with the initial state at construction time. From then on it fires on every emit, identically to a manually-wired `subscribe(render)`. This eliminates the two-line boilerplate (`engine.subscribe(render); render(engine.getSnapshot())`) for callers who don't have another reactive layer driving rendering. `subscribe` remains the lower-level primitive; React adapter and worker callers wire their own subscribers explicitly and should not pass `render`.
+
+### Seeded randomness & determinism
+
+The engine derives one `SimRandom` per run from `config.seed` (a vendored
+splitmix32 PRNG; string seeds are hashed to a 32-bit int) and hands it to
+`init` and `step`. The rules that make runs reproducible:
+
+- **Same-seed reset semantics.** `resetWith()` re-derives the generator from
+  the same seed, so a reset replays the original run exactly. This is a
+  resolved design decision: reset means "run it again", not "run a different
+  one". To get a different run, construct a new engine (or remount
+  `<Simulation>` via `key`) with a different seed.
+- **The recorded-default-seed trick.** When `seed` is omitted, the engine picks
+  a random numeric seed at construction and *records* it. `getSeed()` returns
+  it, so any run — even an unseeded one — can be reproduced after the fact by
+  passing the recorded seed back in. In worker mode the default seed is
+  resolved on the main thread before the init message, so the main thread
+  always knows it (exposed as `seed` on the React context).
+- **Per-JS-engine reproducibility caveat.** The PRNG itself is exact integer
+  arithmetic and bit-identical everywhere, but transcendental `Math`
+  functions (`Math.sin`, `Math.exp`, `Math.pow`, …) are implementation-defined
+  and may differ in the last ulp across JS engines. Same seed + same JS engine
+  ⇒ bit-identical run; across engines, sims using transcendentals may diverge.
+- **Sim-authoring rule.** A sim is only as deterministic as its inputs: draw
+  all randomness from the toolkit's `random` (never `Math.random`) and avoid
+  ambient nondeterminism — `Date.now()`, `performance.now()`, locale- or
+  environment-dependent APIs — inside `init`/`step`.
+
+Deferred (out of scope for now): a `reseed()` API, replay/backward-seek, and
+input recording.
+
+### Inputs & perturbation
+
+`send(input)` is the engine's input channel: an explicit path for transient,
+consumed-once perturbation events (paint strokes, direction changes, cell
+toggles) that previously had to be smuggled through `setParams` with sentinel
+values. The framing is **perturbation, not interaction** — the library never
+learns what a pointer is; translating browser events into `Input` values is
+the consuming component's job. The rules:
+
+- **Tick-based sampling.** Inputs queue between tick advances. At the next
+  advance, the entire queue is delivered, in send order, as the `inputs`
+  array of the **first tick** of the batch, then cleared; the remaining ticks
+  of a `ticksPerFrame` batch see a shared frozen empty array (no per-tick
+  allocation on the hot path).
+- **No coalescing.** Every `send` reaches the sim exactly once — multiple
+  sends between ticks all arrive in the next tick's `inputs`, in order. This
+  is the whole point of the channel: a snapshot can be skipped, an input
+  cannot.
+- **Status rules.** While `paused`/`idle`, inputs queue up and deliver on the
+  next `advance()`/`play()` tick. While `stopped`, `send` drops the input
+  silently. `resetWith()` clears the queue — pending perturbations belong to
+  the old run.
+- **Bounded queue.** The queue holds at most `maxQueuedInputs` entries
+  (default 1024) and drops the *oldest* beyond the bound — the most recent
+  perturbations win.
+- **Never in snapshots.** `State` is unchanged: inputs are per-tick
+  transients, not state. They never appear in `getSnapshot()` and never cross
+  the wire as part of a snapshot.
+
+Non-goals, stated explicitly: no DOM awareness (the library has no concept of
+pointers, keys, or elements), no latency guarantees (an input lands on the
+next tick, whenever that is — at `delayMs: 500` that's up to half a second
+away), and no sub-tick timing (inputs are sampled at tick boundaries; the sim
+cannot know *when* within the inter-tick window a send happened).
+
+Forward note: replay (deferred, above) will record inputs tagged with their
+delivery tick — `{ tick, input }` — so a recorded run can be reproduced by
+re-sending each input just before its tick. The engine drains its queue in a
+single place to keep that a local change.
 
 ### State Machine
 
@@ -402,6 +507,7 @@ type SimulationEngine<Data, Params> = {
 | `stopped` | `seek(n)` | `stopped` | No-op. Cannot seek from stopped. |
 | `stopped` | `resetWith(patch?)` | `idle` | Merges patch with current params, calls `init()`. Only way out of stopped. |
 | any | `setParams(patch)` | (unchanged) | Live merge. Does not change status. |
+| any | `send(input)` | (unchanged) | Queues for the next tick. Dropped silently when `stopped`. |
 | any | `resetWith(patch?)` | `idle` | Merges patch with current params (or uses current params if no patch), calls `init()`, resets tick to 0. |
 
 **`resetWith` during `playing`:** Transitions to `idle`, not back to `playing`. Consumer calls `play()` themselves if they want to resume. Predictable over magical.
@@ -421,7 +527,10 @@ The worker is a black box that produces snapshots on its own schedule. Communica
 
 ```ts
 type MainToWorkerMessage =
-  | { kind: 'init'; params: Params; config: WorkerConfig }
+  // `seed` is resolved on the main thread (random default generated there
+  // when absent) so the main thread always knows it. Only the seed — plain
+  // data — crosses the wire; the SimRandom it derives lives worker-side.
+  | { kind: 'init'; params: Params; seed: number | string; config: WorkerConfig }
   | { kind: 'play' }
   | { kind: 'pause' }
   | { kind: 'stop' }
@@ -429,6 +538,12 @@ type MainToWorkerMessage =
   | { kind: 'advance'; count: number }
   | { kind: 'setParams'; patch: Partial<Params> }
   | { kind: 'resetWith'; patch?: Partial<Params> }
+  // One message per `send()` — only the input value (plain structured-
+  // cloneable data) crosses; the queue and its bound live worker-side,
+  // mirroring how the seed crosses in `init` while the SimRandom stays in
+  // the worker. Snapshots coming back are throttled, but inputs are never
+  // coalesced — every send reaches the sim.
+  | { kind: 'input'; input: Input }
   | { kind: 'destroy' };
 
 type WorkerConfig = {
@@ -436,6 +551,7 @@ type WorkerConfig = {
   delayMs?: number;
   ticksPerFrame?: number;
   snapshotIntervalMs?: number;
+  maxQueuedInputs?: number;
 };
 ```
 
@@ -650,3 +766,54 @@ export default defineSim<GameOfLifeData, GameOfLifeParams>({
 **Decision:** Main-thread mode: React component owns RAF (via `useEffect`). Worker mode: worker owns its own `setTimeout` loop.
 
 **Rationale:** Main-thread sims should sync with the browser's render cycle. Workers don't have RAF and shouldn't depend on main-thread timing. The component in worker mode is a passive snapshot subscriber, not a tick driver.
+
+---
+
+## 12. Toolkit Convention & the Canvas View Toolkit
+
+### The convention: injected, never imported
+
+Author-written functions (`step`, draw callbacks) receive their helpers as **injected capability bags** — extra arguments supplied by the library — never as imports and never as return values. A draw function is `(ctx, snapshot, view) => void`: the `view` bag arrives as the third argument, exactly like `ctx` and `snapshot` do. The author's file imports nothing from the library to use the toolkit.
+
+Why injection:
+
+- **The function stays portable.** A draw function that closes over imported helpers or module state is welded to the environment it was written in. One that only consumes its arguments can be relocated — including, eventually, to a worker.
+- **The library controls lifetime and identity.** Caches (theme reads, blit buffers) and observers live in the attachment that created the bag, are shared across frames, and are torn down on detach. An imported helper has no attachment to belong to.
+- **Discoverability.** Typing `view.` in an editor enumerates the whole toolkit. There is no second place to look.
+
+One `CanvasView` object exists per attachment — stable identity, fields (`width`, `height`, `dpr`) mutated in place on resize/dpr change. Helpers never leak context state: anything they touch (`fillStyle`, `globalAlpha`, `imageSmoothingEnabled`, the transform) is restored before the author's next statement runs.
+
+### The two-tier inclusion test
+
+A member earns its place in the bag in one of two ways:
+
+1. **Capabilities** — the recipe is a correctness trap. If the obvious hand-written version is subtly wrong (wrong on zoom, wrong on theme switch, wrong on resize, leaks state), the library must own it. `theme()` is the canonical case: the naive `getComputedStyle` read is easy, but *redrawing a paused sim when the theme flips* is the part everyone forgets — so the canvas stays stale after a light/dark switch. Same for DPR ownership (`width × dpr` backing store + transform + `resolution:` media-query re-arm) and `blitGrid` (offscreen canvas + ImageData caching keyed by dimensions, smoothing toggled and restored).
+2. **Conveniences** — pure compositions of bag members that appear in essentially every sim. `clear()` and `fade()` are one-liners over `ctx` + `view.width/height`, but every single demo writes them, and `fade` has a state-leak footgun (`globalAlpha`) attached.
+
+Anything that fails both tests stays out.
+
+### Rejected: shape helpers
+
+There is no `view.circle()`, `view.line()`, or any drawing-vocabulary helper — and this is a deliberate reversal of precedent: the original library shipped a circle helper, and it was dropped. `ctx.arc()` is not a correctness trap; wrapping it saves zero bugs and starts an unbounded vocabulary (circle, then triangle, then arrow, then text-with-outline…). The 2D context *is* the drawing vocabulary. The bag only contains what the context can't safely express on its own.
+
+### Values, not DOM reads
+
+View helpers may depend only on the drawing context and on **values** (`width`, `height`, `dpr`, resolved theme strings). The author's draw function must never be forced into a direct DOM read (`getComputedStyle`, element measurement, `window.devicePixelRatio`). Where a DOM read is genuinely needed — theme variables — the *library* performs it, caches the resolved value, and hands the author a string.
+
+This is what keeps OffscreenCanvas rendering reachable: a draw function whose inputs are a context, a snapshot, and a bag of plain values can run anywhere a 2D context exists, including a worker where `document` does not. The main thread would resolve the values (size, dpr, theme strings) and ship them across; the draw function wouldn't change. A single sneaky `getComputedStyle` inside a draw function forecloses that path.
+
+### React/DOM mode gets no view toolkit
+
+`useSimulation()` rendering (JSX output) deliberately has no equivalent bag. CSS *is* the toolkit there: theme variables apply via ordinary cascade, the browser handles DPR, "clear" is reconciliation. Injecting a helper bag into JSX rendering would duplicate the platform. The view toolkit exists precisely because a 2D canvas context has none of those affordances built in.
+
+### Per-mode placement
+
+| Mode | How the sim runs | How drawing attaches | View toolkit |
+|------|------------------|----------------------|--------------|
+| Plain JS / vanilla | `createEngine()` | `attachCanvas(engine, canvas, draw, { width, height })` from `automatick/canvas` | Yes — injected `view` |
+| React canvas | `<Simulation>` | `useSimulationCanvas(draw, { width, height })` — a thin wrapper over `attachCanvas` | Yes — injected `view` |
+| React DOM | `<Simulation>` | `useSimulation()` + JSX | No — CSS is the toolkit |
+| Worker | sim steps in the worker; drawing stays on the main thread | same as React canvas / plain JS (the runner satisfies the same `CanvasSource` interface) | Yes — on the main thread |
+| Worker (future, OffscreenCanvas) | sim and draw both in worker | not yet implemented | Reachable because of the values-not-DOM-reads rule |
+
+The core lives framework-free in `automatick/canvas` (DOM, no React): `attachCanvas(source, canvas, draw, options) => detach`. `source` is a minimal structural interface — `{ subscribe, getSnapshot, recordDrawTime? }` — satisfied by `SimulationEngine`, the worker runner, and the React engine context, so every mode funnels through one implementation. The React hook adds nothing but ref plumbing and effect lifetime. Inside the worker itself there is no view toolkit — `step` gets the engine-side toolkit only; rendering concerns never enter the sim module.

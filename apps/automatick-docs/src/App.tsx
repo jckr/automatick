@@ -20,42 +20,162 @@ import { SimulationApiPage } from './pages/api/SimulationApiPage';
 import { UseSimulationApiPage } from './pages/api/UseSimulationApiPage';
 import { ControlsApiPage } from './pages/api/ControlsApiPage';
 import { CreateEngineApiPage } from './pages/api/CreateEngineApiPage';
-import { CounterPage } from './pages/examples/CounterPage';
-import { InlineCounterPage } from './pages/examples/InlineCounterPage';
-import { WorkerCanvasPage } from './pages/examples/WorkerCanvasPage';
-import { SegregationPage } from './pages/examples/SegregationPage';
-import { SegregationLocalPage } from './pages/examples/SegregationLocalPage';
-import { GameOfLifePage } from './pages/examples/GameOfLifePage';
-import { ChaosGamePage } from './pages/examples/ChaosGamePage';
-import { FibonacciPage } from './pages/examples/FibonacciPage';
-import { FibonacciSpiralPage } from './pages/examples/FibonacciSpiralPage';
-import { DicePage } from './pages/examples/DicePage';
-import { SimpleModelPage } from './pages/examples/SimpleModelPage';
-import { Automata1dPage } from './pages/examples/Automata1dPage';
-import { EpidemicPage } from './pages/examples/EpidemicPage';
-import { PredatorPreyPage } from './pages/examples/PredatorPreyPage';
-import { CrowdComparePage } from './pages/examples/CrowdComparePage';
-import { LangtonAntPage } from './pages/examples/LangtonAntPage';
-import { BoidsPage } from './pages/examples/BoidsPage';
-import { SnakePage } from './pages/examples/SnakePage';
-import { MazePage } from './pages/examples/MazePage';
-import { ActivatorsPage } from './pages/examples/ActivatorsPage';
-import { PercolationPage } from './pages/examples/PercolationPage';
-import { GravityPage } from './pages/examples/GravityPage';
-import { GrayScottPage } from './pages/examples/GrayScottPage';
-import { StableFluidsPage } from './pages/examples/StableFluidsPage';
-import { SandpilePage } from './pages/examples/SandpilePage';
-import { SphFluidPage } from './pages/examples/SphFluidPage';
-import { IsingPage } from './pages/examples/IsingPage';
-import { AntColonyPage } from './pages/examples/AntColonyPage';
-import { TrafficPage } from './pages/examples/TrafficPage';
-import { AutomatickHeroPage } from './pages/examples/AutomatickHeroPage';
-import { WorldSpinnerPage } from './pages/examples/WorldSpinnerPage';
-import { AutomatickBubblesPage } from './pages/examples/AutomatickBubblesPage';
-import { FallingSandPage } from './pages/examples/FallingSandPage';
-import { SettlementPage } from './pages/examples/SettlementPage';
-import { ErosionPage } from './pages/examples/ErosionPage';
-import { EMFieldPage } from './pages/examples/EMFieldPage';
+// Example routes are lazy-loaded so each demo (and its sim modules) ships as
+// its own chunk, kept out of the initial bundle. The pages use named exports,
+// so each import is adapted to the default-export shape React.lazy expects.
+const CounterPage = React.lazy(() =>
+  import('./pages/examples/CounterPage').then((m) => ({ default: m.CounterPage }))
+);
+const InlineCounterPage = React.lazy(() =>
+  import('./pages/examples/InlineCounterPage').then((m) => ({ default: m.InlineCounterPage }))
+);
+const WorkerCanvasPage = React.lazy(() =>
+  import('./pages/examples/WorkerCanvasPage').then((m) => ({ default: m.WorkerCanvasPage }))
+);
+const SegregationPage = React.lazy(() =>
+  import('./pages/examples/SegregationPage').then((m) => ({ default: m.SegregationPage }))
+);
+const SegregationLocalPage = React.lazy(() =>
+  import('./pages/examples/SegregationLocalPage').then((m) => ({ default: m.SegregationLocalPage }))
+);
+const GameOfLifePage = React.lazy(() =>
+  import('./pages/examples/GameOfLifePage').then((m) => ({ default: m.GameOfLifePage }))
+);
+const ChaosGamePage = React.lazy(() =>
+  import('./pages/examples/ChaosGamePage').then((m) => ({ default: m.ChaosGamePage }))
+);
+const FibonacciPage = React.lazy(() =>
+  import('./pages/examples/FibonacciPage').then((m) => ({ default: m.FibonacciPage }))
+);
+const FibonacciSpiralPage = React.lazy(() =>
+  import('./pages/examples/FibonacciSpiralPage').then((m) => ({ default: m.FibonacciSpiralPage }))
+);
+const DicePage = React.lazy(() =>
+  import('./pages/examples/DicePage').then((m) => ({ default: m.DicePage }))
+);
+const SimpleModelPage = React.lazy(() =>
+  import('./pages/examples/SimpleModelPage').then((m) => ({ default: m.SimpleModelPage }))
+);
+const Automata1dPage = React.lazy(() =>
+  import('./pages/examples/Automata1dPage').then((m) => ({ default: m.Automata1dPage }))
+);
+const EpidemicPage = React.lazy(() =>
+  import('./pages/examples/EpidemicPage').then((m) => ({ default: m.EpidemicPage }))
+);
+const PredatorPreyPage = React.lazy(() =>
+  import('./pages/examples/PredatorPreyPage').then((m) => ({ default: m.PredatorPreyPage }))
+);
+const CrowdComparePage = React.lazy(() =>
+  import('./pages/examples/CrowdComparePage').then((m) => ({ default: m.CrowdComparePage }))
+);
+const LangtonAntPage = React.lazy(() =>
+  import('./pages/examples/LangtonAntPage').then((m) => ({ default: m.LangtonAntPage }))
+);
+const BoidsPage = React.lazy(() =>
+  import('./pages/examples/BoidsPage').then((m) => ({ default: m.BoidsPage }))
+);
+const SnakePage = React.lazy(() =>
+  import('./pages/examples/SnakePage').then((m) => ({ default: m.SnakePage }))
+);
+const MazePage = React.lazy(() =>
+  import('./pages/examples/MazePage').then((m) => ({ default: m.MazePage }))
+);
+const ActivatorsPage = React.lazy(() =>
+  import('./pages/examples/ActivatorsPage').then((m) => ({ default: m.ActivatorsPage }))
+);
+const PercolationPage = React.lazy(() =>
+  import('./pages/examples/PercolationPage').then((m) => ({ default: m.PercolationPage }))
+);
+const GravityPage = React.lazy(() =>
+  import('./pages/examples/GravityPage').then((m) => ({ default: m.GravityPage }))
+);
+const GrayScottPage = React.lazy(() =>
+  import('./pages/examples/GrayScottPage').then((m) => ({ default: m.GrayScottPage }))
+);
+const StableFluidsPage = React.lazy(() =>
+  import('./pages/examples/StableFluidsPage').then((m) => ({ default: m.StableFluidsPage }))
+);
+const SandpilePage = React.lazy(() =>
+  import('./pages/examples/SandpilePage').then((m) => ({ default: m.SandpilePage }))
+);
+const SphFluidPage = React.lazy(() =>
+  import('./pages/examples/SphFluidPage').then((m) => ({ default: m.SphFluidPage }))
+);
+const IsingPage = React.lazy(() =>
+  import('./pages/examples/IsingPage').then((m) => ({ default: m.IsingPage }))
+);
+const AntColonyPage = React.lazy(() =>
+  import('./pages/examples/AntColonyPage').then((m) => ({ default: m.AntColonyPage }))
+);
+const TrafficPage = React.lazy(() =>
+  import('./pages/examples/TrafficPage').then((m) => ({ default: m.TrafficPage }))
+);
+const AutomatickHeroPage = React.lazy(() =>
+  import('./pages/examples/AutomatickHeroPage').then((m) => ({ default: m.AutomatickHeroPage }))
+);
+const WorldSpinnerPage = React.lazy(() =>
+  import('./pages/examples/WorldSpinnerPage').then((m) => ({ default: m.WorldSpinnerPage }))
+);
+const AutomatickBubblesPage = React.lazy(() =>
+  import('./pages/examples/AutomatickBubblesPage').then((m) => ({ default: m.AutomatickBubblesPage }))
+);
+const FallingSandPage = React.lazy(() =>
+  import('./pages/examples/FallingSandPage').then((m) => ({ default: m.FallingSandPage }))
+);
+const SettlementPage = React.lazy(() =>
+  import('./pages/examples/SettlementPage').then((m) => ({ default: m.SettlementPage }))
+);
+const ErosionPage = React.lazy(() =>
+  import('./pages/examples/ErosionPage').then((m) => ({ default: m.ErosionPage }))
+);
+const EMFieldPage = React.lazy(() =>
+  import('./pages/examples/EMFieldPage').then((m) => ({ default: m.EMFieldPage }))
+);
+const MaterialCAPage = React.lazy(() =>
+  import('./pages/examples/MaterialCAPage').then((m) => ({ default: m.MaterialCAPage }))
+);
+const WavePage = React.lazy(() =>
+  import('./pages/examples/WavePage').then((m) => ({ default: m.WavePage }))
+);
+const PhysarumPage = React.lazy(() =>
+  import('./pages/examples/PhysarumPage').then((m) => ({ default: m.PhysarumPage }))
+);
+const SugarscapePage = React.lazy(() =>
+  import('./pages/examples/SugarscapePage').then((m) => ({ default: m.SugarscapePage }))
+);
+const OpinionDynamicsPage = React.lazy(() =>
+  import('./pages/examples/OpinionDynamicsPage').then((m) => ({ default: m.OpinionDynamicsPage }))
+);
+const MarketPage = React.lazy(() =>
+  import('./pages/examples/MarketPage').then((m) => ({ default: m.MarketPage }))
+);
+const ParticleLifePage = React.lazy(() =>
+  import('./pages/examples/ParticleLifePage').then((m) => ({ default: m.ParticleLifePage }))
+);
+const FireworksPage = React.lazy(() =>
+  import('./pages/examples/FireworksPage').then((m) => ({ default: m.FireworksPage }))
+);
+const SpringMassPage = React.lazy(() =>
+  import('./pages/examples/SpringMassPage').then((m) => ({ default: m.SpringMassPage }))
+);
+const ClothPage = React.lazy(() =>
+  import('./pages/examples/ClothPage').then((m) => ({ default: m.ClothPage }))
+);
+const RigidBodyPage = React.lazy(() =>
+  import('./pages/examples/RigidBodyPage').then((m) => ({ default: m.RigidBodyPage }))
+);
+const DoublePendulumPage = React.lazy(() =>
+  import('./pages/examples/DoublePendulumPage').then((m) => ({ default: m.DoublePendulumPage }))
+);
+const ForceGraphPage = React.lazy(() =>
+  import('./pages/examples/ForceGraphPage').then((m) => ({ default: m.ForceGraphPage }))
+);
+const LSystemPage = React.lazy(() =>
+  import('./pages/examples/LSystemPage').then((m) => ({ default: m.LSystemPage }))
+);
+const TerrainPage = React.lazy(() =>
+  import('./pages/examples/TerrainPage').then((m) => ({ default: m.TerrainPage }))
+);
 
 export function App() {
   return (
@@ -119,6 +239,21 @@ export function App() {
           <Route path='examples/settlement' element={<SettlementPage />} />
           <Route path='examples/erosion' element={<ErosionPage />} />
           <Route path='examples/electric-field' element={<EMFieldPage />} />
+          <Route path='examples/material-ca' element={<MaterialCAPage />} />
+          <Route path='examples/wave' element={<WavePage />} />
+          <Route path='examples/physarum' element={<PhysarumPage />} />
+          <Route path='examples/sugarscape' element={<SugarscapePage />} />
+          <Route path='examples/opinion-dynamics' element={<OpinionDynamicsPage />} />
+          <Route path='examples/market' element={<MarketPage />} />
+          <Route path='examples/particle-life' element={<ParticleLifePage />} />
+          <Route path='examples/fireworks' element={<FireworksPage />} />
+          <Route path='examples/spring-mass' element={<SpringMassPage />} />
+          <Route path='examples/cloth' element={<ClothPage />} />
+          <Route path='examples/rigid-body' element={<RigidBodyPage />} />
+          <Route path='examples/double-pendulum' element={<DoublePendulumPage />} />
+          <Route path='examples/force-graph' element={<ForceGraphPage />} />
+          <Route path='examples/l-systems' element={<LSystemPage />} />
+          <Route path='examples/terrain' element={<TerrainPage />} />
           <Route path='examples/automatick-hero' element={<AutomatickHeroPage />} />
           <Route path='examples/automatick-bubbles' element={<AutomatickBubblesPage />} />
           <Route path='examples/world-spinner' element={<WorldSpinnerPage />} />

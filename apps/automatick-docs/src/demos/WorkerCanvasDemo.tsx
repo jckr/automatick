@@ -16,55 +16,50 @@ const CSS_WIDTH = 600;
 const CSS_HEIGHT = 500;
 
 function XorRingCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const historyRef = React.useRef<number[][]>([]);
   const lastTickRef = React.useRef(-1);
 
-  const canvasRef = useSimulationCanvas<typeof xorRingSim>((ctx, { data, params, tick }) => {
-    const cssStyles = getComputedStyle(document.documentElement);
-    const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
-    const bg = cssStyles.getPropertyValue('--bg2').trim() || '#EFEADD';
+  const canvasRef = useSimulationCanvas<typeof xorRingSim>(
+    (ctx, { data, params, tick }, view) => {
+      const ink = view.theme('--fg1', '#0E1116');
+      const bg = view.theme('--bg2', '#EFEADD');
 
-    if (tick === 0) {
-      historyRef.current = [];
-      lastTickRef.current = -1;
-    }
-
-    if (tick > lastTickRef.current) {
-      historyRef.current.push([...data]);
-      lastTickRef.current = tick;
-    }
-    if (historyRef.current.length > MAX_ROWS) {
-      historyRef.current = historyRef.current.slice(-MAX_ROWS);
-    }
-
-    const { cells } = params;
-    const simW = cells;
-    const simH = MAX_ROWS * ROW_HEIGHT;
-    const scaleX = (CSS_WIDTH * dpr) / simW;
-    const scaleY = (CSS_HEIGHT * dpr) / simH;
-    ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
-
-    const rows = historyRef.current;
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, simW, simH);
-    ctx.fillStyle = ink;
-    rows.forEach((row, rowIdx) => {
-      for (let i = 0; i < cells; i++) {
-        if (row[i]) ctx.fillRect(i, rowIdx * ROW_HEIGHT, 1, ROW_HEIGHT);
+      if (tick === 0) {
+        historyRef.current = [];
+        lastTickRef.current = -1;
       }
-    });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+
+      if (tick > lastTickRef.current) {
+        historyRef.current.push([...data]);
+        lastTickRef.current = tick;
+      }
+      if (historyRef.current.length > MAX_ROWS) {
+        historyRef.current = historyRef.current.slice(-MAX_ROWS);
+      }
+
+      const { cells } = params;
+      const simW = cells;
+      const simH = MAX_ROWS * ROW_HEIGHT;
+      ctx.save();
+      ctx.scale(view.width / simW, view.height / simH);
+
+      const rows = historyRef.current;
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, simW, simH);
+      ctx.fillStyle = ink;
+      rows.forEach((row, rowIdx) => {
+        for (let i = 0; i < cells; i++) {
+          if (row[i]) ctx.fillRect(i, rowIdx * ROW_HEIGHT, 1, ROW_HEIGHT);
+        }
+      });
+      ctx.restore();
+    },
+    { width: CSS_WIDTH, height: CSS_HEIGHT }
+  );
 
   return (
     <CanvasStage maxWidth={CSS_WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_WIDTH * dpr}
-        height={CSS_HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

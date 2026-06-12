@@ -97,8 +97,7 @@ export default defineSim<BoidsData, BoidsParams>({
     width: 332
   },
 
-  init: (params) => {
-    const random = Math.random;
+  init: (params, { random }) => {
     const { height, nbBoids, width } = params;
     return Array.from({ length: nbBoids }, () => {
       const angle = random() * 2 * Math.PI;

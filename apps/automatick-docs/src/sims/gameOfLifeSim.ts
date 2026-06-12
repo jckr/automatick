@@ -23,9 +23,9 @@ function countNeighbors(x: number, y: number, grid: number[][]): number {
 export default defineSim<GameOfLifeData, GameOfLifeParams>({
   defaultParams: { height: 28, width: 28, density: 0.15 },
 
-  init: ({ height, width, density }) => ({
+  init: ({ height, width, density }, { random }) => ({
     grid: Array.from({ length: height }, () =>
-      Array.from({ length: width }, () => (Math.random() < density ? 1 : 0))
+      Array.from({ length: width }, () => (random() < density ? 1 : 0))
     ),
     changes: -1,
   }),

@@ -61,6 +61,21 @@ export const EXAMPLES: ExampleMeta[] = [
   { slug: 'settlement', label: 'Settlement growth' },
   { slug: 'erosion', label: 'Hydraulic erosion' },
   { slug: 'electric-field', label: 'Electric field' },
+  { slug: 'material-ca', label: 'Water, fire & smoke' },
+  { slug: 'wave', label: 'Wave propagation' },
+  { slug: 'physarum', label: 'Slime mold' },
+  { slug: 'sugarscape', label: 'Sugarscape' },
+  { slug: 'opinion-dynamics', label: 'Opinion dynamics' },
+  { slug: 'market', label: 'Market' },
+  { slug: 'particle-life', label: 'Particle life' },
+  { slug: 'fireworks', label: 'Fireworks' },
+  { slug: 'spring-mass', label: 'Spring-mass' },
+  { slug: 'cloth', label: 'Rope & cloth' },
+  { slug: 'rigid-body', label: 'Rigid bodies' },
+  { slug: 'double-pendulum', label: 'Double pendulum' },
+  { slug: 'force-graph', label: 'Force-directed graph' },
+  { slug: 'l-systems', label: 'L-systems' },
+  { slug: 'terrain', label: 'Terrain' },
 ];
 
 /** The route path for an example (e.g. `/examples/boids`). */
