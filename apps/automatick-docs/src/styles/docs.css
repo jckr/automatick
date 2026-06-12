@@ -199,8 +199,12 @@ a {
   position: sticky;
   top: 57px;
   align-self: start;
-  height: calc(100vh - 57px);
-  overflow-y: auto;
+  /* Size to the nav's content rather than a fixed `height: calc(100vh - 57px)`.
+     The fixed height forced a full-viewport column even on short pages, then
+     clipped the lower nav exactly where the footer begins (see the right-hand
+     `.toc`, which uses this same content-sized sticky pattern). When the nav is
+     taller than the viewport, the page scroll reveals the rest and the footer
+     sits cleanly below it. */
   padding: 32px 12px 48px 0;
   border-right: 1px solid var(--border);
   font-size: 13px;
