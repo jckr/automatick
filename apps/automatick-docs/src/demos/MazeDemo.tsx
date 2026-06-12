@@ -43,35 +43,33 @@ function GridTypeGroup() {
 }
 
 function MazeCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const lastDrawnTickRef = React.useRef(-1);
 
-  const canvasRef = useSimulationCanvas<typeof mazeSim>((ctx, { data, params, tick }) => {
-    const scale = (CSS_SIZE * dpr) / params.width;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    if (tick === 0) lastDrawnTickRef.current = -1;
-    const gap = tick - lastDrawnTickRef.current;
-    const overrideParams = { ...params, ticksPerAnimation: gap };
-    drawMazeFrame({
-      ctx,
-      pixelWidth: params.width,
-      pixelHeight: params.height,
-      tick,
-      params: overrideParams,
-      data,
-    });
-    lastDrawnTickRef.current = tick;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  const canvasRef = useSimulationCanvas<typeof mazeSim>(
+    (ctx, { data, params, tick }, view) => {
+      const scale = view.width / params.width;
+      ctx.save();
+      ctx.scale(scale, scale);
+      if (tick === 0) lastDrawnTickRef.current = -1;
+      const gap = tick - lastDrawnTickRef.current;
+      const overrideParams = { ...params, ticksPerAnimation: gap };
+      drawMazeFrame({
+        ctx,
+        pixelWidth: params.width,
+        pixelHeight: params.height,
+        tick,
+        params: overrideParams,
+        data,
+      });
+      lastDrawnTickRef.current = tick;
+      ctx.restore();
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <CanvasStage maxWidth={CSS_SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

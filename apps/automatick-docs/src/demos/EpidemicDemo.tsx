@@ -24,16 +24,12 @@ function EpidemicCanvas() {
   const { setParams, resetWith } = useSimulation<typeof epidemicSim>();
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const initializedRef = React.useRef(false);
+  // Ownership mode needs the logical canvas size up front: track the
+  // wrapper's measured size in state so the hook re-attaches on resize.
+  const [size, setSize] = React.useState({ width: 332, height: 332 });
 
-  const canvasRef = useSimulationCanvas<typeof epidemicSim>((ctx, { data, params }) => {
-    const cssStyles = getComputedStyle(document.documentElement);
-    const bg = cssStyles.getPropertyValue('--bg3').trim() || '#E6E0D0';
-    const dpr = window.devicePixelRatio || 1;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, params.width, params.height);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, params.width, params.height);
+  const canvasRef = useSimulationCanvas<typeof epidemicSim>((ctx, { data, params }, view) => {
+    view.clear(view.theme('--bg3', '#E6E0D0'));
 
     data.agents.forEach((agent) => {
       ctx.fillStyle = STATUS_COLORS[agent.status] ?? '#999';
@@ -41,25 +37,19 @@ function EpidemicCanvas() {
       ctx.arc(agent.x, agent.y, params.r, 0, Math.PI * 2);
       ctx.fill();
     });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  }, size);
 
-  // Track the wrapper size; resize the canvas framebuffer and the sim's
-  // world bounds so agents bounce against the visible edges.
+  // Track the wrapper size; resize the canvas (via ownership mode) and the
+  // sim's world bounds so agents bounce against the visible edges.
   React.useEffect(() => {
     const wrap = wrapperRef.current;
-    const canvas = canvasRef.current;
-    if (!wrap || !canvas) return;
+    if (!wrap) return;
 
     const apply = () => {
-      const dpr = window.devicePixelRatio || 1;
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
       if (w === 0 || h === 0) return;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
+      setSize({ width: w, height: h });
       if (!initializedRef.current) {
         initializedRef.current = true;
         resetWith({ width: w, height: h } as Partial<EpidemicParams>);
@@ -71,7 +61,7 @@ function EpidemicCanvas() {
     const ro = new ResizeObserver(apply);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [canvasRef, setParams, resetWith]);
+  }, [setParams, resetWith]);
 
   return (
     <div className={styles.stage}>

@@ -14,36 +14,32 @@ const CELL_PX = 10;
 const CSS_SIZE = 600;
 
 function ActivatorsCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const canvasRef = useSimulationCanvas<typeof activatorsSim>(
+    (ctx, { data, params }, view) => {
+      const ink = view.theme('--fg1', '#0E1116');
+      const bg = view.theme('--bg3', '#E6E0D0');
 
-  const canvasRef = useSimulationCanvas<typeof activatorsSim>((ctx, { data, params }) => {
-    const cssStyles = getComputedStyle(document.documentElement);
-    const ink = cssStyles.getPropertyValue('--fg1').trim() || '#0E1116';
-    const bg = cssStyles.getPropertyValue('--bg3').trim() || '#E6E0D0';
+      view.clear();
+      // Draw in sim coordinates (cells of CELL_PX) scaled to the canvas.
+      const scale = CSS_SIZE / (params.width * CELL_PX);
+      ctx.save();
+      ctx.scale(scale, scale);
 
-    const simW = params.width * CELL_PX;
-    const scale = (CSS_SIZE * dpr) / simW;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx.clearRect(0, 0, params.width * CELL_PX, params.height * CELL_PX);
-
-    for (let row = 0; row < data.grid.length; row++) {
-      for (let col = 0; col < data.grid[row].length; col++) {
-        ctx.fillStyle = data.grid[row][col] ? ink : bg;
-        ctx.fillRect(col * CELL_PX, row * CELL_PX, CELL_PX, CELL_PX);
+      for (let row = 0; row < data.grid.length; row++) {
+        for (let col = 0; col < data.grid[row].length; col++) {
+          ctx.fillStyle = data.grid[row][col] ? ink : bg;
+          ctx.fillRect(col * CELL_PX, row * CELL_PX, CELL_PX, CELL_PX);
+        }
       }
-    }
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      ctx.restore();
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <div className={styles.stage}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
       <div className={styles.perf}>
         <PerformanceOverlay />
       </div>

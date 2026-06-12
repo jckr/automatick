@@ -1,5 +1,7 @@
 /** Pathfinding + grid helpers for the AI snake (ported from legacy automatick). */
 
+import type { SimRandom } from 'automatick/random';
+
 export const UP = 0;
 export const RIGHT = 1;
 export const DOWN = 2;
@@ -29,10 +31,6 @@ export function directionFromDelta(dx: number, dy: number): number {
 
 export function coordKey(x: number, y: number): string {
   return `${x},${y}`;
-}
-
-export function getRandomInBounds(min: number, max: number, random: () => number): number {
-  return min + Math.floor(random() * (max + 1 - min));
 }
 
 export function isValid(x: number, y: number, visited: Record<string, boolean>, height: number, width: number): boolean {
@@ -213,7 +211,7 @@ export function getActionGrid(args: {
   return actionGrid;
 }
 
-export function positionFruit(grid: number[][], random: () => number): [number, number] | null {
+export function positionFruit(grid: number[][], random: SimRandom): [number, number] | null {
   const eligible: [number, number][] = [];
   grid.forEach((row, r) => {
     row.forEach((cell, c) => {
@@ -221,8 +219,7 @@ export function positionFruit(grid: number[][], random: () => number): [number, 
     });
   });
   if (eligible.length === 0) return null;
-  const idx = Math.floor(random() * eligible.length);
-  return eligible[idx] ?? null;
+  return random.pick(eligible);
 }
 
 export function addToGrid(grid: number[][], path: readonly (readonly [number, number])[]): number[][] {

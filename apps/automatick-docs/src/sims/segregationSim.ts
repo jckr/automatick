@@ -177,14 +177,14 @@ export function draw({
 export default defineSim<SegData, SegParams>({
   defaultParams,
 
-  init: (params) => {
+  init: (params, { random }) => {
     const { cols, rows, proportion, tolerance } = params;
     const grid: Cell[][] = Array(rows)
       .fill(0)
       .map(() =>
         Array(cols)
           .fill(0)
-          .map(() => ({ community: 100 * Math.random() > proportion ? 1 : 0 }))
+          .map(() => ({ community: 100 * random() > proportion ? 1 : 0 }))
       );
     grid.forEach((row, y) =>
       row.forEach((_cell, x) => {
@@ -195,7 +195,7 @@ export default defineSim<SegData, SegParams>({
     return { grid, happy, happiness: happy / (cols * rows), totalMoves: 0 };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { cols, threshold, tolerance } = params;
     let movers: [number, number][] = [];
     let happy = 0;
@@ -227,7 +227,7 @@ export default defineSim<SegData, SegParams>({
 
     while (movers.length > 1) {
       const first = movers.shift()!;
-      const idx = Math.floor(Math.random() * movers.length);
+      const idx = random.int(0, movers.length - 1);
       const second = movers[idx];
 
       const tmp = { ...updatedGrid[first[1]][first[0]] };

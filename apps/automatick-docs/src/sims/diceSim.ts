@@ -10,10 +10,6 @@ export type DiceData = {
   totals: Record<number, number>;
 };
 
-function roll(random: () => number): number {
-  return Math.ceil(random() * 6);
-}
-
 export default defineSim<DiceData, DiceParams>({
   defaultParams: { nbDice: 2 },
 
@@ -24,12 +20,12 @@ export default defineSim<DiceData, DiceParams>({
     totals: {},
   }),
 
-  step: ({ data, params, tick }) => {
+  step: ({ data, params, tick, random }) => {
     const { nbDice } = params;
     const rolls: number[] = [];
     let total = 0;
     for (let i = 0; i < nbDice; i++) {
-      const r = roll(Math.random);
+      const r = random.int(1, 6);
       rolls.push(r);
       total += r;
     }

@@ -51,7 +51,7 @@ export default defineSim<AntColonyData, AntColonyParams>({
     sensorAngle: 0.5,
   },
 
-  init: ({ antCount }) => {
+  init: ({ antCount }, { random }) => {
     const antX = new Float32Array(antCount);
     const antY = new Float32Array(antCount);
     const antAngle = new Float32Array(antCount);
@@ -59,7 +59,7 @@ export default defineSim<AntColonyData, AntColonyParams>({
     for (let i = 0; i < antCount; i++) {
       antX[i] = HOME_X;
       antY[i] = HOME_Y;
-      antAngle[i] = Math.random() * Math.PI * 2;
+      antAngle[i] = random() * Math.PI * 2;
     }
 
     const homePher = new Float32Array(W * H);
@@ -91,7 +91,7 @@ export default defineSim<AntColonyData, AntColonyParams>({
     };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { evaporation, depositAmount, sensorAngle } = params;
     const { antX, antY, antAngle, antCarrying, homePher, foodPher, food } = data;
     const n = antX.length;
@@ -127,7 +127,7 @@ export default defineSim<AntColonyData, AntColonyParams>({
       } else {
         newAngle = aR;
       }
-      newAngle += (Math.random() - 0.5) * 0.4;
+      newAngle += (random() - 0.5) * 0.4;
 
       let nx = x + Math.cos(newAngle) * SPEED;
       let ny = y + Math.sin(newAngle) * SPEED;

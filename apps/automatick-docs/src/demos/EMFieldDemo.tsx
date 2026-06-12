@@ -50,15 +50,16 @@ function fieldAt(charges: EMCharge[], x: number, y: number): [number, number] {
 }
 
 function EMFieldCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  // The heatmap scales a coarse grid up WITH smoothing (a smooth gradient
+  // look), so it keeps a manual offscreen canvas — view.blitGrid always
+  // disables smoothing for crisp cells, which is the opposite intent.
   const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
   const imageDataRef = React.useRef<ImageData | null>(null);
 
   const canvasRef = useSimulationCanvas<typeof emFieldSim>(
-    (ctx, { data, params }) => {
+    (ctx, { data, params }, view) => {
       const { charges, potential, res, width } = data;
       const scale = CSS_SIZE / width;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       // --- Layer 1: potential heatmap (or flat backdrop) ---
       if (params.showPotential) {
@@ -91,8 +92,7 @@ function EMFieldCanvas() {
           ctx.drawImage(off, 0, 0, CSS_SIZE, CSS_SIZE);
         }
       } else {
-        ctx.fillStyle = BG_HEX;
-        ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
+        view.clear(BG_HEX);
       }
 
       // --- Layer 2: field lines from each positive charge ---
@@ -158,19 +158,13 @@ function EMFieldCanvas() {
         }
         ctx.stroke();
       }
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
   );
 
   return (
     <CanvasStage maxWidth={CSS_SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

@@ -16,23 +16,26 @@ import percolationSim, {
 } from '../sims/percolationSim';
 import styles from './PercolationDemo.module.css';
 
-const CELL_PX = 6;
 const CSS_SIZE = 600;
 
-function cellColor(cell: number): string {
-  if (cell === ROCK) return '#555';
+// #555 rock, #38bdf8 water, #f0ebe3 open.
+const ROCK_RGB: readonly [number, number, number] = [85, 85, 85];
+const WATER_RGB: readonly [number, number, number] = [56, 189, 248];
+const OPEN_RGB: readonly [number, number, number] = [240, 235, 227];
+
+function cellRgb(cell: number): readonly [number, number, number] {
+  if (cell === ROCK) return ROCK_RGB;
   if (
     cell === WATER_FROM_TOP ||
     cell === WATER_FROM_LEFT ||
     cell === WATER_FROM_RIGHT
   ) {
-    return '#38bdf8';
+    return WATER_RGB;
   }
-  return '#f0ebe3';
+  return OPEN_RGB;
 }
 
 function PercolationGrid() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { data } = useSimulation<typeof percolationSim>();
 
   const borderColor =
@@ -42,28 +45,27 @@ function PercolationGrid() {
         ? 'var(--fg3)'
         : 'transparent';
 
-  const canvasRef = useSimulationCanvas<typeof percolationSim>((ctx, { data, params }) => {
-    const simW = params.width * CELL_PX;
-    const simH = params.height * CELL_PX;
-    const scaleX = (CSS_SIZE * dpr) / simW;
-    const scaleY = (CSS_SIZE * dpr) / simH;
-    ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
-
-    ctx.fillStyle = '#f0ebe3';
-    ctx.fillRect(0, 0, simW, simH);
-
-    for (let y = 0; y < data.grid.length; y++) {
-      const row = data.grid[y];
-      for (let x = 0; x < row.length; x++) {
-        const color = cellColor(row[x]);
-        if (color !== '#f0ebe3') {
-          ctx.fillStyle = color;
-          ctx.fillRect(x * CELL_PX, y * CELL_PX, CELL_PX, CELL_PX);
+  const canvasRef = useSimulationCanvas<typeof percolationSim>(
+    (ctx, { data }, view) => {
+      const rows = data.grid.length;
+      const cols = rows > 0 ? data.grid[0].length : 0;
+      if (!rows || !cols) return;
+      view.blitGrid(cols, rows, (px) => {
+        let j = 0;
+        for (let y = 0; y < rows; y++) {
+          const row = data.grid[y];
+          for (let x = 0; x < cols; x++, j += 4) {
+            const c = cellRgb(row[x]);
+            px[j] = c[0];
+            px[j + 1] = c[1];
+            px[j + 2] = c[2];
+            px[j + 3] = 255;
+          }
         }
-      }
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      });
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <div className={styles.stage}>
@@ -71,12 +73,7 @@ function PercolationGrid() {
         className={styles.frame}
         style={{ border: `3px solid ${borderColor}` }}
       >
-        <canvas
-          ref={canvasRef}
-          width={CSS_SIZE * dpr}
-          height={CSS_SIZE * dpr}
-          className={styles.canvas}
-        />
+        <canvas ref={canvasRef} className={styles.canvas} />
       </div>
       <div className={styles.perf}>
         <PerformanceOverlay />

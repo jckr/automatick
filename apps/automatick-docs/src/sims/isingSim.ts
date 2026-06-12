@@ -38,11 +38,11 @@ export default defineSim<IsingData, IsingParams>({
     sweepsPerTick: 2,
   },
 
-  init: ({ externalField }) => {
+  init: ({ externalField }, { random }) => {
     const spins = new Int8Array(N);
     let mSum = 0;
     for (let i = 0; i < N; i++) {
-      const s = Math.random() < 0.5 ? 1 : -1;
+      const s = random() < 0.5 ? 1 : -1;
       spins[i] = s;
       mSum += s;
     }
@@ -53,7 +53,7 @@ export default defineSim<IsingData, IsingParams>({
     };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { T, externalField, sweepsPerTick } = params;
     const spins = new Int8Array(data.spins);
     let mSum = data.magnetization * N;
@@ -62,7 +62,7 @@ export default defineSim<IsingData, IsingParams>({
 
     for (let sweep = 0; sweep < sweepsPerTick; sweep++) {
       for (let k = 0; k < N; k++) {
-        const i = (Math.random() * N) | 0;
+        const i = random.int(0, N - 1);
         const x = i % W;
         const y = (i / W) | 0;
         const xW = x === 0 ? W - 1 : x - 1;
@@ -76,7 +76,7 @@ export default defineSim<IsingData, IsingParams>({
           spins[yS * W + x];
         const s = spins[i];
         const dE = 2 * s * (neighborSum + externalField);
-        if (dE <= 0 || Math.random() < Math.exp(-dE * invT)) {
+        if (dE <= 0 || random() < Math.exp(-dE * invT)) {
           spins[i] = -s;
           mSum += -2 * s;
           eSum += dE;

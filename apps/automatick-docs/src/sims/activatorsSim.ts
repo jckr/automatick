@@ -65,9 +65,9 @@ export default defineSim<ActivatorsData, ActivatorsParams>({
     w: 0.35,
   },
 
-  init: ({ height, width, density, innerRadius, outerRadius }) => {
+  init: ({ height, width, density, innerRadius, outerRadius }, { random }) => {
     const grid = Array.from({ length: height }, () =>
-      Array.from({ length: width }, () => (Math.random() < density ? 1 : 0))
+      Array.from({ length: width }, () => (random() < density ? 1 : 0))
     );
     const neighbors = buildNeighborMap(height, width, innerRadius, outerRadius);
     return { grid, neighbors, changes: -1 };

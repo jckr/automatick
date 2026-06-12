@@ -1,9 +1,9 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 import {
   addToGrid,
   getActionGrid,
   getLongestPath,
-  getRandomInBounds,
   getShortestPath,
   opposite,
   positionFruit,
@@ -55,7 +55,7 @@ function initSnake(
     | 'xHead'
     | 'yHead'
   >,
-  random: () => number
+  random: SimRandom
 ): {
   grid: number[][];
   head: [number, number];
@@ -67,7 +67,7 @@ function initSnake(
   const { directionRandom, directionText, height, width, initialLength, snakePosRandom, xHead, yHead } = params;
 
   const direction = directionRandom
-    ? Math.floor(random() * 4)
+    ? random.int(0, 3)
     : ({ up: 0, right: 1, down: 2, left: 3 } as const)[directionText];
 
   const minX = direction === 1 ? initialLength + 2 : 2;
@@ -78,8 +78,8 @@ function initSnake(
   let xh = xHead;
   let yh = yHead;
   if (snakePosRandom) {
-    xh = getRandomInBounds(minX, maxX, random);
-    yh = getRandomInBounds(minY, maxY, random);
+    xh = random.int(minX, maxX);
+    yh = random.int(minY, maxY);
   } else {
     xh = Math.min(maxX, Math.max(minX, xh));
     yh = Math.min(maxY, Math.max(minY, yh));
@@ -113,8 +113,7 @@ function initSnake(
   };
 }
 
-export function initSnakeGame(params: SnakeParams): SnakeData {
-  const random = Math.random;
+export function initSnakeGame(params: SnakeParams, random: SimRandom): SnakeData {
   const { grid, head, tail, direction, length, snakePath } = initSnake(params, random);
   const fruit = positionFruit(grid, random);
   const longestPath = getLongestPath({
@@ -136,11 +135,11 @@ export function initSnakeGame(params: SnakeParams): SnakeData {
   };
 }
 
-export function updateSnake({ data, params }: {
+export function updateSnake({ data, params, random }: {
   data: SnakeData;
   params: SnakeParams;
+  random: SimRandom;
 }): SnakeData {
-  const random = Math.random;
   const { actionGrid, bestPath, grid, direction, head, fruit, length } = data;
   let updatedActionGrid = actionGrid;
   let updatedBestPath = bestPath;
@@ -250,9 +249,9 @@ export default defineSim<SnakeData, SnakeParams>({
     directionText: 'right'
   },
 
-  init: (params) => initSnakeGame(params),
+  init: (params, { random }) => initSnakeGame(params, random),
 
-  step: ({ data, params }) => updateSnake({ data, params }),
+  step: ({ data, params, random }) => updateSnake({ data, params, random }),
 
   shouldStop: (data) => data.stopped,
 });

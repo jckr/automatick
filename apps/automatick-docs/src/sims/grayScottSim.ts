@@ -27,7 +27,7 @@ export default defineSim<GrayScottData, GrayScottParams>({
     subTicks: 4,
   },
 
-  init: () => {
+  init: (_params, { random }) => {
     const u = new Float32Array(W * H);
     const v = new Float32Array(W * H);
     for (let i = 0; i < W * H; i++) {
@@ -40,8 +40,8 @@ export default defineSim<GrayScottData, GrayScottParams>({
     for (let y = y0; y < y0 + seedSize; y++) {
       for (let x = x0; x < x0 + seedSize; x++) {
         const i = y * W + x;
-        u[i] = 0.5 + (Math.random() - 0.5) * 0.01;
-        v[i] = 0.25 + (Math.random() - 0.5) * 0.01;
+        u[i] = 0.5 + (random() - 0.5) * 0.01;
+        v[i] = 0.25 + (random() - 0.5) * 0.01;
       }
     }
     return { u, v, width: W, height: H };

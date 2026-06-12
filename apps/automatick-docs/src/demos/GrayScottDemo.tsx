@@ -14,76 +14,42 @@ const WIDTH = 600;
 const HEIGHT = 600;
 
 function GrayScottCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
-
-  const canvasRef = useSimulationCanvas<typeof grayScottSim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const w = data.width;
-    const h = data.height;
-
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = w;
-      off.height = h;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-
-    if (
-      !imageDataRef.current ||
-      imageDataRef.current.width !== w ||
-      imageDataRef.current.height !== h
-    ) {
-      imageDataRef.current = offCtx.createImageData(w, h);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
-
-    for (let i = 0; i < w * h; i++) {
-      const vRaw = data.v[i];
-      const t = Math.min(Math.max(vRaw * 2.5, 0), 1);
-      let r: number;
-      let g: number;
-      let b: number;
-      if (t < 0.5) {
-        const s = t * 2;
-        r = Math.floor(20 + s * 220);
-        g = Math.floor(30 + s * 200);
-        b = Math.floor(90 + s * 40);
-      } else {
-        const s = (t - 0.5) * 2;
-        r = Math.floor(240 - s * 20);
-        g = Math.floor(230 - s * 180);
-        b = Math.floor(130 - s * 110);
-      }
-      const j = i * 4;
-      px[j] = r;
-      px[j + 1] = g;
-      px[j + 2] = b;
-      px[j + 3] = 255;
-    }
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, WIDTH, HEIGHT);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  const canvasRef = useSimulationCanvas<typeof grayScottSim>(
+    (ctx, { data }, view) => {
+      const w = data.width;
+      const h = data.height;
+      view.blitGrid(w, h, (px) => {
+        for (let i = 0; i < w * h; i++) {
+          const vRaw = data.v[i];
+          const t = Math.min(Math.max(vRaw * 2.5, 0), 1);
+          let r: number;
+          let g: number;
+          let b: number;
+          if (t < 0.5) {
+            const s = t * 2;
+            r = Math.floor(20 + s * 220);
+            g = Math.floor(30 + s * 200);
+            b = Math.floor(90 + s * 40);
+          } else {
+            const s = (t - 0.5) * 2;
+            r = Math.floor(240 - s * 20);
+            g = Math.floor(230 - s * 180);
+            b = Math.floor(130 - s * 110);
+          }
+          const j = i * 4;
+          px[j] = r;
+          px[j + 1] = g;
+          px[j + 2] = b;
+          px[j + 3] = 255;
+        }
+      });
+    },
+    { width: WIDTH, height: HEIGHT }
+  );
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

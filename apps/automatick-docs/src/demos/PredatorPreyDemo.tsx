@@ -25,7 +25,6 @@ const TRAIL_LEN = 20;
 type TrailAgent = { x: number; y: number; vx: number; vy: number; type: string };
 
 function PredatorPreyCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   // Per-agent position history, keyed by the agent object itself. The engine
   // reuses agent objects across ticks (no cloning in local mode), so surviving
   // agents accumulate a trail while dead ones are dropped from the map by GC.
@@ -33,14 +32,9 @@ function PredatorPreyCanvas() {
   const lastTickRef = React.useRef(-1);
 
   const canvasRef = useSimulationCanvas<typeof predatorPreySim>(
-    (ctx, { data, params, tick }) => {
+    (ctx, { data, params, tick }, view) => {
       const scale = CSS_SIZE / params.worldWidth;
-      const cssStyles = getComputedStyle(document.documentElement);
-      const bg = cssStyles.getPropertyValue('--bg3').trim() || '#14181f';
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
+      view.clear(view.theme('--bg3', '#14181f'));
 
       const trails = trailsRef.current;
       // Only extend trails when the tick actually advanced — the engine also
@@ -118,20 +112,14 @@ function PredatorPreyCanvas() {
         ctx.fill();
         ctx.restore();
       }
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
   );
 
   return (
     <div className={styles.stage}>
       <CanvasStage maxWidth={CSS_SIZE}>
-        <canvas
-          ref={canvasRef}
-          width={CSS_SIZE * dpr}
-          height={CSS_SIZE * dpr}
-          className={styles.canvas}
-        />
+        <canvas ref={canvasRef} className={styles.canvas} />
       </CanvasStage>
       <div className={styles.chartWrap}>
         <TimeSeries<PredatorPreyData>

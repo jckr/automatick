@@ -330,9 +330,6 @@ canvas + `ImageData` refs, raw `getComputedStyle` theme reads, and manual
 `fillRect` trail overlays — are superseded by ownership mode and the view
 toolkit. Don't use them in new code.
 
-Note: the docs-site demos have NOT yet been migrated to the view toolkit
-(separate follow-up); they still use the legacy patterns.
-
 ## Build & Test
 
 ```bash

@@ -44,11 +44,16 @@ const RESTITUTION = 0.9;
 const WALL_MARGIN = 8;
 const POT_SOFTEN = 9;
 
-function makeCharge(width: number, height: number, sign: number): EMCharge {
-  const mag = 1 + Math.random() * 1.5;
+function makeCharge(
+  width: number,
+  height: number,
+  sign: number,
+  random: () => number
+): EMCharge {
+  const mag = 1 + random() * 1.5;
   return {
-    x: width * (0.15 + Math.random() * 0.7),
-    y: height * (0.15 + Math.random() * 0.7),
+    x: width * (0.15 + random() * 0.7),
+    y: height * (0.15 + random() * 0.7),
     vx: 0,
     vy: 0,
     charge: sign * mag,
@@ -63,11 +68,12 @@ function reconcile(
   sign: number,
   target: number,
   width: number,
-  height: number
+  height: number,
+  random: () => number
 ): void {
   let count = charges.reduce((n, c) => n + (Math.sign(c.charge) === sign ? 1 : 0), 0);
   while (count < target) {
-    charges.push(makeCharge(width, height, sign));
+    charges.push(makeCharge(width, height, sign, random));
     count++;
   }
   while (count > target) {
@@ -121,18 +127,18 @@ export default defineSim<EMFieldData, EMFieldParams>({
     height: EM_HEIGHT,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const { numPositive, numNegative, fieldResolution, width, height } = params;
     const charges: EMCharge[] = [];
-    for (let i = 0; i < numPositive; i++) charges.push(makeCharge(width, height, 1));
-    for (let i = 0; i < numNegative; i++) charges.push(makeCharge(width, height, -1));
+    for (let i = 0; i < numPositive; i++) charges.push(makeCharge(width, height, 1, random));
+    for (let i = 0; i < numNegative; i++) charges.push(makeCharge(width, height, -1, random));
     const res = fieldResolution;
     const potential = new Float32Array(res * res);
     computePotential(charges, potential, res, width, height);
     return { charges, potential, res, width, height };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const {
       coulombStrength: k,
       damping,
@@ -146,8 +152,8 @@ export default defineSim<EMFieldData, EMFieldParams>({
     const charges = data.charges;
 
     // Live-reconcile counts so the sliders take effect without a reset.
-    reconcile(charges, 1, numPositive, width, height);
-    reconcile(charges, -1, numNegative, width, height);
+    reconcile(charges, 1, numPositive, width, height, random);
+    reconcile(charges, -1, numNegative, width, height, random);
 
     if (!fixedCharges) {
       const n = charges.length;

@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 
 export const SAND_W = 200;
 export const SAND_H = 200;
@@ -10,15 +11,20 @@ export const STONE = 3;
 
 export type FallingSandData = {
   grid: Uint8Array;
+  /** Last known brush position; while `down`, the brush keeps painting every tick. */
+  pen: { x: number; y: number; down: boolean };
 };
 
 export type FallingSandParams = {
   material: number;
   brushSize: number;
   dropRate: number;
-  paintX: number;
-  paintY: number;
 };
+
+/** Transient brush events: strokes paint at a grid cell, lift ends the stroke. */
+export type FallingSandInput =
+  | { kind: 'paint'; x: number; y: number }
+  | { kind: 'lift' };
 
 const idx = (x: number, y: number) => y * SAND_W + x;
 
@@ -30,7 +36,7 @@ function canSandDisplace(cell: number) {
   return cell === EMPTY || cell === WATER;
 }
 
-function updateSand(grid: Uint8Array, next: Uint8Array, x: number, y: number) {
+function updateSand(next: Uint8Array, x: number, y: number, random: SimRandom) {
   if (next[idx(x, y)] !== SAND) return;
   const below = y + 1;
   if (below >= SAND_H) return;
@@ -42,7 +48,7 @@ function updateSand(grid: Uint8Array, next: Uint8Array, x: number, y: number) {
     return;
   }
 
-  const dir = Math.random() < 0.5 ? -1 : 1;
+  const dir = random() < 0.5 ? -1 : 1;
   const dx1 = x + dir;
   const dx2 = x - dir;
 
@@ -57,7 +63,7 @@ function updateSand(grid: Uint8Array, next: Uint8Array, x: number, y: number) {
   }
 }
 
-function updateWater(grid: Uint8Array, next: Uint8Array, x: number, y: number) {
+function updateWater(next: Uint8Array, x: number, y: number, random: SimRandom) {
   if (next[idx(x, y)] !== WATER) return;
   const below = y + 1;
 
@@ -67,7 +73,7 @@ function updateWater(grid: Uint8Array, next: Uint8Array, x: number, y: number) {
     return;
   }
 
-  const dir = Math.random() < 0.5 ? -1 : 1;
+  const dir = random() < 0.5 ? -1 : 1;
   const dx1 = x + dir;
   const dx2 = x - dir;
 
@@ -113,31 +119,45 @@ function paintBrush(
   }
 }
 
-export default defineSim<FallingSandData, FallingSandParams>({
+export default defineSim<FallingSandData, FallingSandParams, FallingSandInput>({
   defaultParams: {
     material: SAND,
     brushSize: 3,
     dropRate: 5,
-    paintX: -1,
-    paintY: -1,
   },
 
   init: () => ({
     grid: new Uint8Array(SAND_W * SAND_H),
+    pen: { x: 0, y: 0, down: false },
   }),
 
-  step: ({ data, params }) => {
+  step: ({ data, params, inputs, random }) => {
     const { grid } = data;
     const next = new Uint8Array(grid);
+    const pen = { ...data.pen };
 
-    if (params.paintX >= 0 && params.paintY >= 0) {
-      paintBrush(next, params.paintX, params.paintY, params.brushSize, params.material);
+    // Apply every queued stroke (none are coalesced), then keep painting at
+    // the last position while the pointer stays down — a held brush pours.
+    let painted = false;
+    for (const input of inputs) {
+      if (input.kind === 'lift') {
+        pen.down = false;
+        continue;
+      }
+      pen.x = input.x;
+      pen.y = input.y;
+      pen.down = true;
+      paintBrush(next, input.x, input.y, params.brushSize, params.material);
+      painted = true;
+    }
+    if (pen.down && !painted) {
+      paintBrush(next, pen.x, pen.y, params.brushSize, params.material);
     }
 
     const order = new Array(SAND_W);
     for (let i = 0; i < SAND_W; i++) order[i] = i;
     for (let i = SAND_W - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = random.int(0, i);
       const tmp = order[i];
       order[i] = order[j];
       order[j] = tmp;
@@ -147,20 +167,20 @@ export default defineSim<FallingSandData, FallingSandParams>({
       for (let xi = 0; xi < SAND_W; xi++) {
         const x = order[xi];
         const cell = next[idx(x, y)];
-        if (cell === SAND) updateSand(grid, next, x, y);
-        else if (cell === WATER) updateWater(grid, next, x, y);
+        if (cell === SAND) updateSand(next, x, y, random);
+        else if (cell === WATER) updateWater(next, x, y, random);
       }
     }
 
     if (params.material !== STONE) {
       for (let i = 0; i < params.dropRate; i++) {
-        const x = Math.floor(Math.random() * SAND_W);
+        const x = random.int(0, SAND_W - 1);
         if (next[idx(x, 0)] === EMPTY) {
           next[idx(x, 0)] = params.material;
         }
       }
     }
 
-    return { grid: next };
+    return { grid: next, pen };
   },
 });

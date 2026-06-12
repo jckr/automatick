@@ -24,63 +24,29 @@ const PALETTE: ReadonlyArray<readonly [number, number, number]> = [
 ];
 
 function SandpileCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
-
-  const canvasRef = useSimulationCanvas<typeof sandpileSim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const W = SANDPILE_WIDTH;
-    const H = SANDPILE_HEIGHT;
-
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = W;
-      off.height = H;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-
-    if (
-      !imageDataRef.current ||
-      imageDataRef.current.width !== W ||
-      imageDataRef.current.height !== H
-    ) {
-      imageDataRef.current = offCtx.createImageData(W, H);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
-    const grid = data.grid;
-
-    for (let i = 0; i < W * H; i++) {
-      const c = grid[i];
-      const p = PALETTE[c < 4 ? c : 4];
-      const j = i * 4;
-      px[j] = p[0];
-      px[j + 1] = p[1];
-      px[j + 2] = p[2];
-      px[j + 3] = 255;
-    }
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, CSS_SIZE, CSS_SIZE);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  const canvasRef = useSimulationCanvas<typeof sandpileSim>(
+    (ctx, { data }, view) => {
+      const W = SANDPILE_WIDTH;
+      const H = SANDPILE_HEIGHT;
+      view.blitGrid(W, H, (px) => {
+        const grid = data.grid;
+        for (let i = 0; i < W * H; i++) {
+          const c = grid[i];
+          const p = PALETTE[c < 4 ? c : 4];
+          const j = i * 4;
+          px[j] = p[0];
+          px[j + 1] = p[1];
+          px[j + 2] = p[2];
+          px[j + 3] = 255;
+        }
+      });
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <CanvasStage maxWidth={CSS_SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

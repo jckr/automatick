@@ -15,59 +15,31 @@ const GRID = 200;
 const CSS_SIZE = 600;
 
 function IsingCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
-
-  const canvasRef = useSimulationCanvas<typeof isingSim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = GRID;
-      off.height = GRID;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-    if (!imageDataRef.current) {
-      imageDataRef.current = offCtx.createImageData(GRID, GRID);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
-
-    for (let i = 0; i < GRID * GRID; i++) {
-      const s = data.spins[i];
-      const j = i * 4;
-      if (s > 0) {
-        px[j] = 240;
-        px[j + 1] = 230;
-        px[j + 2] = 210;
-      } else {
-        px[j] = 25;
-        px[j + 1] = 35;
-        px[j + 2] = 70;
-      }
-      px[j + 3] = 255;
-    }
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, CSS_SIZE, CSS_SIZE);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  const canvasRef = useSimulationCanvas<typeof isingSim>(
+    (ctx, { data }, view) => {
+      view.blitGrid(GRID, GRID, (px) => {
+        for (let i = 0; i < GRID * GRID; i++) {
+          const s = data.spins[i];
+          const j = i * 4;
+          if (s > 0) {
+            px[j] = 240;
+            px[j + 1] = 230;
+            px[j + 2] = 210;
+          } else {
+            px[j] = 25;
+            px[j + 1] = 35;
+            px[j + 2] = 70;
+          }
+          px[j + 3] = 255;
+        }
+      });
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
+  );
 
   return (
     <CanvasStage maxWidth={CSS_SIZE}>
-      <canvas
-        ref={canvasRef}
-        width={CSS_SIZE * dpr}
-        height={CSS_SIZE * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }
