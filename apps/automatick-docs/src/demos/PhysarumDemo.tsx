@@ -14,67 +14,34 @@ const WIDTH = 600;
 const HEIGHT = 600;
 
 function PhysarumCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
+  const canvasRef = useSimulationCanvas<typeof physarumSim>(
+    (ctx, { data }, view) => {
+      const w = data.width;
+      const h = data.height;
+      const trail = data.trail;
 
-  const canvasRef = useSimulationCanvas<typeof physarumSim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const w = data.width;
-    const h = data.height;
-
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = w;
-      off.height = h;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-
-    if (
-      !imageDataRef.current ||
-      imageDataRef.current.width !== w ||
-      imageDataRef.current.height !== h
-    ) {
-      imageDataRef.current = offCtx.createImageData(w, h);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
-    const trail = data.trail;
-
-    // Map trail concentration to a dark -> bright (cyan/white) palette.
-    for (let i = 0; i < w * h; i++) {
-      const t = Math.min(1, trail[i] / 6);
-      // dark teal background -> cyan -> white as concentration rises.
-      const r = Math.floor(8 + t * t * 247);
-      const g = Math.floor(14 + t * 200 + t * t * 41);
-      const b = Math.floor(24 + t * 180 + t * t * 51);
-      const j = i * 4;
-      px[j] = r;
-      px[j + 1] = Math.min(255, g);
-      px[j + 2] = Math.min(255, b);
-      px[j + 3] = 255;
-    }
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, WIDTH, HEIGHT);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      // Map trail concentration to a dark -> bright (cyan/white) palette.
+      view.blitGrid(w, h, (px) => {
+        for (let i = 0; i < w * h; i++) {
+          const t = Math.min(1, trail[i] / 6);
+          // dark teal background -> cyan -> white as concentration rises.
+          const r = Math.floor(8 + t * t * 247);
+          const g = Math.floor(14 + t * 200 + t * t * 41);
+          const b = Math.floor(24 + t * 180 + t * t * 51);
+          const j = i * 4;
+          px[j] = r;
+          px[j + 1] = Math.min(255, g);
+          px[j + 2] = Math.min(255, b);
+          px[j + 3] = 255;
+        }
+      });
+    },
+    { width: WIDTH, height: HEIGHT }
+  );
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

@@ -25,14 +25,14 @@ export type PhysarumParams = {
   height: number;
 };
 
-function makeAgents(n: number) {
+function makeAgents(n: number, random: () => number) {
   const ax = new Float32Array(n);
   const ay = new Float32Array(n);
   const angle = new Float32Array(n);
   for (let i = 0; i < n; i++) {
-    ax[i] = Math.random() * W;
-    ay[i] = Math.random() * H;
-    angle[i] = Math.random() * Math.PI * 2;
+    ax[i] = random() * W;
+    ay[i] = random() * H;
+    angle[i] = random() * Math.PI * 2;
   }
   return { ax, ay, angle };
 }
@@ -62,13 +62,13 @@ export default defineSim<PhysarumData, PhysarumParams>({
     height: H,
   },
 
-  init: (params) => {
-    const { ax, ay, angle } = makeAgents(params.numAgents);
+  init: (params, { random }) => {
+    const { ax, ay, angle } = makeAgents(params.numAgents, random);
     const trail = new Float32Array(W * H);
     return { ax, ay, angle, trail, width: W, height: H };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const {
       numAgents,
       sensorAngle,
@@ -84,7 +84,7 @@ export default defineSim<PhysarumData, PhysarumParams>({
 
     // Re-seed agent arrays if the requested count changed at runtime.
     if (ax.length !== numAgents) {
-      const fresh = makeAgents(numAgents);
+      const fresh = makeAgents(numAgents, random);
       ax = fresh.ax;
       ay = fresh.ay;
       angle = fresh.angle;
@@ -116,7 +116,7 @@ export default defineSim<PhysarumData, PhysarumParams>({
         na = a + turnSpeed;
       } else {
         // ambiguous: small random jitter
-        na = a + (Math.random() - 0.5) * turnSpeed * 2;
+        na = a + (random() - 0.5) * turnSpeed * 2;
       }
       angle[i] = na;
 

@@ -19,18 +19,7 @@ export type TerrainParams = {
   erosionRate: number;
   depositionRate: number;
   thermalErosionRate: number;
-  seed: number;
 };
-
-function mulberry32(a: number) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 function valueNoiseLayer(size: number, freq: number, rand: () => number): Float32Array {
   const cells = freq + 1;
@@ -130,10 +119,11 @@ function hydraulicErosion(
   drops: number,
   erosionRate: number,
   depositionRate: number,
+  random: () => number,
 ) {
   for (let d = 0; d < drops; d++) {
-    let px = Math.random() * (size - 2) + 0.5;
-    let py = Math.random() * (size - 2) + 0.5;
+    let px = random() * (size - 2) + 0.5;
+    let py = random() * (size - 2) + 0.5;
     let dirX = 0;
     let dirY = 0;
     let speed = 1;
@@ -229,14 +219,12 @@ export default defineSim<TerrainData, TerrainParams>({
     erosionRate: 0.3,
     depositionRate: 0.3,
     thermalErosionRate: 0.04,
-    seed: 1,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const size = TERRAIN_SIZE;
-    const rand = mulberry32(params.seed | 0 || 1);
-    const heightmap = fractalNoise(size, params.noiseScale, params.noiseOctaves, rand);
-    const moisture = fractalNoise(size, Math.max(2, params.noiseScale - 1), 4, rand);
+    const heightmap = fractalNoise(size, params.noiseScale, params.noiseOctaves, random);
+    const moisture = fractalNoise(size, Math.max(2, params.noiseScale - 1), 4, random);
     return {
       heightmap,
       moisture,
@@ -246,7 +234,7 @@ export default defineSim<TerrainData, TerrainParams>({
     };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { heightmap, moisture, water, size } = data;
     const {
       evolutionSpeed,
@@ -267,6 +255,7 @@ export default defineSim<TerrainData, TerrainParams>({
         dropsPerTick,
         erosionRate,
         depositionRate,
+        random,
       );
       thermalErosion(heightmap, size, thermalErosionRate);
     }
