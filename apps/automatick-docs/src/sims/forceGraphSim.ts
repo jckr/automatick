@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 
 export const FG_WIDTH = 600;
 export const FG_HEIGHT = 600;
@@ -34,21 +35,13 @@ export type ForceGraphParams = {
   centerGravity: number;
 };
 
-function mulberry32(a: number) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function buildGraph(params: ForceGraphParams): {
+function buildGraph(
+  params: ForceGraphParams,
+  rand: SimRandom,
+): {
   nodes: GraphNode[];
   edges: Edge[];
 } {
-  const rand = mulberry32(((params.numNodes * 131 + Math.floor(params.edgeProbability * 1000)) | 0) || 1);
   const n = params.numNodes;
   const cx = FG_WIDTH / 2;
   const cy = FG_HEIGHT / 2;
@@ -75,18 +68,18 @@ function buildGraph(params: ForceGraphParams): {
   if (params.preset === 'tree') {
     // Random spanning tree: each new node attaches to an existing one.
     for (let i = 1; i < n; i++) {
-      const parent = Math.floor(rand() * i);
+      const parent = rand.int(0, i - 1);
       addEdge(parent, i);
     }
     // A few extra edges to make it less perfectly hierarchical.
     const extra = Math.floor(n * 0.1);
     for (let e = 0; e < extra; e++) {
-      addEdge(Math.floor(rand() * n), Math.floor(rand() * n));
+      addEdge(rand.int(0, n - 1), rand.int(0, n - 1));
     }
   } else if (params.preset === 'clusters') {
     const numClusters = Math.min(5, Math.max(3, Math.floor(n / 12)));
     for (let i = 0; i < n; i++) {
-      nodes[i].group = Math.floor(rand() * numClusters);
+      nodes[i].group = rand.int(0, numClusters - 1);
     }
     // Dense intra-cluster edges.
     for (let i = 0; i < n; i++) {
@@ -119,7 +112,7 @@ function buildGraph(params: ForceGraphParams): {
     // Connect any isolated nodes so nothing flies off alone.
     for (let i = 0; i < n; i++) {
       if (edges.every((e) => e.source !== i && e.target !== i)) {
-        addEdge(i, Math.floor(rand() * n));
+        addEdge(i, rand.int(0, n - 1));
       }
     }
   }
@@ -144,12 +137,12 @@ export default defineSim<ForceGraphData, ForceGraphParams>({
     centerGravity: 0.01,
   },
 
-  init: (params) => {
-    const { nodes, edges } = buildGraph(params);
+  init: (params, { random }) => {
+    const { nodes, edges } = buildGraph(params, random);
     return { nodes, edges, totalEnergy: Infinity };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { nodes, edges } = data;
     const {
       repulsionStrength,
@@ -173,8 +166,8 @@ export default defineSim<ForceGraphData, ForceGraphParams>({
         let dy = nodes[i].y - nodes[j].y;
         let distSq = dx * dx + dy * dy;
         if (distSq < 0.01) {
-          dx = (Math.random() - 0.5) * 0.1;
-          dy = (Math.random() - 0.5) * 0.1;
+          dx = (random() - 0.5) * 0.1;
+          dy = (random() - 0.5) * 0.1;
           distSq = dx * dx + dy * dy + 0.01;
         }
         const dist = Math.sqrt(distSq);
