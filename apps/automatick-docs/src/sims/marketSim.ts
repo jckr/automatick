@@ -91,7 +91,7 @@ export default defineSim<MarketData, MarketParams>({
     };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { lookbackWindow, orderSize, priceImpact, numTraders } = params;
     const { traders, priceHistory } = data;
     const price = data.price;
@@ -108,7 +108,7 @@ export default defineSim<MarketData, MarketParams>({
       } else if (t.strategy === 'mean-revert') {
         order = price > ma ? -1 : price < ma ? 1 : 0;
       } else {
-        order = Math.random() < 0.5 ? 1 : -1;
+        order = random() < 0.5 ? 1 : -1;
       }
       orders[i] = order;
       netDemand += order;
