@@ -15,7 +15,6 @@ const WIDTH = 600;
 const HEIGHT = 600;
 
 function ClothCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { resetWith, params } = useSimulation<typeof clothSim>();
 
   // Structure depends on the preset, so a preset change must rebuild the sim.
@@ -27,16 +26,11 @@ function ClothCanvas() {
     }
   }, [params.preset, resetWith]);
 
-  const canvasRef = useSimulationCanvas<typeof clothSim>((ctx, { data }) => {
-    const css = getComputedStyle(document.documentElement);
-    const bg = css.getPropertyValue('--bg2').trim() || '#12161c';
-    const ink = css.getPropertyValue('--fg1').trim() || '#e6e6e6';
-    const pinColor = css.getPropertyValue('--viz-1').trim() || '#D7451E';
+  const canvasRef = useSimulationCanvas<typeof clothSim>((ctx, { data }, view) => {
+    const ink = view.theme('--fg1', '#e6e6e6');
+    const pinColor = view.theme('--viz-1', '#D7451E');
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    view.clear(view.theme('--bg2', '#12161c'));
 
     const { points, constraints } = data;
 
@@ -74,18 +68,11 @@ function ClothCanvas() {
       if (p.pinned) continue;
       ctx.fillRect(p.x - 0.75, p.y - 0.75, 1.5, 1.5);
     }
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  }, { width: WIDTH, height: HEIGHT });
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }
