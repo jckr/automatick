@@ -19,89 +19,78 @@ const UP = '#2ecc71';
 const DOWN = '#e74c3c';
 
 function MarketCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const canvasRef = useSimulationCanvas<typeof marketSim>(
+    (ctx, { data }, view) => {
+      const grid = view.theme('--border', '#2a2f3a');
 
-  const canvasRef = useSimulationCanvas<typeof marketSim>((ctx, { data }) => {
-    const cssStyles = getComputedStyle(document.documentElement);
-    const bg = cssStyles.getPropertyValue('--bg3').trim() || '#14181f';
-    const grid = cssStyles.getPropertyValue('--border').trim() || '#2a2f3a';
+      view.clear(view.theme('--bg3', '#14181f'));
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, CSS_W, CSS_H);
+      const history = data.priceHistory;
+      const n = history.length;
+      if (n < 2) {
+        return;
+      }
 
-    const history = data.priceHistory;
-    const n = history.length;
-    if (n < 2) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
+      let minP = Infinity;
+      let maxP = -Infinity;
+      for (const p of history) {
+        if (p < minP) minP = p;
+        if (p > maxP) maxP = p;
+      }
+      if (maxP === minP) {
+        maxP += 1;
+        minP -= 1;
+      }
+      const pad = (maxP - minP) * 0.08;
+      minP -= pad;
+      maxP += pad;
 
-    let minP = Infinity;
-    let maxP = -Infinity;
-    for (const p of history) {
-      if (p < minP) minP = p;
-      if (p > maxP) maxP = p;
-    }
-    if (maxP === minP) {
-      maxP += 1;
-      minP -= 1;
-    }
-    const pad = (maxP - minP) * 0.08;
-    minP -= pad;
-    maxP += pad;
+      const padX = 8;
+      const padY = 20;
+      const plotW = CSS_W - padX * 2;
+      const plotH = CSS_H - padY * 2;
+      const xAt = (i: number) => padX + (i / (n - 1)) * plotW;
+      const yAt = (p: number) =>
+        padY + plotH - ((p - minP) / (maxP - minP)) * plotH;
 
-    const padX = 8;
-    const padY = 20;
-    const plotW = CSS_W - padX * 2;
-    const plotH = CSS_H - padY * 2;
-    const xAt = (i: number) => padX + (i / (n - 1)) * plotW;
-    const yAt = (p: number) =>
-      padY + plotH - ((p - minP) / (maxP - minP)) * plotH;
+      // Gridlines.
+      ctx.strokeStyle = grid;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
+      for (let g = 0; g <= 4; g++) {
+        const y = padY + (g / 4) * plotH;
+        ctx.beginPath();
+        ctx.moveTo(padX, y);
+        ctx.lineTo(CSS_W - padX, y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
 
-    // Gridlines.
-    ctx.strokeStyle = grid;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.5;
-    for (let g = 0; g <= 4; g++) {
-      const y = padY + (g / 4) * plotH;
+      // Price line, colored per segment by direction.
+      ctx.lineWidth = 1.6;
+      ctx.lineJoin = 'round';
+      for (let i = 1; i < n; i++) {
+        ctx.strokeStyle = history[i] >= history[i - 1] ? UP : DOWN;
+        ctx.beginPath();
+        ctx.moveTo(xAt(i - 1), yAt(history[i - 1]));
+        ctx.lineTo(xAt(i), yAt(history[i]));
+        ctx.stroke();
+      }
+
+      // Latest price marker.
+      const last = history[n - 1];
+      ctx.fillStyle = last >= history[n - 2] ? UP : DOWN;
       ctx.beginPath();
-      ctx.moveTo(padX, y);
-      ctx.lineTo(CSS_W - padX, y);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    // Price line, colored per segment by direction.
-    ctx.lineWidth = 1.6;
-    ctx.lineJoin = 'round';
-    for (let i = 1; i < n; i++) {
-      ctx.strokeStyle = history[i] >= history[i - 1] ? UP : DOWN;
-      ctx.beginPath();
-      ctx.moveTo(xAt(i - 1), yAt(history[i - 1]));
-      ctx.lineTo(xAt(i), yAt(history[i]));
-      ctx.stroke();
-    }
-
-    // Latest price marker.
-    const last = history[n - 1];
-    ctx.fillStyle = last >= history[n - 2] ? UP : DOWN;
-    ctx.beginPath();
-    ctx.arc(xAt(n - 1), yAt(last), 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      ctx.arc(xAt(n - 1), yAt(last), 3, 0, Math.PI * 2);
+      ctx.fill();
+    },
+    { width: CSS_W, height: CSS_H },
+  );
 
   return (
     <div className={styles.stage}>
       <CanvasStage maxWidth={CSS_W}>
-        <canvas
-          ref={canvasRef}
-          width={CSS_W * dpr}
-          height={CSS_H * dpr}
-          className={styles.canvas}
-        />
+        <canvas ref={canvasRef} className={styles.canvas} />
       </CanvasStage>
       <div className={styles.chartWrap}>
         <TimeSeries<MarketData> mode='line' height={110} series={SERIES} />

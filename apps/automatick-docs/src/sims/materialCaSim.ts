@@ -18,6 +18,8 @@ export type MaterialCAData = {
   energy: Float32Array;
   width: number;
   height: number;
+  /** Last known brush position; while `down`, the brush keeps painting every tick. */
+  pen: { x: number; y: number; down: boolean };
 };
 
 export type MaterialCAParams = {
@@ -27,9 +29,12 @@ export type MaterialCAParams = {
   brushSize: number;
   fireSpreadChance: number;
   smokeFadeRate: number;
-  paintX: number;
-  paintY: number;
 };
+
+/** Transient brush events: strokes paint at a grid cell, lift ends the stroke. */
+export type MaterialCAInput =
+  | { kind: 'paint'; x: number; y: number }
+  | { kind: 'lift' };
 
 const FIRE_LIFETIME = 1.0;
 const SMOKE_LIFETIME = 1.0;
@@ -60,7 +65,7 @@ function paintBrush(
   }
 }
 
-export default defineSim<MaterialCAData, MaterialCAParams>({
+export default defineSim<MaterialCAData, MaterialCAParams, MaterialCAInput>({
   defaultParams: {
     width: W,
     height: H,
@@ -68,8 +73,6 @@ export default defineSim<MaterialCAData, MaterialCAParams>({
     brushSize: 4,
     fireSpreadChance: 0.3,
     smokeFadeRate: 0.04,
-    paintX: -1,
-    paintY: -1,
   },
 
   init: () => {
@@ -102,26 +105,34 @@ export default defineSim<MaterialCAData, MaterialCAParams>({
       energy[i] = FIRE_LIFETIME;
     }
 
-    return { grid, energy, width: W, height: H };
+    return { grid, energy, width: W, height: H, pen: { x: 0, y: 0, down: false } };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, inputs, random }) => {
     const { fireSpreadChance, smokeFadeRate } = params;
     const grid = data.grid;
     const energy = data.energy;
+    const pen = { ...data.pen };
 
     const idx = (x: number, y: number) => y * W + x;
     const inBounds = (x: number, y: number) => x >= 0 && x < W && y >= 0 && y < H;
 
-    if (params.paintX >= 0 && params.paintY >= 0) {
-      paintBrush(
-        grid,
-        energy,
-        params.paintX,
-        params.paintY,
-        params.brushSize,
-        params.material,
-      );
+    // Apply every queued stroke, then keep painting at the last position while
+    // the pointer stays down — a held brush keeps depositing material.
+    let painted = false;
+    for (const input of inputs) {
+      if (input.kind === 'lift') {
+        pen.down = false;
+        continue;
+      }
+      pen.x = input.x;
+      pen.y = input.y;
+      pen.down = true;
+      paintBrush(grid, energy, input.x, input.y, params.brushSize, params.material);
+      painted = true;
+    }
+    if (pen.down && !painted) {
+      paintBrush(grid, energy, pen.x, pen.y, params.brushSize, params.material);
     }
 
     // --- Falling/settling materials: process bottom-to-top ---
@@ -140,7 +151,7 @@ export default defineSim<MaterialCAData, MaterialCAParams>({
               continue;
             }
             // Slide diagonally.
-            const dir = Math.random() < 0.5 ? -1 : 1;
+            const dir = random() < 0.5 ? -1 : 1;
             for (const dx of [dir, -dir]) {
               const nx = x + dx;
               if (inBounds(nx, y + 1)) {
@@ -160,7 +171,7 @@ export default defineSim<MaterialCAData, MaterialCAParams>({
             continue;
           }
           // Diagonal down.
-          const dir = Math.random() < 0.5 ? -1 : 1;
+          const dir = random() < 0.5 ? -1 : 1;
           let moved = false;
           for (const dx of [dir, -dir]) {
             const nx = x + dx;
@@ -201,7 +212,7 @@ export default defineSim<MaterialCAData, MaterialCAParams>({
               if (!inBounds(nx, ny)) continue;
               const ni = idx(nx, ny);
               const nc = grid[ni];
-              if (nc === WOOD && Math.random() < fireSpreadChance) {
+              if (nc === WOOD && random() < fireSpreadChance) {
                 grid[ni] = FIRE;
                 energy[ni] = FIRE_LIFETIME;
               } else if (nc === WATER) {
@@ -213,7 +224,7 @@ export default defineSim<MaterialCAData, MaterialCAParams>({
           }
         }
 
-        energy[i] -= 0.05 + Math.random() * 0.03;
+        energy[i] -= 0.05 + random() * 0.03;
         if (grid[i] === FIRE && energy[i] <= 0) {
           grid[i] = SMOKE;
           energy[i] = SMOKE_LIFETIME;
@@ -235,7 +246,7 @@ export default defineSim<MaterialCAData, MaterialCAParams>({
 
         // Rise into empty cell above, with a little horizontal drift.
         if (y - 1 >= 0) {
-          const driftDir = Math.random() < 0.5 ? -1 : 1;
+          const driftDir = random() < 0.5 ? -1 : 1;
           const candidates = [
             [x, y - 1],
             [x + driftDir, y - 1],
@@ -254,6 +265,6 @@ export default defineSim<MaterialCAData, MaterialCAParams>({
       }
     }
 
-    return { grid, energy, width: W, height: H };
+    return { grid, energy, width: W, height: H, pen };
   },
 });

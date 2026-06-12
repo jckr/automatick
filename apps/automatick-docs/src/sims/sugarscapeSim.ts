@@ -73,9 +73,9 @@ function computeGini(agents: SugarAgent[]): number {
   return (2 * cumWeighted) / (n * total) - (n + 1) / n;
 }
 
-function shuffle<T>(arr: T[]): T[] {
+function shuffle<T>(arr: T[], random: () => number): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
@@ -90,7 +90,7 @@ export default defineSim<SugarscapeData, SugarscapeParams>({
     maxVision: 6,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const size = params.gridSize;
     const capacityGrid = buildCapacity(size);
     const sugarGrid = new Float32Array(capacityGrid);
@@ -99,17 +99,17 @@ export default defineSim<SugarscapeData, SugarscapeParams>({
     const agents: SugarAgent[] = [];
     const target = Math.min(params.numAgents, size * size);
     while (agents.length < target) {
-      const x = Math.floor(Math.random() * size);
-      const y = Math.floor(Math.random() * size);
+      const x = random.int(0, size - 1);
+      const y = random.int(0, size - 1);
       const key = y * size + x;
       if (occupied.has(key)) continue;
       occupied.add(key);
       agents.push({
         x,
         y,
-        sugar: 5 + Math.random() * 20,
-        metabolism: 1 + Math.floor(Math.random() * params.maxMetabolism),
-        vision: 1 + Math.floor(Math.random() * params.maxVision),
+        sugar: 5 + random() * 20,
+        metabolism: random.int(1, params.maxMetabolism),
+        vision: random.int(1, params.maxVision),
       });
     }
 
@@ -124,7 +124,7 @@ export default defineSim<SugarscapeData, SugarscapeParams>({
     };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const size = data.width;
     const sugarGrid = data.sugarGrid;
     const capacityGrid = data.capacityGrid;
@@ -142,7 +142,7 @@ export default defineSim<SugarscapeData, SugarscapeParams>({
     const occupied = new Set<number>();
     for (const a of data.agents) occupied.add(a.y * size + a.x);
 
-    const order = shuffle([...data.agents]);
+    const order = shuffle([...data.agents], random);
     const survivors: SugarAgent[] = [];
 
     for (const a of order) {

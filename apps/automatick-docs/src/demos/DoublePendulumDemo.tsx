@@ -17,7 +17,6 @@ const PIVOT_X = WIDTH / 2;
 const PIVOT_Y = HEIGHT * 0.4;
 
 function DoublePendulumCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { resetWith, params } = useSimulation<typeof doublePendulumSim>();
 
   // Initial angles and the chip count seed init(), so changing them rebuilds.
@@ -39,15 +38,10 @@ function DoublePendulumCanvas() {
   ]);
 
   const canvasRef = useSimulationCanvas<typeof doublePendulumSim>(
-    (ctx, { data, params: p }) => {
-      const css = getComputedStyle(document.documentElement);
-      const bg = css.getPropertyValue('--bg2').trim() || '#12161c';
-      const ink = css.getPropertyValue('--fg1').trim() || '#e6e6e6';
+    (ctx, { data, params: p }, view) => {
+      const ink = view.theme('--fg1', '#e6e6e6');
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      view.clear(view.theme('--bg2', '#12161c'));
 
       const { L1, L2, m1, m2 } = p;
       const r1 = 4 + Math.sqrt(m1) * 3;
@@ -111,19 +105,13 @@ function DoublePendulumCanvas() {
       ctx.beginPath();
       ctx.arc(PIVOT_X, PIVOT_Y, 4, 0, Math.PI * 2);
       ctx.fill();
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: WIDTH, height: HEIGHT }
   );
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

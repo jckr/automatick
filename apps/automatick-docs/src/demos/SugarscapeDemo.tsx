@@ -17,50 +17,22 @@ const CSS_SIZE = 600;
 const MAX_CAPACITY = 4;
 
 function SugarscapeCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
-
   const canvasRef = useSimulationCanvas<typeof sugarscapeSim>(
-    (ctx, { data }) => {
+    (ctx, { data }, view) => {
       const w = data.width;
       const h = data.height;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      if (
-        !offscreenRef.current ||
-        offscreenRef.current.width !== w ||
-        offscreenRef.current.height !== h
-      ) {
-        const off = document.createElement('canvas');
-        off.width = w;
-        off.height = h;
-        offscreenRef.current = off;
-        imageDataRef.current = null;
-      }
-      const off = offscreenRef.current;
-      const offCtx = off.getContext('2d');
-      if (!offCtx) {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        return;
-      }
-      if (!imageDataRef.current) {
-        imageDataRef.current = offCtx.createImageData(w, h);
-      }
-      const px = imageDataRef.current.data;
 
       // Sugar field: dark background, golden where sugar is plentiful.
-      for (let i = 0; i < w * h; i++) {
-        const t = Math.min(1, data.sugarGrid[i] / MAX_CAPACITY);
-        const j = i * 4;
-        px[j] = Math.floor(20 + t * 215);
-        px[j + 1] = Math.floor(18 + t * 190);
-        px[j + 2] = Math.floor(24 + t * 40);
-        px[j + 3] = 255;
-      }
-      offCtx.putImageData(imageDataRef.current, 0, 0);
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(off, 0, 0, CSS_SIZE, CSS_SIZE);
+      view.blitGrid(w, h, (px) => {
+        for (let i = 0; i < w * h; i++) {
+          const t = Math.min(1, data.sugarGrid[i] / MAX_CAPACITY);
+          const j = i * 4;
+          px[j] = Math.floor(20 + t * 215);
+          px[j + 1] = Math.floor(18 + t * 190);
+          px[j + 2] = Math.floor(24 + t * 40);
+          px[j + 3] = 255;
+        }
+      });
 
       // Agents as dots colored by wealth (red = poor, green = rich).
       const cell = CSS_SIZE / w;
@@ -74,20 +46,14 @@ function SugarscapeCanvas() {
         ctx.arc((a.x + 0.5) * cell, (a.y + 0.5) * cell, r, 0, Math.PI * 2);
         ctx.fill();
       }
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: CSS_SIZE, height: CSS_SIZE }
   );
 
   return (
     <div className={styles.stage}>
       <CanvasStage maxWidth={CSS_SIZE}>
-        <canvas
-          ref={canvasRef}
-          width={CSS_SIZE * dpr}
-          height={CSS_SIZE * dpr}
-          className={styles.canvas}
-        />
+        <canvas ref={canvasRef} className={styles.canvas} />
       </CanvasStage>
       <div className={styles.chartWrap}>
         <TimeSeries<SugarscapeData>

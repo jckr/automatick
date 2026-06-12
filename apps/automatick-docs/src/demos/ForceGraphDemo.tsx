@@ -15,21 +15,12 @@ import forceGraphSim, {
 } from '../sims/forceGraphSim';
 import styles from './ForceGraphDemo.module.css';
 
-const GROUP_COLORS = [
-  '#D7451E',
-  '#2B6E8F',
-  '#3D6B4B',
-  '#C98A1A',
-  '#7A4FA0',
-];
+const GROUP_COLORS = ['#D7451E', '#2B6E8F', '#3D6B4B', '#C98A1A', '#7A4FA0'];
 
 function ForceGraphCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-
   const canvasRef = useSimulationCanvas<typeof forceGraphSim>(
-    (ctx, { data }) => {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, FG_WIDTH, FG_HEIGHT);
+    (ctx, { data }, view) => {
+      view.clear();
 
       const { nodes, edges } = data;
 
@@ -60,19 +51,13 @@ function ForceGraphCanvas() {
         ctx.strokeStyle = 'rgba(255,255,255,0.6)';
         ctx.stroke();
       }
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: FG_WIDTH, height: FG_HEIGHT },
   );
 
   return (
     <CanvasStage maxWidth={FG_WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={FG_WIDTH * dpr}
-        height={FG_HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

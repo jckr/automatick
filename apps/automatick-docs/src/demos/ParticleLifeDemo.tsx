@@ -17,7 +17,6 @@ const WIDTH = 600;
 const HEIGHT = 600;
 
 function ParticleLifeCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { params, resetWith } = useSimulation<typeof particleLifeSim>();
   const prevRandomizeRef = React.useRef(params.randomizeForces);
 
@@ -32,17 +31,13 @@ function ParticleLifeCanvas() {
   const initializedRef = React.useRef(false);
 
   const canvasRef = useSimulationCanvas<typeof particleLifeSim>(
-    (ctx, { data }) => {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
+    (ctx, { data }, view) => {
       if (!initializedRef.current) {
-        ctx.fillStyle = '#0a0a12';
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        view.clear('#0a0a12');
         initializedRef.current = true;
       }
       // Semi-transparent fill for subtle trails.
-      ctx.fillStyle = 'rgba(10, 10, 18, 0.18)';
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      view.fade(0.18, '#0a0a12');
 
       const scale = WIDTH / data.worldSize;
       const numTypes = data.numTypes;
@@ -53,8 +48,8 @@ function ParticleLifeCanvas() {
         ctx.arc(p.x * scale, p.y * scale, 2.2, 0, Math.PI * 2);
         ctx.fill();
       });
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: WIDTH, height: HEIGHT },
   );
 
   // Reseed when structural params change so a fresh world is built.
@@ -79,12 +74,7 @@ function ParticleLifeCanvas() {
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

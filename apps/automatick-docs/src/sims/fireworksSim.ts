@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 
 export type FireworkParticle = {
   x: number;
@@ -37,14 +38,19 @@ export type FireworksParams = {
 
 const MAX_PARTICLES = 2000;
 
-function makeEmitters(count: number, width: number, height: number): Emitter[] {
+function makeEmitters(
+  count: number,
+  width: number,
+  height: number,
+  random: SimRandom
+): Emitter[] {
   const emitters: Emitter[] = [];
   for (let i = 0; i < count; i++) {
     const x = ((i + 1) / (count + 1)) * width;
     emitters.push({
       x,
       y: height,
-      cooldown: Math.floor(Math.random() * 60),
+      cooldown: random.int(0, 59),
     });
   }
   return emitters;
@@ -61,18 +67,18 @@ export default defineSim<FireworksData, FireworksParams>({
     windStrength: 0,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const width = 600;
     const height = 600;
     return {
       particles: [],
-      emitters: makeEmitters(params.emitterCount, width, height),
+      emitters: makeEmitters(params.emitterCount, width, height, random),
       width,
       height,
     };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { gravity, drag, launchInterval, burstSize, sparkleChance, windStrength } =
       params;
     const { height } = data;
@@ -84,16 +90,16 @@ export default defineSim<FireworksData, FireworksParams>({
     for (const e of data.emitters) {
       e.cooldown -= 1;
       if (e.cooldown <= 0) {
-        e.cooldown = launchInterval + Math.floor(Math.random() * launchInterval);
-        const speed = 7 + Math.random() * 3;
+        e.cooldown = launchInterval + Math.floor(random() * launchInterval);
+        const speed = 7 + random() * 3;
         particles.push({
-          x: e.x + (Math.random() - 0.5) * 20,
+          x: e.x + (random() - 0.5) * 20,
           y: height,
-          vx: (Math.random() - 0.5) * 1.5,
+          vx: (random() - 0.5) * 1.5,
           vy: -speed,
           life: 1,
           decay: 0.004,
-          hue: Math.floor(Math.random() * 360),
+          hue: random.int(0, 359),
           size: 2.5,
           type: 'spark',
         });
@@ -117,16 +123,16 @@ export default defineSim<FireworksData, FireworksParams>({
           const count = burstSize;
           const baseHue = p.hue;
           for (let k = 0; k < count; k++) {
-            const ang = (k / count) * Math.PI * 2 + Math.random() * 0.3;
-            const sp = 1.5 + Math.random() * 3.5;
+            const ang = (k / count) * Math.PI * 2 + random() * 0.3;
+            const sp = 1.5 + random() * 3.5;
             newParticles.push({
               x: p.x,
               y: p.y,
               vx: Math.cos(ang) * sp,
               vy: Math.sin(ang) * sp,
               life: 1,
-              decay: 0.012 + Math.random() * 0.01,
-              hue: baseHue + (Math.random() - 0.5) * 40,
+              decay: 0.012 + random() * 0.01,
+              hue: baseHue + (random() - 0.5) * 40,
               size: 2,
               type: 'burst',
             });
@@ -139,8 +145,8 @@ export default defineSim<FireworksData, FireworksParams>({
           newParticles.push({
             x: p.x,
             y: p.y,
-            vx: (Math.random() - 0.5) * 0.4,
-            vy: (Math.random() - 0.5) * 0.4,
+            vx: (random() - 0.5) * 0.4,
+            vy: (random() - 0.5) * 0.4,
             life: 0.6,
             decay: 0.04,
             hue: p.hue,
@@ -151,14 +157,14 @@ export default defineSim<FireworksData, FireworksParams>({
       } else if (p.type === 'burst') {
         // Occasional secondary sparkle.
         if (
-          Math.random() < sparkleChance &&
+          random() < sparkleChance &&
           newParticles.length + particles.length < MAX_PARTICLES
         ) {
           newParticles.push({
             x: p.x,
             y: p.y,
-            vx: (Math.random() - 0.5) * 1.2,
-            vy: (Math.random() - 0.5) * 1.2,
+            vx: (random() - 0.5) * 1.2,
+            vy: (random() - 0.5) * 1.2,
             life: 0.5,
             decay: 0.05,
             hue: p.hue,

@@ -14,79 +14,46 @@ const WIDTH = 600;
 const HEIGHT = 600;
 
 function WaveCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const offscreenRef = React.useRef<HTMLCanvasElement | null>(null);
-  const imageDataRef = React.useRef<ImageData | null>(null);
+  const canvasRef = useSimulationCanvas<typeof waveSim>(
+    (ctx, { data }, view) => {
+      const w = data.width;
+      const h = data.height;
+      const cur = data.current;
 
-  const canvasRef = useSimulationCanvas<typeof waveSim>((ctx, { data }) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const w = data.width;
-    const h = data.height;
-
-    if (!offscreenRef.current) {
-      const off = document.createElement('canvas');
-      off.width = w;
-      off.height = h;
-      offscreenRef.current = off;
-    }
-    const off = offscreenRef.current;
-    const offCtx = off.getContext('2d');
-    if (!offCtx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      return;
-    }
-
-    if (
-      !imageDataRef.current ||
-      imageDataRef.current.width !== w ||
-      imageDataRef.current.height !== h
-    ) {
-      imageDataRef.current = offCtx.createImageData(w, h);
-    }
-    const imageData = imageDataRef.current;
-    const px = imageData.data;
-    const cur = data.current;
-
-    // Diverging palette around zero: negative -> blue, zero -> dark, positive -> red/white.
-    for (let i = 0; i < w * h; i++) {
-      const v = cur[i];
-      const t = Math.max(-1, Math.min(1, v));
-      let r: number;
-      let g: number;
-      let b: number;
-      if (t >= 0) {
-        // dark -> red -> white
-        r = Math.floor(20 + t * 235);
-        g = Math.floor(20 + t * t * 235);
-        b = Math.floor(30 + t * t * 200);
-      } else {
-        const s = -t;
-        // dark -> blue -> white
-        b = Math.floor(40 + s * 215);
-        g = Math.floor(20 + s * s * 200);
-        r = Math.floor(20 + s * s * 180);
-      }
-      const j = i * 4;
-      px[j] = r;
-      px[j + 1] = g;
-      px[j + 2] = b;
-      px[j + 3] = 255;
-    }
-    offCtx.putImageData(imageData, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, WIDTH, HEIGHT);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+      // Diverging palette around zero: negative -> blue, zero -> dark, positive -> red/white.
+      view.blitGrid(w, h, (px) => {
+        for (let i = 0; i < w * h; i++) {
+          const v = cur[i];
+          const t = Math.max(-1, Math.min(1, v));
+          let r: number;
+          let g: number;
+          let b: number;
+          if (t >= 0) {
+            // dark -> red -> white
+            r = Math.floor(20 + t * 235);
+            g = Math.floor(20 + t * t * 235);
+            b = Math.floor(30 + t * t * 200);
+          } else {
+            const s = -t;
+            // dark -> blue -> white
+            b = Math.floor(40 + s * 215);
+            g = Math.floor(20 + s * s * 200);
+            r = Math.floor(20 + s * s * 180);
+          }
+          const j = i * 4;
+          px[j] = r;
+          px[j + 1] = g;
+          px[j + 2] = b;
+          px[j + 3] = 255;
+        }
+      });
+    },
+    { width: WIDTH, height: HEIGHT }
+  );
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

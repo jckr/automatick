@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 
 export type Body = {
   x: number;
@@ -30,16 +31,16 @@ const SUBSTEPS = 4;
 const MAX_SPEED = 18;
 const WALL_DAMP = 0.98;
 
-function makeBody(width: number, height: number): Body {
-  const radius = 10 + Math.random() * 14;
+function makeBody(width: number, height: number, random: SimRandom): Body {
+  const radius = 10 + random() * 14;
   return {
-    x: width * 0.2 + Math.random() * width * 0.6,
-    y: radius + Math.random() * height * 0.4,
-    vx: (Math.random() - 0.5) * 2,
+    x: width * 0.2 + random() * width * 0.6,
+    y: radius + random() * height * 0.4,
+    vx: (random() - 0.5) * 2,
     vy: 0,
     radius,
     mass: radius * radius,
-    hue: Math.floor(Math.random() * 360),
+    hue: random.int(0, 359),
   };
 }
 
@@ -53,20 +54,20 @@ export default defineSim<RigidBodyData, RigidBodyParams>({
     height: 600,
   },
 
-  init: ({ count, width, height }) => {
+  init: ({ count, width, height }, { random }) => {
     const bodies: Body[] = [];
-    for (let i = 0; i < count; i++) bodies.push(makeBody(width, height));
+    for (let i = 0; i < count; i++) bodies.push(makeBody(width, height, random));
     return { bodies, width, height, collisions: 0 };
   },
 
-  step: ({ data, params }) => {
+  step: ({ data, params, random }) => {
     const { gravity, restitution, width, height, drop } = params;
     const bodies = data.bodies.map((b) => ({ ...b }));
     let collisions = data.collisions;
 
     // Optional continuous spawn from the top while "drop" is on.
     if (drop && bodies.length < 120) {
-      const b = makeBody(width, height);
+      const b = makeBody(width, height, random);
       b.y = b.radius + 2;
       bodies.push(b);
     }

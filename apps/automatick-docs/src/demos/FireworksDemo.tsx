@@ -14,10 +14,12 @@ import styles from './FireworksDemo.module.css';
 const WIDTH = 600;
 const HEIGHT = 600;
 
+const BG = '#05060f';
+
 function FireworksCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { params, resetWith } = useSimulation<typeof fireworksSim>();
   const initializedRef = React.useRef(false);
+  const dprRef = React.useRef<number | null>(null);
 
   // Rebuild emitters when their count changes.
   const prevCountRef = React.useRef(params.emitterCount);
@@ -30,17 +32,17 @@ function FireworksCanvas() {
   }, [params.emitterCount, resetWith]);
 
   const canvasRef = useSimulationCanvas<typeof fireworksSim>(
-    (ctx, { data }) => {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      if (!initializedRef.current) {
-        ctx.fillStyle = '#05060f';
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    (ctx, { data }, view) => {
+      // This renderer accumulates: each frame fades the previous frame and
+      // draws on top with additive blending. A dpr change resizes (and wipes)
+      // the backing store, so re-prime the background when it changes.
+      if (!initializedRef.current || view.dpr !== dprRef.current) {
+        view.clear(BG);
         initializedRef.current = true;
+        dprRef.current = view.dpr;
       }
       // Trail fade.
-      ctx.fillStyle = 'rgba(5, 6, 15, 0.18)';
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      view.fade(0.18, BG);
 
       ctx.globalCompositeOperation = 'lighter';
       data.particles.forEach((p) => {
@@ -59,19 +61,13 @@ function FireworksCanvas() {
         ctx.fill();
       });
       ctx.globalCompositeOperation = 'source-over';
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: WIDTH, height: HEIGHT }
   );
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

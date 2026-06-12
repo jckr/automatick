@@ -15,7 +15,6 @@ const WIDTH = 600;
 const HEIGHT = 600;
 
 function RigidBodyCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { resetWith, params } = useSimulation<typeof rigidBodySim>();
 
   // The body count is fixed at init, so a change must rebuild the scene.
@@ -27,15 +26,10 @@ function RigidBodyCanvas() {
     }
   }, [params.count, resetWith]);
 
-  const canvasRef = useSimulationCanvas<typeof rigidBodySim>((ctx, { data }) => {
-    const css = getComputedStyle(document.documentElement);
-    const bg = css.getPropertyValue('--bg2').trim() || '#12161c';
-    const ink = css.getPropertyValue('--fg1').trim() || '#e6e6e6';
+  const canvasRef = useSimulationCanvas<typeof rigidBodySim>((ctx, { data }, view) => {
+    const ink = view.theme('--fg1', '#e6e6e6');
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    view.clear(view.theme('--bg2', '#12161c'));
 
     for (let i = 0; i < data.bodies.length; i++) {
       const b = data.bodies[i];
@@ -59,18 +53,11 @@ function RigidBodyCanvas() {
     ctx.lineTo(WIDTH, HEIGHT - 1);
     ctx.stroke();
     ctx.globalAlpha = 1;
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  });
+  }, { width: WIDTH, height: HEIGHT });
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

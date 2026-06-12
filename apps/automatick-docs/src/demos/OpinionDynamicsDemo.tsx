@@ -32,17 +32,11 @@ function opinionColor(o: number): string {
 }
 
 function OpinionCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-
   const canvasRef = useSimulationCanvas<typeof opinionDynamicsSim>(
-    (ctx, { data }) => {
+    (ctx, { data }, view) => {
       const scale = CSS_SIZE / data.worldSize;
-      const cssStyles = getComputedStyle(document.documentElement);
-      const bg = cssStyles.getPropertyValue('--bg3').trim() || '#14181f';
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, CSS_SIZE, CSS_SIZE);
+      view.clear(view.theme('--bg3', '#14181f'));
 
       for (const a of data.agents) {
         ctx.fillStyle = opinionColor(a.opinion);
@@ -50,20 +44,14 @@ function OpinionCanvas() {
         ctx.arc(a.x * scale, a.y * scale, 4, 0, Math.PI * 2);
         ctx.fill();
       }
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: CSS_SIZE, height: CSS_SIZE },
   );
 
   return (
     <div className={styles.stage}>
       <CanvasStage maxWidth={CSS_SIZE}>
-        <canvas
-          ref={canvasRef}
-          width={CSS_SIZE * dpr}
-          height={CSS_SIZE * dpr}
-          className={styles.canvas}
-        />
+        <canvas ref={canvasRef} className={styles.canvas} />
       </CanvasStage>
       <div className={styles.chartWrap}>
         <TimeSeries<OpinionData> mode='line' height={130} series={SERIES} />
@@ -93,9 +81,7 @@ function OpinionStats() {
         </div>
         <div className={styles.row}>
           <span className={styles.label}>avg opinion</span>
-          <span className={styles.value}>
-            {data.averageOpinion.toFixed(3)}
-          </span>
+          <span className={styles.value}>{data.averageOpinion.toFixed(3)}</span>
         </div>
       </div>
     </div>
@@ -165,11 +151,7 @@ export function OpinionDynamicsDemo() {
       <DemoSplit
         preview={<OpinionCanvas />}
         controls={
-          <DemoControlPanel
-            groups={GROUPS}
-            extra={<OpinionStats />}
-            showStep
-          />
+          <DemoControlPanel groups={GROUPS} extra={<OpinionStats />} showStep />
         }
       />
     </Simulation>

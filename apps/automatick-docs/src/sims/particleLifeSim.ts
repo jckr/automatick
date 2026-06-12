@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 
 export type Particle = {
   x: number;
@@ -29,10 +30,10 @@ export type ParticleLifeParams = {
 /** Universal close-range repulsion radius as a fraction of forceRange. */
 const REPEL_FRACTION = 0.3;
 
-function makeMatrix(numTypes: number): number[] {
+function makeMatrix(numTypes: number, random: SimRandom): number[] {
   const m: number[] = [];
   for (let i = 0; i < numTypes * numTypes; i++) {
-    m.push(Math.random() * 2 - 1);
+    m.push(random() * 2 - 1);
   }
   return m;
 }
@@ -48,21 +49,21 @@ export default defineSim<ParticleLifeData, ParticleLifeParams>({
     randomizeForces: false,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const { numParticles, numTypes, worldSize } = params;
     const particles: Particle[] = [];
     for (let i = 0; i < numParticles; i++) {
       particles.push({
-        x: Math.random() * worldSize,
-        y: Math.random() * worldSize,
+        x: random() * worldSize,
+        y: random() * worldSize,
         vx: 0,
         vy: 0,
-        type: Math.floor(Math.random() * numTypes),
+        type: random.int(0, numTypes - 1),
       });
     }
     return {
       particles,
-      matrix: makeMatrix(numTypes),
+      matrix: makeMatrix(numTypes, random),
       numTypes,
       worldSize,
     };
@@ -104,7 +105,7 @@ export default defineSim<ParticleLifeData, ParticleLifeParams>({
         let fi: number; // force on i from j (positive = toward j)
         let fj: number; // force on j from i (positive = toward i)
         if (dist < repelDist) {
-          const r = (dist / repelDist - 1); // -1..0, repulsive
+          const r = dist / repelDist - 1; // -1..0, repulsive
           fi = r;
           fj = r;
         } else {
