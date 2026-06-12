@@ -27,7 +27,6 @@ function strainColor(strain: number): string {
 }
 
 function SpringMassCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const { params, resetWith } = useSimulation<typeof springMassSim>();
 
   // Rebuild the structure when preset or grid size changes.
@@ -44,9 +43,8 @@ function SpringMassCanvas() {
   }, [params.preset, params.gridSize, resetWith]);
 
   const canvasRef = useSimulationCanvas<typeof springMassSim>(
-    (ctx, { data }) => {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    (ctx, { data }, view) => {
+      view.clear();
 
       const { nodes, springs } = data;
 
@@ -78,18 +76,13 @@ function SpringMassCanvas() {
           ctx.fill();
         }
       }
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    },
+    { width: WIDTH, height: HEIGHT }
   );
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }

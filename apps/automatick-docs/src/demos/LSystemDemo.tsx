@@ -29,7 +29,13 @@ type Segment = {
 function interpret(
   str: string,
   angleDeg: number,
-): { segments: Segment[]; minX: number; minY: number; maxX: number; maxY: number } {
+): {
+  segments: Segment[];
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} {
   const angle = (angleDeg * Math.PI) / 180;
   const step = 1;
 
@@ -88,19 +94,15 @@ function interpret(
 }
 
 function LSystemCanvas() {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-
   const canvasRef = useSimulationCanvas<typeof lSystemSim>(
-    (ctx, { data, params }) => {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    (ctx, { data, params }, view) => {
+      view.clear();
 
       const { segments, minX, minY, maxX, maxY } = interpret(
         data.current,
         params.angle,
       );
       if (segments.length === 0) {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
         return;
       }
 
@@ -141,19 +143,13 @@ function LSystemCanvas() {
         ctx.lineTo(s.x2 * scale + offsetX, s.y2 * scale + offsetY);
         ctx.stroke();
       }
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
     },
+    { width: WIDTH, height: HEIGHT },
   );
 
   return (
     <CanvasStage maxWidth={WIDTH}>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH * dpr}
-        height={HEIGHT * dpr}
-        className={styles.canvas}
-      />
+      <canvas ref={canvasRef} className={styles.canvas} />
     </CanvasStage>
   );
 }
@@ -179,12 +175,13 @@ function GenerationStats() {
 
 // Switching preset resets the sim and snaps the angle to that preset's default.
 function ResetOnPresetChange({ children }: { children: React.ReactNode }) {
-  const { params, setParams, resetWith } =
-    useSimulation<typeof lSystemSim>();
+  const { params, setParams, resetWith } = useSimulation<typeof lSystemSim>();
   const lastRef = React.useRef<string>('');
   React.useEffect(() => {
     if (lastRef.current && lastRef.current !== params.preset) {
-      setParams({ angle: PRESETS[params.preset].angle } as Partial<LSystemParams>);
+      setParams({
+        angle: PRESETS[params.preset].angle,
+      } as Partial<LSystemParams>);
       resetWith();
     }
     lastRef.current = params.preset;

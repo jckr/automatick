@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import type { SimRandom } from 'automatick/random';
 
 export type OpinionAgent = {
   x: number;
@@ -30,22 +31,26 @@ function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
 
-function gaussian(): number {
+function gaussian(random: SimRandom): number {
   // Box-Muller.
-  const u = Math.random() || 1e-9;
-  const v = Math.random();
+  const u = random() || 1e-9;
+  const v = random();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-function initialOpinion(dist: OpinionDistribution, centers: number[]): number {
-  if (dist === 'uniform') return Math.random();
+function initialOpinion(
+  dist: OpinionDistribution,
+  centers: number[],
+  random: SimRandom,
+): number {
+  if (dist === 'uniform') return random();
   if (dist === 'bimodal') {
-    const c = Math.random() < 0.5 ? 0.2 : 0.8;
-    return clamp01(c + gaussian() * 0.06);
+    const c = random() < 0.5 ? 0.2 : 0.8;
+    return clamp01(c + gaussian(random) * 0.06);
   }
   // clustered
-  const c = centers[Math.floor(Math.random() * centers.length)];
-  return clamp01(c + gaussian() * 0.05);
+  const c = random.pick(centers);
+  return clamp01(c + gaussian(random) * 0.05);
 }
 
 function aggregate(agents: OpinionAgent[]): {
@@ -85,23 +90,25 @@ export default defineSim<OpinionData, OpinionParams>({
     initialDistribution: 'uniform',
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const { numAgents, worldSize, initialDistribution } = params;
-    const centers = Array.from(
-      { length: 3 + Math.floor(Math.random() * 2) },
-      () => Math.random()
-    );
+    const centers = Array.from({ length: random.int(3, 4) }, () => random());
     const agents: OpinionAgent[] = Array.from({ length: numAgents }, () => ({
-      x: Math.random() * worldSize,
-      y: Math.random() * worldSize,
-      opinion: initialOpinion(initialDistribution, centers),
+      x: random() * worldSize,
+      y: random() * worldSize,
+      opinion: initialOpinion(initialDistribution, centers, random),
     }));
     return { agents, worldSize, ...aggregate(agents) };
   },
 
-  step: ({ data, params }) => {
-    const { interactionRadius, tolerance, influenceStrength, noise, worldSize } =
-      params;
+  step: ({ data, params, random }) => {
+    const {
+      interactionRadius,
+      tolerance,
+      influenceStrength,
+      noise,
+      worldSize,
+    } = params;
     const agents = data.agents;
     const r2 = interactionRadius * interactionRadius;
 
@@ -122,7 +129,7 @@ export default defineSim<OpinionData, OpinionParams>({
       // count includes self (distance 0, opinion diff 0).
       const target = count > 0 ? sum / count : a.opinion;
       let o = a.opinion + (target - a.opinion) * influenceStrength;
-      o += (Math.random() - 0.5) * 2 * noise;
+      o += (random() - 0.5) * 2 * noise;
       nextOpinions[i] = clamp01(o);
     }
 
@@ -130,8 +137,8 @@ export default defineSim<OpinionData, OpinionParams>({
       const a = agents[i];
       a.opinion = nextOpinions[i];
       // Slow spatial drift so neighborhoods evolve.
-      a.x = (a.x + (Math.random() - 0.5) * 4 + worldSize) % worldSize;
-      a.y = (a.y + (Math.random() - 0.5) * 4 + worldSize) % worldSize;
+      a.x = (a.x + (random() - 0.5) * 4 + worldSize) % worldSize;
+      a.y = (a.y + (random() - 0.5) * 4 + worldSize) % worldSize;
     }
 
     return { ...data, agents, worldSize, ...aggregate(agents) };
