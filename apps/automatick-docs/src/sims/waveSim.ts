@@ -19,18 +19,25 @@ export type WaveParams = {
   sourceCount: number;
 };
 
-/** Evenly distribute up to `count` source points across the grid. */
+/**
+ * Arrange up to `count` source points: a single source sits at the grid
+ * center; multiple sources form a regular polygon around it (a triangle for
+ * 3), first vertex pointing up.
+ */
 function sourcePositions(count: number): Array<[number, number]> {
-  const positions: Array<[number, number]> = [];
   if (count <= 1) {
-    positions.push([Math.floor(W / 2), Math.floor(H / 2)]);
-    return positions;
+    return [[Math.floor(W / 2), Math.floor(H / 2)]];
   }
-  // Spread sources horizontally across the vertical center band.
+  const cx = W / 2;
+  const cy = H / 2;
+  const r = Math.min(W, H) / 4;
+  const positions: Array<[number, number]> = [];
   for (let i = 0; i < count; i++) {
-    const x = Math.floor((W * (i + 1)) / (count + 1));
-    const y = Math.floor(H / 2);
-    positions.push([x, y]);
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / count;
+    positions.push([
+      Math.round(cx + r * Math.cos(angle)),
+      Math.round(cy + r * Math.sin(angle)),
+    ]);
   }
   return positions;
 }
@@ -42,7 +49,7 @@ export default defineSim<WaveData, WaveParams>({
     damping: 0.995,
     speed: 0.2,
     sourceFrequency: 0.06,
-    sourceCount: 2,
+    sourceCount: 3,
   },
 
   init: () => {
