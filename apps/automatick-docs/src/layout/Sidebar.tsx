@@ -57,6 +57,21 @@ const EXAMPLES: Item[] = [
   { to: '/examples/settlement', label: 'Settlement growth' },
   { to: '/examples/erosion', label: 'Hydraulic erosion' },
   { to: '/examples/electric-field', label: 'Electric field' },
+  { to: '/examples/material-ca', label: 'Water, fire & smoke' },
+  { to: '/examples/wave', label: 'Wave propagation' },
+  { to: '/examples/physarum', label: 'Slime mold' },
+  { to: '/examples/sugarscape', label: 'Sugarscape' },
+  { to: '/examples/opinion-dynamics', label: 'Opinion dynamics' },
+  { to: '/examples/market', label: 'Market' },
+  { to: '/examples/particle-life', label: 'Particle life' },
+  { to: '/examples/fireworks', label: 'Fireworks' },
+  { to: '/examples/spring-mass', label: 'Spring-mass' },
+  { to: '/examples/cloth', label: 'Rope & cloth' },
+  { to: '/examples/rigid-body', label: 'Rigid bodies' },
+  { to: '/examples/double-pendulum', label: 'Double pendulum' },
+  { to: '/examples/force-graph', label: 'Force-directed graph' },
+  { to: '/examples/l-systems', label: 'L-systems' },
+  { to: '/examples/terrain', label: 'Terrain' },
 ];
 
 const GROUPS: Group[] = [
