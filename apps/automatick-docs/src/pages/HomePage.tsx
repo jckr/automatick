@@ -44,7 +44,7 @@ export function HomePage() {
             <li>you render with HTML/SVG, Canvas or WebGL.</li>
           </ul>
           <div className='cta-row'>
-            <Link to='/examples/automatick-hero' className='btn primary'>
+            <Link to='/examples' className='btn primary'>
               See examples
               <span className='kbd-inline'>
                 <ArrowIcon />

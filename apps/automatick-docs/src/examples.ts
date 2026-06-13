@@ -30,6 +30,12 @@ export type ExampleMeta = {
   warmupMs?: number;
   /** Per-example crop to the "interesting detail" (defaults to a center-crop of the preview). */
   focus?: FocusRegion;
+  /**
+   * CSS `object-position` for the gallery tile's cover-crop (e.g. `'top left'`).
+   * A cheap framing nudge when the full-preview thumbnail is just off-center —
+   * no recapture needed. Defaults to `'center'`.
+   */
+  objectPosition?: string;
   /** Override the default `.pg-sim` capture selector for unusual layouts. */
   captureSelector?: string;
 };

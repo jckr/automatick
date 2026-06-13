@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { DocsLayout } from './layout/DocsLayout';
 import { ShellRoute } from './layout/ShellRoute';
 import { HomePage } from './pages/HomePage';
+import { ExamplesGalleryPage } from './pages/ExamplesGalleryPage';
 import { GettingStartedPage } from './pages/GettingStartedPage';
 import { WithoutReactPage } from './pages/WithoutReactPage';
 import { WithReactPage } from './pages/WithReactPage';
@@ -205,6 +206,7 @@ export function App() {
           </Route>
           {/* Examples — playground layout (sidebar + flush main, no TOC) */}
           <Route element={<ShellRoute variant='playground' />}>
+          <Route path='examples' element={<ExamplesGalleryPage />} />
           <Route path='examples/counter' element={<CounterPage />} />
           <Route path='examples/inline-counter' element={<InlineCounterPage />} />
           <Route path='examples/fibonacci' element={<FibonacciPage />} />
