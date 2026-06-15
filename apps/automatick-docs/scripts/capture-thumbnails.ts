@@ -64,7 +64,9 @@ async function toThumbnail(png: Buffer, ex: ExampleMeta): Promise<Buffer> {
   }
   return pipeline
     .resize(THUMB_W, THUMB_H, { fit: 'cover', position: 'centre' })
-    .png()
+    // Palette-quantize: ~70% smaller than full-color PNG with no visible loss
+    // at tile size, so the gallery wall stays light to load.
+    .png({ compressionLevel: 9, effort: 10, palette: true, quality: 90 })
     .toBuffer();
 }
 
