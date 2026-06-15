@@ -22,8 +22,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { EXAMPLES, examplePath, type ExampleMeta } from '../src/examples.ts';
 
-const THUMB_W = 640;
-const THUMB_H = 400; // 16:10
+// Tiles render at ~220–330 CSS px wide; 512×320 stays crisp at 2x DPR while
+// keeping the gallery payload small. 16:10 to match the .thumb aspect.
+const THUMB_W = 512;
+const THUMB_H = 320;
 const DEVICE_SCALE = 2; // capture at 2x for crisp downscale / zoomed crops
 const DEFAULT_WARMUP_MS = 2500;
 const PORT = 5179;
