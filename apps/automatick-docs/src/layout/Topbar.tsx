@@ -14,7 +14,7 @@ const REPO_URL = 'https://github.com/jckr/automatick';
 const SECTIONS: Array<{ label: string; to: string; match: RegExp }> = [
   { label: 'Guide', to: '/guide/getting-started', match: /^\/guide\b|^\/$/ },
   { label: 'API', to: '/api/define-sim', match: /^\/api\b/ },
-  { label: 'Examples', to: '/examples/counter', match: /^\/examples\b/ },
+  { label: 'Examples', to: '/examples', match: /^\/examples\b/ },
 ];
 
 export function Topbar() {
