@@ -116,6 +116,14 @@ async function main(): Promise<void> {
           .waitFor({ state: 'visible', timeout: 15_000 })
           .catch(() => {});
 
+        // Some demos start paused (no `autoplay`); press Play so the sim
+        // actually advances during the warm-up. Autoplaying demos only expose
+        // a Pause button, so this is a no-op for them.
+        const playBtn = page.getByRole('button', { name: 'Play', exact: true }).first();
+        if (await playBtn.count()) {
+          await playBtn.click({ timeout: 2000 }).catch(() => {});
+        }
+
         // Let the simulation develop to its "money shot" moment.
         await sleep(ex.warmupMs ?? DEFAULT_WARMUP_MS);
 

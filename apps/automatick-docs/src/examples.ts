@@ -46,9 +46,11 @@ export type ExampleMeta = {
 };
 
 export const EXAMPLES: ExampleMeta[] = [
-  { slug: 'dice', label: 'Dice' },
+  // Histogram builds up roll-by-roll; let it accumulate visible bars.
+  { slug: 'dice', label: 'Dice', warmupMs: 9000 },
   { slug: 'game-of-life', label: 'Game of Life' },
-  { slug: 'automata-1d', label: '1D automata' },
+  // Rows are drawn top-down over time; wait for the triangle to fill the grid.
+  { slug: 'automata-1d', label: '1D automata', warmupMs: 8000 },
   { slug: 'percolation', label: 'Percolation' },
   { slug: 'activators', label: 'Activators' },
   { slug: 'langton-ant', label: "Langton's ant" },
@@ -56,33 +58,57 @@ export const EXAMPLES: ExampleMeta[] = [
   { slug: 'gravity', label: 'N-body gravity' },
   { slug: 'boids', label: 'Boids' },
   { slug: 'predator-prey', label: 'Predator–Prey' },
-  { slug: 'crowd-compare', label: 'Crowd: selfish vs coordinated' },
-  { slug: 'snake', label: 'Snake' },
+  // Crop to the two corridors up top; the arrivals chart below starts empty.
+  {
+    slug: 'crowd-compare',
+    label: 'Crowd: selfish vs coordinated',
+    focus: { x: 0, y: 0, width: 1, height: 0.52 },
+  },
+  // Snake grows as it eats; give it time to become a satisfying length.
+  { slug: 'snake', label: 'Snake', warmupMs: 8000 },
   { slug: 'mazes', label: 'Mazes' },
-  { slug: 'chaos-game', label: 'Chaos game' },
-  { slug: 'worker-canvas', label: 'XOR ring' },
+  // Points accumulate into the Sierpinski attractor; needs a long warm-up.
+  { slug: 'chaos-game', label: 'Chaos game', warmupMs: 12000 },
+  // Accumulated rows fill the canvas top-down; wait for the ring to develop.
+  { slug: 'worker-canvas', label: 'XOR ring', warmupMs: 8000 },
   { slug: 'gray-scott', label: 'Gray-Scott' },
   { slug: 'stable-fluids', label: 'Stable fluids' },
   { slug: 'sandpile', label: 'Abelian sandpile' },
-  { slug: 'sph-fluid', label: 'SPH fluid' },
+  // Fluid settles into the lower portion of the tank; crop to it.
+  { slug: 'sph-fluid', label: 'SPH fluid', focus: { x: 0, y: 0.42, width: 1, height: 0.58 } },
   { slug: 'ising', label: 'Ising model' },
   { slug: 'ant-colony', label: 'Ant colony' },
-  { slug: 'traffic', label: 'Traffic' },
+  // Crop to the road band; avoids the perf overlay in the top-right corner.
+  { slug: 'traffic', label: 'Traffic', focus: { x: 0, y: 0.24, width: 1, height: 0.5 } },
   { slug: 'falling-sand', label: 'Falling sand' },
   { slug: 'settlement', label: 'Settlement growth' },
   { slug: 'erosion', label: 'Hydraulic erosion' },
   { slug: 'electric-field', label: 'Electric field' },
-  { slug: 'material-ca', label: 'Water, fire & smoke' },
+  // The seeded ember flares into fire + a smoke plume around ~0.4s, then burns
+  // out fast; grab it at the peak and crop to the blaze (above the perf HUD).
+  {
+    slug: 'material-ca',
+    label: 'Water, fire & smoke',
+    warmupMs: 450,
+    focus: { x: 0.22, y: 0.42, width: 0.6, height: 0.26 },
+  },
   { slug: 'wave', label: 'Wave propagation' },
   { slug: 'physarum', label: 'Slime mold' },
   { slug: 'sugarscape', label: 'Sugarscape' },
-  { slug: 'opinion-dynamics', label: 'Opinion dynamics' },
+  // Opinions start scattered and pale; let them cluster into clear camps.
+  { slug: 'opinion-dynamics', label: 'Opinion dynamics', warmupMs: 9000 },
   { slug: 'market', label: 'Market' },
   { slug: 'particle-life', label: 'Particle life' },
   { slug: 'fireworks', label: 'Fireworks' },
   { slug: 'spring-mass', label: 'Spring-mass' },
   { slug: 'cloth', label: 'Rope & cloth' },
-  { slug: 'rigid-body', label: 'Rigid bodies' },
+  // Bodies fall and settle into a pile at the bottom; wait, then crop to it.
+  {
+    slug: 'rigid-body',
+    label: 'Rigid bodies',
+    warmupMs: 5000,
+    focus: { x: 0, y: 0.42, width: 1, height: 0.58 },
+  },
   { slug: 'double-pendulum', label: 'Double pendulum' },
   { slug: 'force-graph', label: 'Force-directed graph' },
   { slug: 'l-systems', label: 'L-systems' },
