@@ -47,14 +47,16 @@ export default function Counter() {
 }
 ```
 
-`StandardControls` gives you play/pause, reset, step, seek, and parameter inputs out of the box. For finer control, individual primitives live at `automatick/react/control-primitives`.
+`StandardControls` gives you play/pause and a reset button out of the box; pass `showStepButton`, a finite `maxTime` (for the seek slider), and `controls` to add the step button, seek, and parameter inputs. For finer control, individual primitives live at `automatick/react/control-primitives`.
 
 ## Web worker
 
-Same sim module, one prop change — the simulation now runs off the main thread:
+Same sim module, one prop change — the simulation now runs off the main thread. The `worker` prop takes a module **URL** (or string), not the module itself; the Vite idiom is `new URL('./sim.ts', import.meta.url)`. Since a URL carries no type information, pass `Data`/`Params` explicitly:
 
 ```tsx
-<Simulation worker={() => import('./counterSim')}>
+<Simulation<{ count: number }, { increment: number }>
+  worker={new URL('./counterSim.ts', import.meta.url)}
+>
   <Display />
   <StandardControls />
 </Simulation>
@@ -64,11 +66,11 @@ Useful when `step` is expensive (large grids, n-body simulations, fluid solvers)
 
 ## API at a glance
 
-`defineSim<Data, Params>({ init, step, shouldStop?, defaultParams })` declares a sim module.
+`defineSim<Data, Params, Input?>({ init, step, shouldStop?, defaultParams? })` declares a sim module. `defaultParams` is optional; the third `Input` generic types transient events delivered via `send()` (see below) and defaults to `never`.
 
-`step` receives `{ data, params, tick }` and returns the next `Data`.
+`step` receives `{ data, params, tick, status, stepDurationMs, random, inputs }` and returns the next `Data`. Draw all randomness from `random` (`random()`, `random.int`, `random.pick`) rather than `Math.random` so runs replay from their seed. `inputs` holds the events delivered to this tick.
 
-`shouldStop(data, params) => boolean` is an optional terminal predicate; the engine moves to `'stopped'` when it returns true.
+`init` is either a value or `(params, { random }) => Data`, and `shouldStop(data, params) => boolean` is an optional terminal predicate; the engine moves to `'stopped'` when it returns true.
 
 `useSimulation<typeof sim>()` returns the current snapshot and actions:
 
@@ -78,18 +80,22 @@ Useful when `step` is expensive (large grids, n-body simulations, fluid solvers)
 | `params` | `Params` | Current parameters |
 | `tick` | `number` | Current tick (starts at 0) |
 | `status` | `'idle' \| 'playing' \| 'paused' \| 'stopped'` | Engine status |
+| `seed` | `number \| string` | Resolved seed driving the run (read back the auto-generated one to reproduce a run) |
 | `play()`, `pause()`, `stop()` | `() => void` | Lifecycle controls |
 | `seek(tick)` | `(n: number) => void` | Jump forward; pauses |
 | `advance(n?)` | `(n?: number) => void` | Step forward by `n` ticks (default 1) |
 | `setParams(patch)` | `(patch: Partial<Params>) => void` | Update params without reinit |
 | `resetWith(patch?)` | `(patch?: Partial<Params>) => void` | Re-run `init` with optional param patch |
+| `send(input)` | `(input: Input) => void` | Queue a transient event for the next tick's `inputs` |
 
 ## Package entry points
 
 | Subpath | Exports |
 |---|---|
 | `automatick` | `createEngine`, engine + status types |
-| `automatick/sim` | `defineSim`, `SimModule`, `SimData`, `SimParams` |
+| `automatick/sim` | `defineSim`, `SimModule`, `SimData`, `SimParams`, `SimInput` |
+| `automatick/random` | `SimRandom` seeded RNG types |
+| `automatick/canvas` | `attachCanvas` (framework-free), `CanvasView` toolkit |
 | `automatick/worker/runner` | Worker-side runtime |
 | `automatick/worker/create` | Worker host factory |
 | `automatick/worker/protocol` | Message protocol types |

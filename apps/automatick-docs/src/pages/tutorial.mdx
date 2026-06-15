@@ -35,10 +35,10 @@ export default defineSim({
     density: 0.3,
   },
 
-  init: (params) => {
+  init: (params, { random }) => {
     const grid = Array.from({ length: params.height }, () =>
       Array.from({ length: params.width }, () =>
-        Math.random() < params.density ? 1 : 0
+        random() < params.density ? 1 : 0
       )
     );
     return { grid, changes: 0 };
@@ -51,7 +51,7 @@ export default defineSim({
 Three things are happening here:
 
 - **`defaultParams`** defines the knobs for the simulation. Width and height set the grid size; density controls how many cells start alive.
-- **`init`** receives the current params and returns the initial state. We build a 2D array of 1s (alive) and 0s (dead), with each cell having a `density` chance of being alive.
+- **`init`** receives the current params and the engine toolkit, and returns the initial state. We build a 2D array of 1s (alive) and 0s (dead), with each cell having a `density` chance of being alive. We draw from the injected `random` (not `Math.random`) so the starting grid is reproducible — pass `seed` to `<Simulation>` to replay the exact same run, or read the auto-generated `seed` back from `useSimulation()`.
 - **`step`** is a placeholder that just returns the current data unchanged. We'll add the Game of Life rules shortly.
 
 The `changes` field in our data will be useful later for detecting when the simulation has stabilized.

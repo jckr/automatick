@@ -4,22 +4,67 @@
 import { defineSim } from 'automatick/sim';
 ```
 
-Identity function that returns a `SimModule` with full type inference for `Data` and `Params`.
+Identity function that returns a `SimModule` with full type inference for `Data`, `Params`, and `Input`.
 
 ```ts
-function defineSim<Data, Params>(sim: SimModule<Data, Params>): SimModule<Data, Params>
+function defineSim<Data, Params, Input = never>(
+  sim: SimModule<Data, Params, Input>,
+): SimModule<Data, Params, Input>
 ```
+
+The third `Input` type parameter declares the transient events the sim accepts via the `send()` action; it defaults to `never` (a sim that declares no `Input` cannot be sent anything). See [Params vs inputs](#params-vs-inputs) below.
 
 ---
 
-## SimModule&lt;Data, Params&gt;
+## SimModule&lt;Data, Params, Input&gt;
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `init` | `(params: Params) => Data` | Yes | Creates initial state from params. Called on engine creation and on `resetWith()`. |
-| `step` | `(state: State<Data, Params>) => Data` | Yes | Advances simulation by one tick. Must be pure and synchronous. |
-| `shouldStop` | `(data: Data, params: Params) => boolean` | No | Termination predicate checked after each step. Return `true` to stop. |
-| `defaultParams` | `Params` | Yes | Default parameter values used at engine creation if no override is provided. |
+| `init` | `Data \| ((params: Params, toolkit) => Data)` | Yes | Initial state — a value, or a function of `params` and the toolkit. Value-form inits are `structuredClone`d on every (re)init. Called on engine creation and on `resetWith()`. |
+| `step` | `(ctx: StepContext<Data, Params, Input>) => Data` | Yes | Advances simulation by one tick. Must be pure and synchronous. Receives `State` plus the toolkit (`random`, `inputs`). |
+| `shouldStop` | `(data: Data, params: Params) => boolean` | No | Termination predicate checked after each step. Return `true` to stop. Deliberately receives no toolkit — termination must be deterministic. |
+| `defaultParams` | `Params` | No | Default parameter values used at engine creation if no override is provided. Omit for sims with no tweakable params. |
+
+---
+
+## The toolkit (`random`, `inputs`)
+
+`init`'s optional second argument and `step`'s context carry an engine-provided toolkit. The one-arg `init: (params) => Data` form remains valid.
+
+### Seeded randomness
+
+Draw all randomness from `random` rather than `Math.random`, so runs replay from their seed:
+
+```ts
+init: (params, { random }) => ({ x: random() * params.width }),
+step: ({ data, random }) => {
+  const dx = random() - 0.5;          // uniform [0, 1), like Math.random
+  const lane = random.int(0, 3);      // integer, BOTH bounds inclusive
+  const dir = random.pick(['N', 'E', 'S', 'W'] as const);
+  // ...
+},
+```
+
+Seed a run from the component with `<Simulation sim={mySim} seed={42}>` (number or string). When omitted, a random seed is generated and recorded — read it back as `seed` from `useSimulation()`. Same seed ⇒ same run; `resetWith()` replays from the same seed. Avoid other ambient nondeterminism (`Date.now()`, `performance.now()`) in `init`/`step`.
+
+### Params vs inputs
+
+Params are persistent configuration consulted every tick (`setParams`); **inputs** are transient, consumed-once events delivered to exactly one tick (`send`). Brush *size* is a param; brush *strokes* are inputs. Declare the input type as the third generic and read `inputs` from the step context:
+
+```ts
+type Stroke = { x: number; y: number };
+
+export default defineSim<PaintData, PaintParams, Stroke>({
+  defaultParams: { brushSize: 2 },
+  init: (params) => ({ grid: makeGrid(params) }),
+  step: ({ data, params, inputs }) => {
+    for (const stroke of inputs) paint(data.grid, stroke, params.brushSize);
+    return diffuse(data);
+  },
+});
+```
+
+Everything sent since the last tick advance arrives in the next tick's `inputs`, in send order; ticks with nothing queued see an empty array. `Input` values must be structured-cloneable (same as `Data`) — in worker mode each one crosses `postMessage`.
 
 ---
 
@@ -43,6 +88,7 @@ The unified state shape passed to `step`, returned by `getSnapshot`, and deliver
 |------|-------------|
 | `SimData<M>` | Extracts the `Data` type from a `SimModule`. |
 | `SimParams<M>` | Extracts the `Params` type from a `SimModule`. |
+| `SimInput<M>` | Extracts the `Input` type from a `SimModule`. |
 
 ---
 

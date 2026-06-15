@@ -30,16 +30,19 @@ function step({ data, tick }) {
 }
 
 function Grid() {
-  const canvasRef = useSimulationCanvas((ctx, { data }) => {
-    ctx.clearRect(0, 0, SIZE * CELL, SIZE * CELL);
-    ctx.fillStyle = CELL_COLOR;
-    for (let i = 0; i < TOTAL; i++) {
-      if (data.cells[i]) {
-        ctx.fillRect((i % SIZE) * CELL, Math.floor(i / SIZE) * CELL, CELL, CELL);
+  const canvasRef = useSimulationCanvas(
+    (ctx, { data }, view) => {
+      view.clear();
+      ctx.fillStyle = CELL_COLOR;
+      for (let i = 0; i < TOTAL; i++) {
+        if (data.cells[i]) {
+          ctx.fillRect((i % SIZE) * CELL, Math.floor(i / SIZE) * CELL, CELL, CELL);
+        }
       }
-    }
-  });
-  return <canvas ref={canvasRef} width={SIZE * CELL} height={SIZE * CELL} />;
+    },
+    { width: SIZE * CELL, height: SIZE * CELL },
+  );
+  return <canvas ref={canvasRef} style={{ width: SIZE * CELL, height: SIZE * CELL }} />;
 }
 
 export function SimpleModel() {
@@ -62,12 +65,17 @@ export function SimpleModel() {
 ### `useSimulationCanvas` replaces `useSimulation`
 
 ```tsx
-const canvasRef = useSimulationCanvas((ctx, { data }) => {
-  // draw whatever you want
-});
+const canvasRef = useSimulationCanvas(
+  (ctx, { data }, view) => {
+    // draw whatever you want, in CSS pixels
+  },
+  { width: SIZE * CELL, height: SIZE * CELL },
+);
 ```
 
-Instead of returning the simulation state for your component to render, the canvas hook takes a **draw function** and returns a ref. Every time the engine emits a new state, automatick calls your draw function with the canvas's 2D context and the current snapshot — directly, no React re-render involved. The hook handles subscription, teardown, and an initial paint for you.
+Instead of returning the simulation state for your component to render, the canvas hook takes a **draw function** and returns a ref. Every time the engine emits a new state, automatick calls your draw function with the canvas's 2D context, the current snapshot, and a `view` toolkit — directly, no React re-render involved. The hook handles subscription, teardown, and an initial paint for you.
+
+Passing `{ width, height }` (logical CSS pixels) enters **ownership mode**: the hook sizes the backing store for the device pixel ratio and applies the transform, so your draw works in CSS pixels and stays crisp on retina screens. Set the canvas's CSS size, not its `width`/`height` attributes.
 
 You still attach the ref to a `<canvas>` element in your JSX. From React's point of view, the canvas component never re-renders after mount.
 
@@ -76,7 +84,7 @@ See the [canvas rendering guide](/guide/canvas-rendering) for the full `useSimul
 ### Drawing instead of JSX
 
 ```tsx
-ctx.clearRect(0, 0, SIZE * CELL, SIZE * CELL);
+view.clear();
 ctx.fillStyle = CELL_COLOR;
 for (let i = 0; i < TOTAL; i++) {
   if (data.cells[i]) {
@@ -85,7 +93,7 @@ for (let i = 0; i < TOTAL; i++) {
 }
 ```
 
-The draw function is plain Canvas 2D API — `clearRect`, `fillStyle`, `fillRect`, paths, text, images, whatever. You own the whole frame: clear it, redraw the state you want to show, return. There's no diffing — each emit is a full repaint.
+The draw function is plain Canvas 2D API — `fillStyle`, `fillRect`, paths, text, images, whatever — plus the `view` toolkit (`clear`, `fade`, `theme`, `blitGrid`). You own the whole frame: clear it, redraw the state you want to show, return. There's no diffing — each emit is a full repaint.
 
 ### Everything else stays the same
 

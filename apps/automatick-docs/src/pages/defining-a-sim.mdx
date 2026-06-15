@@ -1,17 +1,19 @@
 # Defining a simulation
 
-A sim module is a plain object with four fields, wrapped in `defineSim` for type inference.
+A sim module is a plain object — `init` and `step` are required; `defaultParams` and `shouldStop` are optional — wrapped in `defineSim` for type inference.
 
 ```ts
 import { defineSim } from 'automatick/sim';
 
 export default defineSim<Data, Params>({
-  defaultParams,
   init,
   step,
-  shouldStop, // optional
+  defaultParams, // optional — omit for sims with no tweakable params
+  shouldStop,    // optional
 });
 ```
+
+For seeded randomness (the `random` toolkit) and transient events (the `Input` generic + `inputs`/`send`), see the [defineSim API reference](/api/define-sim#the-toolkit-random-inputs).
 
 ## `init(params): Data`
 
@@ -43,6 +45,7 @@ step: ({ data, params, tick }) => ({
 - `data` — current state (the return value of the previous `step`, or `init` for the first tick)
 - `params` — current parameters (may change between ticks via `setParams`)
 - `tick` — the tick number (starts at 1, increments by 1 each step)
+- `random` — the seeded RNG toolkit; also `status`, `stepDurationMs`, and `inputs` (events delivered to this tick via `send`)
 
 `step` returns `Data` directly — no status envelopes, no tagged unions. It only answers "what's next?"
 
@@ -108,5 +111,5 @@ export default defineSim<{ grid: number[][] }, { width: number; height: number }
 ## Tips
 
 - **Don't reach outside `data`.** No DOM access, no module-scope state. If `step` needs to remember something between ticks or expose it to the renderer, put it in `data`. Mutating `data` itself in place is fine.
-- **Reproducibility is opt-in.** `Math.random()` works in `step`, but `resetWith()` won't replay the same sequence. For replayable animations, store a seeded RNG in `data` and advance it deterministically.
+- **Use the built-in `random`, not `Math.random`.** `init` and `step` receive a seeded `random` toolkit (`random()`, `random.int`, `random.pick`). Draw all randomness from it so runs replay from their seed — `resetWith()` and a matching `seed` prop reproduce the exact same sequence. `Math.random()` still works but breaks replay.
 - **`step` is synchronous.** If your computation is expensive, use the `worker` prop on `<Simulation>` to run it off the main thread.

@@ -34,20 +34,22 @@ The simulation runs on the browser's main thread, driven by `requestAnimationFra
 ### Worker mode (`worker` prop)
 
 ```tsx
-<Simulation worker={() => import('./mySim')}>
+<Simulation<MyData, MyParams> worker={new URL('./mySim.ts', import.meta.url)}>
 ```
 
-The sim module is loaded asynchronously. Computation runs in a `setTimeout`-based tick loop decoupled from the browser's animation frame. The component renders `null` until the module is loaded, then subscribes to snapshot updates.
+The `worker` prop takes a module **URL** (or string), not a function — the worker `import()`s it inside its own context. Use the Vite idiom `new URL('./mySim.ts', import.meta.url)`. Computation runs in a tick loop inside the worker, decoupled from the browser's animation frame. The component renders `null` until the worker has produced its first snapshot, then subscribes to snapshot updates.
 
 **Use this when:** the computation per tick is expensive enough to block the UI (pathfinding, physics, large grids). The main thread stays responsive for rendering and user interaction.
 
 Both modes expose the same context — child components don't know and don't care which mode is active.
 
-**Note:** when using the `worker` prop, `useSimulation` cannot infer types from the module (it's loaded dynamically). Provide explicit type parameters:
+**Note:** a URL carries no type information, so pass `Data`/`Params` explicitly on `<Simulation>` (as above) and on the hook:
 
 ```tsx
 const { data } = useSimulation<MyData, MyParams>();
 ```
+
+See [Running in a Web Worker](/guide/with-worker) for the full walkthrough.
 
 ## Rendering patterns
 
@@ -82,20 +84,23 @@ For canvas-based visualizations, use `useSimulationCanvas` instead of `useSimula
 import { useSimulationCanvas } from 'automatick/react/canvas';
 
 function BoidsCanvas() {
-  const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }) => {
-    ctx.clearRect(0, 0, params.width, params.height);
-    data.forEach((boid) => {
-      ctx.fillStyle = '#1a1a1a';
-      ctx.beginPath();
-      ctx.arc(boid.x, boid.y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  });
-  return <canvas ref={canvasRef} width={400} height={400} />;
+  const canvasRef = useSimulationCanvas<typeof boidsSim>(
+    (ctx, { data }, view) => {
+      view.clear(view.theme('--bg2', '#fff'));
+      ctx.fillStyle = view.theme('--fg1', '#1a1a1a');
+      data.forEach((boid) => {
+        ctx.beginPath();
+        ctx.arc(boid.x, boid.y, 3, 0, Math.PI * 2); // CSS pixels — dpr handled
+        ctx.fill();
+      });
+    },
+    { width: 400, height: 400 },
+  );
+  return <canvas ref={canvasRef} style={{ width: 400, height: 400 }} />;
 }
 ```
 
-The hook returns a ref to attach to your `<canvas>` element. Your draw callback is called on every engine snapshot — directly from the subscription, not from a React effect. The library doesn't own the canvas; your component does.
+The hook returns a ref to attach to your `<canvas>` element. Your draw callback is called on every engine snapshot — directly from the subscription, not from a React effect. Passing `{ width, height }` (logical CSS pixels) enters **ownership mode**: the hook sizes the backing store, applies the `devicePixelRatio` transform so you draw in CSS pixels, and injects the `view` toolkit (`clear`/`fade`/`theme`/`blitGrid`) as the third argument. Set the canvas's CSS size, not its `width`/`height` attributes. See the [useSimulationCanvas reference](/api/use-simulation#usesimulationcanvas) for the full toolkit.
 
 Good for: large grids, particle systems, continuous 2D simulations, anything where DOM nodes would be too slow.
 

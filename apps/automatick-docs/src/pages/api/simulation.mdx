@@ -20,11 +20,13 @@ Pass **either** `sim` (main-thread) **or** `worker` (worker mode) -- never both.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `sim` | `SimModule<Data, Params>` | -- | The simulation module to run. |
+| `sim` | `SimModule<Data, Params, Input>` | -- | The simulation module to run. |
 | `params` | `Partial<Params>` | `undefined` | Overrides for `defaultParams`. Live-applied on change. |
+| `seed` | `number \| string` | random | Seed for the sim's `random`. Captured at mount; when omitted a random seed is generated and exposed as `seed` on the context. Change the component `key` to remount with a new seed. |
 | `maxTime` | `number` | `undefined` | Tick limit. Engine stops when `tick >= maxTime`. |
 | `delayMs` | `number` | `0` | Minimum ms between animation frames. |
 | `ticksPerFrame` | `number` | `1` | Ticks computed per animation frame. |
+| `maxQueuedInputs` | `number` | `1024` | Bound on the `send()` input queue (drop-oldest). Captured at mount. |
 | `autoplay` | `boolean` | `false` | Start playing on mount. |
 | `children` | `React.ReactNode` | `undefined` | Child elements that consume simulation context. |
 
@@ -34,12 +36,14 @@ Pass **either** `sim` (main-thread) **or** `worker` (worker mode) -- never both.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `worker` | `() => Promise<{ default: SimModule<Data, Params> }>` | -- | Dynamic import returning the sim module. |
+| `worker` | `URL \| string` | -- | URL of the sim module the worker will `import()`. Use `new URL('./sim.ts', import.meta.url)`. Types can't be inferred from a URL, so pass `<Simulation<Data, Params>>` explicitly. |
 | `params` | `Partial<Params>` | `undefined` | Overrides for `defaultParams`. Live-applied on change. |
+| `seed` | `number \| string` | random | Seed for the sim's `random`. Resolved on the main thread at mount and sent to the worker; exposed as `seed` on the context. |
 | `maxTime` | `number` | `undefined` | Tick limit. |
 | `delayMs` | `number` | `0` | Minimum ms between ticks. |
 | `ticksPerFrame` | `number` | `1` | Ticks per iteration of the worker tick loop. |
-| `snapshotIntervalMs` | `number` | `undefined` | Interval for snapshot emission (worker mode only). |
+| `snapshotIntervalMs` | `number` | `16` | How often the worker sends a snapshot to the main thread (worker mode only). |
+| `maxQueuedInputs` | `number` | `1024` | Bound on the `send()` input queue (drop-oldest). Captured at mount. |
 | `autoplay` | `boolean` | `false` | Start playing when the worker backend is ready. |
 | `children` | `React.ReactNode` | `undefined` | Child elements that consume simulation context. |
 

@@ -24,6 +24,7 @@ The type parameter `<typeof mySim>` infers `Data` and `Params` from the sim modu
 | `params` | `Params` | Current parameters. |
 | `tick` | `number` | Current tick number (starts at 0). |
 | `status` | `SimulationStatus` | One of `'idle'`, `'playing'`, `'paused'`, `'stopped'`. |
+| `seed` | `number \| string` | Resolved seed driving the run's `random`. Display or copy it to reproduce a run. |
 | `play()` | `() => void` | Start or resume playback. |
 | `pause()` | `() => void` | Pause playback. |
 | `stop()` | `() => void` | Stop the simulation (terminal state). |
@@ -31,6 +32,7 @@ The type parameter `<typeof mySim>` infers `Data` and `Params` from the sim modu
 | `advance(n?)` | `(count?: number) => void` | Advance by n ticks while paused (default 1). |
 | `setParams(patch)` | `(patch: Partial<Params>) => void` | Update params without resetting. Next tick sees new values. |
 | `resetWith(patch?)` | `(patch?: Partial<Params>) => void` | Reset: merge optional patch with current params, re-run `init`, tick back to 0. |
+| `send(input)` | `(input: Input) => void` | Queue a transient event for the next tick's `inputs`. Uncallable unless the sim declares an `Input` type. |
 
 ## Status
 
@@ -95,14 +97,31 @@ function ResetButton() {
 }
 ```
 
+### Sending transient inputs
+
+Params are persistent configuration; **inputs** are one-off events (paint strokes, key presses, cell toggles) delivered to a single tick. Translate the DOM event yourself and call `send()` — the sim consumes them as `inputs` in `step` (see [defineSim](/api/define-sim#params-vs-inputs)).
+
+```tsx
+function PaintCanvas() {
+  const { send } = useSimulation<typeof paintSim>();
+  return (
+    <canvas
+      onPointerMove={(e) =>
+        send({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY })
+      }
+    />
+  );
+}
+```
+
 ## Type inference
 
 Two ways to provide types:
 
 ```tsx
-// Infer from sim module (preferred):
+// Infer from sim module (preferred) — Data, Params, and Input:
 const { data } = useSimulation<typeof mySim>();
 
-// Explicit type parameters:
+// Explicit type parameters (e.g. worker mode):
 const { data } = useSimulation<{ count: number }, { increment: number }>();
 ```

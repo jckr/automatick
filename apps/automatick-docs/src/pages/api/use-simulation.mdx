@@ -7,10 +7,14 @@ import { useSimulation } from 'automatick/react/hooks';
 Hook that reads simulation state and actions from the nearest `<Simulation>` provider. Throws if used outside a `<Simulation>`.
 
 ```ts
-function useSimulation<T = unknown, FallbackParams = unknown>(): SimulationContextValue<...>
+function useSimulation<
+  T = unknown,
+  FallbackParams = unknown,
+  FallbackInput = never,
+>(): SimulationContextValue<...>
 ```
 
-**Type inference:** pass `typeof mySim` as the first type parameter to infer `Data` and `Params`, or provide them explicitly.
+**Type inference:** pass `typeof mySim` as the first type parameter to infer `Data`, `Params`, and `Input`, or provide them explicitly (e.g. in worker mode where the module isn't statically known).
 
 ---
 
@@ -24,6 +28,7 @@ function useSimulation<T = unknown, FallbackParams = unknown>(): SimulationConte
 | `params` | `Params` | Current parameters. |
 | `tick` | `number` | Current tick number. |
 | `status` | `SimulationStatus` | Current engine status. |
+| `seed` | `number \| string` | The resolved seed driving the run's `random`. Display or copy it to reproduce the run. |
 
 ### Actions
 
@@ -36,6 +41,7 @@ function useSimulation<T = unknown, FallbackParams = unknown>(): SimulationConte
 | `advance` | `(count?: number) => void` | Step forward by `count` ticks (default `1`). Pauses if playing. |
 | `setParams` | `(patch: Partial<Params>) => void` | Merge a partial update into current params. |
 | `resetWith` | `(patch?: Partial<Params>) => void` | Re-initialize state from `init()`. Optionally merge a param patch first. Resets tick to `0` and status to `idle`. |
+| `send` | `(input: Input) => void` | Queue a transient event (paint stroke, key press, cell toggle) for the next tick's `inputs`. When the sim declares no `Input` type this is `(input: never) => void` — uncallable, which is correct. Inputs sent while `stopped` are dropped. |
 
 ---
 
@@ -83,33 +89,64 @@ Hook for canvas-based rendering that bypasses React's render cycle. Subscribes t
 
 ```ts
 function useSimulationCanvas<T = unknown, FallbackParams = unknown>(
-  draw: (ctx: CanvasRenderingContext2D, snapshot: { data: Data; params: Params; tick: number }) => void
+  draw: (ctx: CanvasRenderingContext2D, snapshot: State<Data, Params>, view: CanvasView) => void,
+  options?: { width: number; height: number },
 ): React.RefObject<HTMLCanvasElement | null>
 ```
 
 Returns a ref to attach to a `<canvas>` element.
 
+### Ownership mode (recommended)
+
+Pass `{ width, height }` (logical CSS pixels). The hook owns the canvas backing store: it sizes the attributes to `width × dpr` / `height × dpr`, applies the `devicePixelRatio` transform around every draw (so you draw in CSS pixels), and tracks dpr changes. **Don't** set `width`/`height` attributes on the `<canvas>` yourself — but do set its CSS size. The draw function receives the injected `view` toolkit as its third argument.
+
+### Legacy mode
+
+Omit `options`. The canvas is never resized and no transform is applied — you size the element (`width={W * dpr}`) and manage the dpr transform yourself. Existing two-argument `(ctx, snapshot)` draws keep working unchanged.
+
 ## Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `draw` | `(ctx, snapshot) => void` | Called on every engine snapshot. Receives the 2D context and `{ data, params, tick }`. |
+| `draw` | `(ctx, snapshot, view) => void` | Called on every engine snapshot. Receives the 2D context, the `State` snapshot (`{ data, params, tick, status, stepDurationMs }`), and the `view` toolkit. |
+| `options` | `{ width: number; height: number }` | Optional. Enables ownership mode at the given logical size. |
 
-## Example
+## The `view` toolkit (`CanvasView`)
+
+The third argument is injected (never imported). All helpers work in logical CSS pixels and restore any context state they touch.
+
+| Member | Description |
+|--------|-------------|
+| `view.width` / `view.height` | Logical (CSS px) drawing size. |
+| `view.dpr` | Current `devicePixelRatio` (already applied to the transform). |
+| `view.clear(color?)` | `clearRect` the full area, or fill it with a CSS color / theme custom property. |
+| `view.fade(alpha, color?)` | Translucent full-area fill — the classic trail effect (`color` defaults to black). |
+| `view.theme(varName, fallback?)` | Read a CSS custom property from `<html>`, cached per frame; lazily wires theme-change observers and repaints on theme switch, even while paused. |
+| `view.blitGrid(cols, rows, write)` | Render a `cols × rows` RGBA cell grid, scaled crisply (smoothing off); offscreen buffer cached per attachment. |
+
+Read theme colors via `view.theme()` and never call `getComputedStyle` inside a draw — that keeps draws location-independent (worker/OffscreenCanvas-safe).
+
+## Example (ownership mode)
 
 ```tsx
 import { useSimulationCanvas } from 'automatick/react/canvas';
 import boidsSim from './boidsSim';
 
 function BoidsCanvas() {
-  const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }) => {
-    ctx.clearRect(0, 0, 400, 400);
-    data.forEach((boid) => {
-      ctx.beginPath();
-      ctx.arc(boid.x, boid.y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  });
-  return <canvas ref={canvasRef} width={400} height={400} />;
+  const canvasRef = useSimulationCanvas<typeof boidsSim>(
+    (ctx, { data }, view) => {
+      view.clear(view.theme('--bg2', '#fff'));
+      ctx.fillStyle = view.theme('--fg1', '#000');
+      data.forEach((boid) => {
+        ctx.beginPath();
+        ctx.arc(boid.x, boid.y, 3, 0, Math.PI * 2); // CSS pixels — dpr handled
+        ctx.fill();
+      });
+    },
+    { width: 400, height: 400 },
+  );
+  return <canvas ref={canvasRef} style={{ width: 400, height: 400 }} />;
 }
 ```
+
+The framework-free equivalent is `attachCanvas(source, canvas, draw, { width, height })` from `automatick/canvas`.

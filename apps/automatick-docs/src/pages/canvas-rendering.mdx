@@ -15,16 +15,31 @@ import { useSimulationCanvas } from 'automatick/react/canvas';
 import mySim from './mySim';
 
 function MyCanvas() {
-  const canvasRef = useSimulationCanvas<typeof mySim>((ctx, { data, params, tick }) => {
-    ctx.clearRect(0, 0, 400, 400);
-    // draw your simulation state...
-  });
+  const canvasRef = useSimulationCanvas<typeof mySim>(
+    (ctx, { data, params, tick }, view) => {
+      view.clear(view.theme('--bg2', '#fff'));
+      // draw your simulation state in CSS pixels...
+    },
+    { width: 400, height: 400 },
+  );
 
-  return <canvas ref={canvasRef} width={400} height={400} />;
+  return <canvas ref={canvasRef} style={{ width: 400, height: 400 }} />;
 }
 ```
 
-The hook returns a ref — attach it to a `<canvas>` element. Your draw callback receives the 2D rendering context and the current snapshot (`data`, `params`, `tick`).
+The hook returns a ref — attach it to a `<canvas>` element. Your draw callback receives the 2D rendering context, the current snapshot (`data`, `params`, `tick`, …), and the injected `view` toolkit.
+
+Passing `{ width, height }` (logical CSS pixels) enters **ownership mode**: the hook sizes the canvas backing store to `width × dpr`, applies the `devicePixelRatio` transform around every draw, and tracks dpr changes — so you draw in CSS pixels and crisp on retina displays without any manual dpr math. Set the canvas's CSS size (`style`), **not** its `width`/`height` attributes. (Omitting the options keeps the older legacy mode where you size and transform the canvas yourself; existing two-argument draws still work.)
+
+### The `view` toolkit
+
+The third argument carries helpers that operate in logical pixels and restore any context state they touch:
+
+- `view.clear(color?)` — clear, or fill with a CSS color / theme custom property.
+- `view.fade(alpha, color?)` — translucent full-area fill for trail effects.
+- `view.theme(varName, fallback?)` — read a CSS custom property (cached per frame); repaints on light/dark switches, even while paused. Use this instead of `getComputedStyle`.
+- `view.blitGrid(cols, rows, write)` — render an RGBA cell grid, scaled crisply (smoothing off). Ideal for cellular automata.
+- `view.width` / `view.height` / `view.dpr` — current logical size and device pixel ratio.
 
 Place the canvas component inside `<Simulation>` like any other child:
 
@@ -44,14 +59,17 @@ Controls still use `useSimulation()` with normal React rendering — that's fine
 Clear the canvas and redraw everything from the current `data`. Simple and correct.
 
 ```tsx
-const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }) => {
-  ctx.clearRect(0, 0, params.width, params.height);
-  data.forEach((boid) => {
-    ctx.beginPath();
-    ctx.arc(boid.x, boid.y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  });
-});
+const canvasRef = useSimulationCanvas<typeof boidsSim>(
+  (ctx, { data }, view) => {
+    view.clear(view.theme('--bg2', '#fff'));
+    data.forEach((boid) => {
+      ctx.beginPath();
+      ctx.arc(boid.x, boid.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  },
+  { width: 400, height: 400 },
+);
 ```
 
 Use this when the entire visible state can be derived from the current `data`. Examples: Boids, Epidemic, Segregation, Langton's Ant.
@@ -65,30 +83,32 @@ function ChaosCanvas() {
   const drawnCountRef = React.useRef(0);
   const lastBgRef = React.useRef<string | null>(null);
 
-  const canvasRef = useSimulationCanvas<typeof chaosGameSim>((ctx, { data, params }) => {
-    const { points, background, attractors } = data;
+  const canvasRef = useSimulationCanvas<typeof chaosGameSim>(
+    (ctx, { data }, view) => {
+      const { points, background } = data;
 
-    // Detect reset: if background changed, clear and start fresh
-    if (background !== lastBgRef.current) {
-      drawnCountRef.current = 0;
-      lastBgRef.current = background;
-      ctx.fillStyle = background;
-      ctx.fillRect(0, 0, params.width, params.height);
-    }
+      // Detect reset: if background changed, clear and start fresh
+      if (background !== lastBgRef.current) {
+        drawnCountRef.current = 0;
+        lastBgRef.current = background;
+        view.clear(background);
+      }
 
-    // Draw only the new points since last frame
-    ctx.fillStyle = data.color;
-    for (let i = drawnCountRef.current; i < points.length; i++) {
-      ctx.fillRect(points[i].x, points[i].y, 1, 1);
-    }
-    drawnCountRef.current = points.length;
-  });
+      // Draw only the new points since last frame
+      ctx.fillStyle = data.color;
+      for (let i = drawnCountRef.current; i < points.length; i++) {
+        ctx.fillRect(points[i].x, points[i].y, 1, 1);
+      }
+      drawnCountRef.current = points.length;
+    },
+    { width: 332, height: 332 },
+  );
 
-  return <canvas ref={canvasRef} width={332} height={332} />;
+  return <canvas ref={canvasRef} style={{ width: 332, height: 332 }} />;
 }
 ```
 
-Key pattern: use `React.useRef` for tracking state between draw calls (like `drawnCountRef`). These are regular React refs — they don't trigger re-renders — and they persist across draw callbacks since the component doesn't unmount between frames.
+Key pattern: use `React.useRef` for tracking state between draw calls (like `drawnCountRef`). These are regular React refs — they don't trigger re-renders — and they persist across draw callbacks since the component doesn't unmount between frames. (Ownership mode preserves accumulated canvas content across frames just like a hand-sized canvas; it only re-clears the backing store when the logical size or dpr actually changes.)
 
 Use incremental drawing when: each tick adds new elements (points, paths, rows) and redrawing from scratch would be expensive or would lose accumulated history. Examples: Chaos Game, Mazes, XOR ring.
 
@@ -96,19 +116,24 @@ Use incremental drawing when: each tick adds new elements (points, paths, rows) 
 
 If the canvas size depends on params (e.g., grid dimensions), you have two options:
 
-**Option 1: Hardcode to defaults.** Simplest — set `width` and `height` on the `<canvas>` element to match `defaultParams`. Works when size doesn't change.
+**Option 1: Hardcode to defaults.** Simplest — pass the `{ width, height }` options and CSS size to match `defaultParams`. Works when size doesn't change.
 
-**Option 2: Use `useSimulation` alongside.** Call `useSimulation` in the same component just to read `params` for the element attributes. This triggers React re-renders when params change (which is fine — params rarely change), while the draw callback still runs outside React:
+**Option 2: Use `useSimulation` alongside.** Call `useSimulation` in the same component to read `params`, then feed them to both the `useSimulationCanvas` options and the element's CSS size. This triggers React re-renders when params change (which is fine — params rarely change); the hook re-attaches at the new logical size while the draw callback still runs outside React:
 
 ```tsx
 function ResizableCanvas() {
   const { params } = useSimulation<typeof mySim>();
-  const canvasRef = useSimulationCanvas<typeof mySim>((ctx, { data, params }) => {
-    ctx.clearRect(0, 0, params.width, params.height);
-    // draw...
-  });
+  const canvasRef = useSimulationCanvas<typeof mySim>(
+    (ctx, { data }, view) => {
+      view.clear(view.theme('--bg2', '#fff'));
+      // draw...
+    },
+    { width: params.width, height: params.height },
+  );
 
-  return <canvas ref={canvasRef} width={params.width} height={params.height} />;
+  return (
+    <canvas ref={canvasRef} style={{ width: params.width, height: params.height }} />
+  );
 }
 ```
 
