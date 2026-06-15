@@ -35,7 +35,11 @@ apps/automatick-docs/         — Documentation site (Vite + React)
 ### Files to modify
 
 5. **`apps/automatick-docs/src/App.tsx`** — add import + `<Route>` under `<ShellRoute variant='playground'>`
-6. **`apps/automatick-docs/src/layout/Sidebar.tsx`** — add an entry to the `EXAMPLES` array (this is the table of contents)
+6. **`apps/automatick-docs/src/examples.ts`** — add an entry to the `EXAMPLES` manifest (the single source of truth for both the sidebar TOC and the gallery)
+
+### Then
+
+7. Capture and commit the example's gallery thumbnail (see step 7 below).
 
 ### 1. Simulation file (`src/sims/myExampleSim.ts`)
 
@@ -197,12 +201,42 @@ Add the route under the `<ShellRoute variant='playground'>` section, alongside t
 <Route path='examples/my-example' element={<MyExamplePage />} />
 ```
 
-### 6. Sidebar / table of contents (`src/layout/Sidebar.tsx`)
+### 6. Examples manifest (`src/examples.ts`)
 
-Add an entry to the `EXAMPLES` array:
-```tsx
-{ to: '/examples/my-example', label: 'My Example' },
+`src/examples.ts` is the single source of truth for curated examples — both the
+sidebar TOC and the `/examples` gallery read from it, so you add the example in
+**one** place. The `slug` is the final segment of the route (`/examples/<slug>`)
+and the thumbnail filename.
+
+```ts
+{ slug: 'my-example', label: 'My Example' },
 ```
+
+Optional capture-tuning fields (see step 7):
+- `warmupMs` — how long the sim runs before the thumbnail is grabbed (default
+  2500). Raise it for sims that need time to develop (reaction-diffusion,
+  flocking, erosion); lower it for ones that look best early.
+- `focus` — a fractional crop `{ x, y, width, height }` (0–1 of the preview) to
+  zoom the thumbnail into the interesting detail.
+- `objectPosition` — CSS `object-position` for the gallery tile's cover-crop
+  (e.g. `'top left'`); a cheap framing nudge that needs no recapture.
+
+### 7. Thumbnail (`public/thumbnails/<slug>.png`)
+
+The gallery shows a labeled placeholder until a thumbnail exists. Generate one
+with the offline capture script (needs a browser: `npx playwright install
+chromium`):
+
+```bash
+# all examples, or pass slugs for a subset:
+npm run capture:thumbnails -w automatick-docs -- my-example
+```
+
+It loads the example, lets it run for `warmupMs`, pauses it, screenshots the
+`.pg-sim` preview, crops to `focus` (if set), and writes a 16:10 PNG. **Commit
+the resulting `public/thumbnails/<slug>.png`** — thumbnails are committed
+artifacts, not generated at build time. If the captured frame is weak, tune
+`warmupMs` / `focus` / `objectPosition` in the manifest and re-run.
 
 ## Docs-site Helper Components
 

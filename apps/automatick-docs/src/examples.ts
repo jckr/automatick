@@ -9,7 +9,12 @@
  * same `focus` region.
  */
 
-/** A crop region within the captured preview, in CSS pixels of the preview box. */
+/**
+ * A crop region within the captured preview, expressed as fractions (0–1) of
+ * the preview box — resolution-independent, so it survives viewport/dpr
+ * changes and is easy to eyeball off a contact sheet. `{ x: 0.5, y: 0, width:
+ * 0.5, height: 1 }` is "the right half".
+ */
 export type FocusRegion = {
   x: number;
   y: number;
