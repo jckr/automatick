@@ -173,7 +173,7 @@ const PENDULUM_GROUPS: DemoControlGroup[] = [
 
 export function DoublePendulumDemo() {
   return (
-    <Simulation sim={doublePendulumSim} delayMs={0} autoplay>
+    <Simulation sim={doublePendulumSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<DoublePendulumCanvas />}
         controls={<DemoControlPanel groups={PENDULUM_GROUPS} showStep />}

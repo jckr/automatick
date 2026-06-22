@@ -90,7 +90,7 @@ const XOR_GROUPS: DemoControlGroup[] = [
 
 export function WorkerCanvasDemo() {
   return (
-    <Simulation sim={xorRingSim} maxTime={5000} delayMs={50}>
+    <Simulation sim={xorRingSim} pauseWhenHidden maxTime={5000} delayMs={50}>
       <DemoSplit
         preview={<XorRingCanvas />}
         controls={<DemoControlPanel groups={XOR_GROUPS} showStep />}

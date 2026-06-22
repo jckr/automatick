@@ -158,7 +158,7 @@ const TRAFFIC_GROUPS: DemoControlGroup[] = [
 
 export function TrafficDemo() {
   return (
-    <Simulation sim={trafficSim} delayMs={0} autoplay>
+    <Simulation sim={trafficSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<TrafficCanvas />}
         controls={

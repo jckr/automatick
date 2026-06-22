@@ -120,7 +120,7 @@ const CLOTH_GROUPS: DemoControlGroup[] = [
 
 export function ClothDemo() {
   return (
-    <Simulation sim={clothSim} delayMs={16} autoplay>
+    <Simulation sim={clothSim} pauseWhenHidden delayMs={16} autoplay>
       <DemoSplit
         preview={<ClothCanvas />}
         controls={<DemoControlPanel groups={CLOTH_GROUPS} showStep />}

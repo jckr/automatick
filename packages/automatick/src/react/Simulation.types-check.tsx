@@ -185,6 +185,26 @@ const _seedWorker = (
 // @ts-expect-error seed must be a number or string, not a boolean
 const _seedWrongType = <Simulation sim={counterSim} seed={true} />;
 
+// `pauseWhenHidden` (#77) is a common prop — accepted by all three modes.
+const _pauseHiddenSim = <Simulation sim={counterSim} pauseWhenHidden autoplay />;
+const _pauseHiddenInline = (
+  <Simulation
+    pauseWhenHidden
+    init={{ count: 0 }}
+    step={({ data }) => ({ count: data.count + 1 })}
+  />
+);
+const _pauseHiddenWorker = (
+  <Simulation<{ count: number }, { increment: number }>
+    worker={workerUrl}
+    pauseWhenHidden
+  />
+);
+
+// prettier-ignore
+// @ts-expect-error pauseWhenHidden must be a boolean
+const _pauseHiddenWrongType = <Simulation sim={counterSim} pauseWhenHidden='yes' />;
+
 // ---------------------------------------------------------------------------
 // 7. Input channel (#73): third generic, `inputs` in step, `send` action.
 // ---------------------------------------------------------------------------
@@ -285,6 +305,10 @@ export {
   _seedInline,
   _seedWorker,
   _seedWrongType,
+  _pauseHiddenSim,
+  _pauseHiddenInline,
+  _pauseHiddenWorker,
+  _pauseHiddenWrongType,
   _paintForm,
   _maxQueuedSim,
   _maxQueuedInline,

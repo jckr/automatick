@@ -186,7 +186,7 @@ const FLUID_GROUPS: DemoControlGroup[] = [
 
 export function StableFluidsDemo() {
   return (
-    <Simulation sim={stableFluidsSim} delayMs={0} autoplay>
+    <Simulation sim={stableFluidsSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<StableFluidsCanvas />}
         controls={<DemoControlPanel groups={FLUID_GROUPS} showStep />}

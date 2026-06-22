@@ -193,7 +193,7 @@ export function ErosionDemo() {
   // so swapping it requires a new <Simulation> instance (hence `key`).
   const [seed, setSeed] = React.useState(INITIAL_SEED);
   return (
-    <Simulation key={seed} sim={erosionSim} seed={seed} delayMs={0} autoplay>
+    <Simulation key={seed} sim={erosionSim} pauseWhenHidden seed={seed} delayMs={0} autoplay>
       <DemoSplit
         preview={<ErosionCanvas />}
         controls={

@@ -242,7 +242,7 @@ const PREDATOR_PREY_GROUPS: DemoControlGroup[] = [
 
 export function PredatorPreyDemo() {
   return (
-    <Simulation sim={predatorPreySim} delayMs={16} autoplay>
+    <Simulation sim={predatorPreySim} pauseWhenHidden delayMs={16} autoplay>
       <DemoSplit
         preview={<PredatorPreyCanvas />}
         controls={

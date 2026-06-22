@@ -143,7 +143,7 @@ const SUGAR_GROUPS: DemoControlGroup[] = [
 
 export function SugarscapeDemo() {
   return (
-    <Simulation sim={sugarscapeSim} delayMs={50} autoplay>
+    <Simulation sim={sugarscapeSim} pauseWhenHidden delayMs={50} autoplay>
       <DemoSplit
         preview={<SugarscapeCanvas />}
         controls={

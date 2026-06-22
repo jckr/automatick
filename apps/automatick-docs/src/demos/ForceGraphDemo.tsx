@@ -175,6 +175,7 @@ export function ForceGraphDemo() {
   return (
     <Simulation
       sim={forceGraphSim}
+      pauseWhenHidden
       delayMs={0}
       autoplay
       params={{ preset: 'clusters' } as Partial<ForceGraphParams>}

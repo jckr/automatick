@@ -228,7 +228,7 @@ const LSYSTEM_GROUPS: DemoControlGroup[] = [
 
 export function LSystemDemo() {
   return (
-    <Simulation sim={lSystemSim} delayMs={600} autoplay>
+    <Simulation sim={lSystemSim} pauseWhenHidden delayMs={600} autoplay>
       <ResetOnPresetChange>
         <DemoSplit
           preview={<LSystemCanvas />}

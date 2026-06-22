@@ -189,7 +189,7 @@ const GROUPS: DemoControlGroup[] = [
 
 export function MarketDemo() {
   return (
-    <Simulation sim={marketSim} delayMs={50} autoplay>
+    <Simulation sim={marketSim} pauseWhenHidden delayMs={50} autoplay>
       <DemoSplit
         preview={<MarketCanvas />}
         controls={

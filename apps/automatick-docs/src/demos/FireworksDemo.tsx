@@ -135,7 +135,7 @@ const CONTROL_GROUPS: DemoControlGroup[] = [
 
 export function FireworksDemo() {
   return (
-    <Simulation sim={fireworksSim} delayMs={16} autoplay>
+    <Simulation sim={fireworksSim} pauseWhenHidden delayMs={16} autoplay>
       <DemoSplit
         preview={<FireworksCanvas />}
         controls={<DemoControlPanel groups={CONTROL_GROUPS} />}

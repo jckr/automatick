@@ -118,7 +118,7 @@ const ANT_GROUPS: DemoControlGroup[] = [
 
 export function AntColonyDemo() {
   return (
-    <Simulation sim={antColonySim} delayMs={0} autoplay>
+    <Simulation sim={antColonySim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<AntColonyCanvas />}
         controls={<DemoControlPanel groups={ANT_GROUPS} showStep />}

@@ -56,7 +56,7 @@ const LIFE_GROUPS: DemoControlGroup[] = [
 
 export function GameOfLifeDemo() {
   return (
-    <Simulation sim={gameOfLifeSim} maxTime={2000} delayMs={100}>
+    <Simulation sim={gameOfLifeSim} pauseWhenHidden maxTime={2000} delayMs={100}>
       <DemoSplit
         preview={
           <div className={styles.preview}>

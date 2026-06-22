@@ -133,7 +133,7 @@ const AUTOMATA_GROUPS: DemoControlGroup[] = [
 
 export function Automata1dDemo() {
   return (
-    <Simulation sim={automata1dSim} maxTime={500} delayMs={40}>
+    <Simulation sim={automata1dSim} pauseWhenHidden maxTime={500} delayMs={40}>
       <DemoSplit
         preview={<Automata1dView />}
         controls={

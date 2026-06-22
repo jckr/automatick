@@ -167,7 +167,7 @@ const MATERIAL_CA_GROUPS: DemoControlGroup[] = [
 
 export function MaterialCADemo() {
   return (
-    <Simulation sim={materialCaSim} delayMs={0} autoplay>
+    <Simulation sim={materialCaSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<MaterialCACanvas />}
         controls={

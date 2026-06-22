@@ -223,7 +223,7 @@ const BOIDS_GROUPS: DemoControlGroup[] = [
 
 export function BoidsDemo() {
   return (
-    <Simulation sim={boidsSim} delayMs={16}>
+    <Simulation sim={boidsSim} pauseWhenHidden delayMs={16}>
       <DemoSplit
         preview={<BoidsCanvas />}
         controls={<DemoControlPanel groups={BOIDS_GROUPS} />}

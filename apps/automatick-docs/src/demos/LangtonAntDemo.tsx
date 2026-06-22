@@ -42,7 +42,7 @@ function LangtonCanvas() {
 
 export function LangtonAntDemo() {
   return (
-    <Simulation sim={langtonAntSim} maxTime={50000} delayMs={0} ticksPerFrame={10}>
+    <Simulation sim={langtonAntSim} pauseWhenHidden maxTime={50000} delayMs={0} ticksPerFrame={10}>
       <DemoSplit
         preview={<LangtonCanvas />}
         controls={<DemoControlPanel groups={[]} showStep />}

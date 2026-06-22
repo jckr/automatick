@@ -83,7 +83,7 @@ const SPH_GROUPS: DemoControlGroup[] = [
 
 export function SphFluidDemo() {
   return (
-    <Simulation sim={sphFluidSim} delayMs={0} autoplay>
+    <Simulation sim={sphFluidSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<SphFluidCanvas />}
         controls={<DemoControlPanel groups={SPH_GROUPS} showStep />}

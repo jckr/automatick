@@ -137,6 +137,7 @@ export function ParticleLifeDemo() {
   return (
     <Simulation
       sim={particleLifeSim}
+      pauseWhenHidden
       params={{ worldSize: WIDTH } as Partial<ParticleLifeParams>}
       delayMs={16}
       autoplay

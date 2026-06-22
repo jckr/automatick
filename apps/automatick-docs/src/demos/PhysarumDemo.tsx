@@ -109,7 +109,7 @@ const PHYSARUM_GROUPS: DemoControlGroup[] = [
 
 export function PhysarumDemo() {
   return (
-    <Simulation sim={physarumSim} delayMs={0} autoplay>
+    <Simulation sim={physarumSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<PhysarumCanvas />}
         controls={<DemoControlPanel groups={PHYSARUM_GROUPS} />}

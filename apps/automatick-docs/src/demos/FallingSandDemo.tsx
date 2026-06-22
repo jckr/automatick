@@ -137,7 +137,7 @@ const SAND_GROUPS: DemoControlGroup[] = [
 
 export function FallingSandDemo() {
   return (
-    <Simulation sim={fallingSandSim} delayMs={0} autoplay>
+    <Simulation sim={fallingSandSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<SandCanvas />}
         controls={

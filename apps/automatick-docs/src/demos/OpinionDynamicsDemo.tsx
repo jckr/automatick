@@ -147,7 +147,7 @@ const GROUPS: DemoControlGroup[] = [
 
 export function OpinionDynamicsDemo() {
   return (
-    <Simulation sim={opinionDynamicsSim} delayMs={50} autoplay>
+    <Simulation sim={opinionDynamicsSim} pauseWhenHidden delayMs={50} autoplay>
       <DemoSplit
         preview={<OpinionCanvas />}
         controls={

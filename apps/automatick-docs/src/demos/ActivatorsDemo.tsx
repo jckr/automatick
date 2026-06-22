@@ -94,7 +94,7 @@ const ACTIVATORS_GROUPS: DemoControlGroup[] = [
 
 export function ActivatorsDemo() {
   return (
-    <Simulation sim={activatorsSim} maxTime={200} delayMs={100}>
+    <Simulation sim={activatorsSim} pauseWhenHidden maxTime={200} delayMs={100}>
       <DemoSplit
         preview={<ActivatorsCanvas />}
         controls={<DemoControlPanel groups={ACTIVATORS_GROUPS} showStep />}

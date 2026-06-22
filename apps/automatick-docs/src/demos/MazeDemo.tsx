@@ -106,7 +106,7 @@ export function MazeDemo() {
   );
 
   return (
-    <Simulation sim={mazeSim} maxTime={50000} delayMs={10} ticksPerFrame={ticksPerFrame}>
+    <Simulation sim={mazeSim} pauseWhenHidden maxTime={50000} delayMs={10} ticksPerFrame={ticksPerFrame}>
       <DemoSplit
         preview={<MazeCanvas />}
         controls={

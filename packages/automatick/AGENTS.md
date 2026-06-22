@@ -212,6 +212,7 @@ Most sims should start as local (canvas) and only move to worker if performance 
 | `autoplay` | `boolean` | `false` | Start immediately on mount |
 | `maxTime` | `number` | — | Auto-stop after N ticks |
 | `ticksPerFrame` | `number` | `1` | Batch multiple ticks per frame (heavy inner loops) |
+| `pauseWhenHidden` | `boolean` | `false` | Freeze the frame clock while scrolled offscreen; defer first autoplay until visible. Main-thread + canvas only |
 | `params` | `Partial<Params>` | — | Override default params from outside |
 
 ## Canvas Rendering Patterns

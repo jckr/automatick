@@ -124,7 +124,7 @@ const CHAOS_GROUPS: DemoControlGroup[] = [
 
 export function ChaosGameDemo() {
   return (
-    <Simulation sim={chaosGameSim} maxTime={100000} delayMs={0} ticksPerFrame={100}>
+    <Simulation sim={chaosGameSim} pauseWhenHidden maxTime={100000} delayMs={0} ticksPerFrame={100}>
       <DemoSplit
         preview={<ChaosCanvas />}
         controls={

@@ -144,7 +144,7 @@ const CONTROL_GROUPS: DemoControlGroup[] = [
 
 export function SpringMassDemo() {
   return (
-    <Simulation sim={springMassSim} delayMs={16} autoplay>
+    <Simulation sim={springMassSim} pauseWhenHidden delayMs={16} autoplay>
       <DemoSplit
         preview={<SpringMassCanvas />}
         controls={<DemoControlPanel groups={CONTROL_GROUPS} showStep />}

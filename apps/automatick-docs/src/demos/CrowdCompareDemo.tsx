@@ -153,7 +153,7 @@ const COMPARE_GROUPS: DemoControlGroup[] = [
 
 export function CrowdCompareDemo() {
   return (
-    <Simulation sim={crowdCompareSim} delayMs={16} autoplay>
+    <Simulation sim={crowdCompareSim} pauseWhenHidden delayMs={16} autoplay>
       <ScenarioSync />
       <DemoSplit
         preview={<CrowdCompareCanvas />}

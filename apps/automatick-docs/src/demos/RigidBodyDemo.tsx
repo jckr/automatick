@@ -88,7 +88,7 @@ const RIGID_GROUPS: DemoControlGroup[] = [
 
 export function RigidBodyDemo() {
   return (
-    <Simulation sim={rigidBodySim} delayMs={16} autoplay>
+    <Simulation sim={rigidBodySim} pauseWhenHidden delayMs={16} autoplay>
       <DemoSplit
         preview={<RigidBodyCanvas />}
         controls={<DemoControlPanel groups={RIGID_GROUPS} showStep />}

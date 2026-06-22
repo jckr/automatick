@@ -129,7 +129,7 @@ export function SnakeDemo() {
   );
 
   return (
-    <Simulation sim={snakeSim} delayMs={delayMs} ticksPerFrame={ticksPerFrame}>
+    <Simulation sim={snakeSim} pauseWhenHidden delayMs={delayMs} ticksPerFrame={ticksPerFrame}>
       <DemoSplit
         preview={<SnakeCanvas />}
         controls={

@@ -14,6 +14,14 @@ export type EngineContextValue = {
   getSnapshot: () => State<unknown, unknown>;
   recordDrawTime: (tick: number, ms: number) => void;
   getPerformance: () => readonly TickPerformance[];
+  /**
+   * Register an element whose viewport visibility should gate the frame clock.
+   * Present only when the surrounding `<Simulation>` has `pauseWhenHidden` set;
+   * `useSimulationCanvas` calls it with its canvas so the adapter can freeze
+   * ticks while the content is scrolled offscreen. Returns a cleanup that stops
+   * observing the element. See `visibilityGate.ts`.
+   */
+  registerVisibilityTarget?: (el: Element) => () => void;
 };
 
 export const EngineContext = React.createContext<EngineContextValue | null>(

@@ -11,6 +11,7 @@ import type { SimulationContextValue } from './SimulationContext';
 import { EngineContext } from './EngineContext';
 import type { EngineContextValue } from './EngineContext';
 import { useStableCallback } from './stableCallback';
+import { createVisibilityGate } from './visibilityGate';
 
 /** Common simulation-level props shared by all three modes. */
 type SimulationPropsCommon<Params> = {
@@ -24,6 +25,20 @@ type SimulationPropsCommon<Params> = {
    */
   maxQueuedInputs?: number;
   autoplay?: boolean;
+  /**
+   * Opt-in viewport visibility gating (off by default). When set, the adapter
+   * freezes its animation-frame clock while the simulation is scrolled out of
+   * view and resumes it on re-entry — without touching engine status, so a
+   * user-paused sim stays paused and nothing was-playing needs remembering.
+   * With `autoplay`, the first `play()` is also held until the content is first
+   * visible, so demos mounted below the fold don't start until seen.
+   *
+   * Requires a `useSimulationCanvas` canvas to observe (the element whose
+   * visibility drives the gate). Main-thread mode only for now — worker mode
+   * ignores it (the worker drives its own timer loop; suspend/resume over the
+   * protocol is phase 2). No-op where `IntersectionObserver` is unavailable.
+   */
+  pauseWhenHidden?: boolean;
   /**
    * Seed for the simulation's `SimRandom`. When omitted, a random numeric
    * seed is generated and recorded — read it back as `seed` from
@@ -135,11 +150,23 @@ function LocalSimulation<Data, Params, Input>(
     params: paramsProp,
     children,
     autoplay,
+    pauseWhenHidden,
   } = props;
 
   const engineRef = React.useRef<SimulationEngine<Data, Params, Input> | null>(
     null
   );
+
+  // Visibility gate for pauseWhenHidden — created once, only when opted in.
+  // `pauseWhenHidden` is captured at mount like `seed`/`sim`; toggling it later
+  // is not live-applied.
+  const gateRef = React.useRef<ReturnType<typeof createVisibilityGate> | null>(
+    null
+  );
+  if (pauseWhenHidden && !gateRef.current) {
+    gateRef.current = createVisibilityGate();
+  }
+  const gate = gateRef.current;
 
   if (!engineRef.current) {
     // Merge precedence: defaultParams (if any) < params prop. When neither
@@ -176,8 +203,18 @@ function LocalSimulation<Data, Params, Input>(
   React.useEffect(() => engine.subscribe((next) => setSnapshot(next)), [engine]);
 
   React.useEffect(() => {
-    if (autoplay) engine.play();
+    if (!autoplay) return;
+    const g = gateRef.current;
+    // Deferred autoplay: hold the first play() until the content is first
+    // visible. whenFirstVisible fires synchronously when already visible (or
+    // when the gate degraded to always-visible), so the no-gate path is just
+    // an immediate play().
+    if (g) g.whenFirstVisible(() => engine.play());
+    else engine.play();
   }, [engine, autoplay]);
+
+  // Tear down the gate's observer on unmount.
+  React.useEffect(() => () => gateRef.current?.destroy(), []);
 
   const isFirstRender = React.useRef(true);
   React.useEffect(() => {
@@ -206,7 +243,12 @@ function LocalSimulation<Data, Params, Input>(
 
     let rafId = 0;
     const loop = (now: number) => {
-      engine.handleAnimationFrame(now);
+      // pauseWhenHidden: skip the engine tick while no observed element is on
+      // screen. Status stays whatever it was (typically `playing`) — we just
+      // don't advance the clock, so re-entry resumes seamlessly. Without a gate
+      // (feature off) this is always true.
+      const g = gateRef.current;
+      if (!g || g.isVisible()) engine.handleAnimationFrame(now);
       rafId = window.requestAnimationFrame(loop);
     };
     rafId = window.requestAnimationFrame(loop);
@@ -214,7 +256,11 @@ function LocalSimulation<Data, Params, Input>(
   }, [engine]);
 
   return (
-    <SimulationProvider snapshot={snapshot} backend={engine}>
+    <SimulationProvider
+      snapshot={snapshot}
+      backend={engine}
+      registerVisibilityTarget={gate ? gate.observe : undefined}
+    >
       {children}
     </SimulationProvider>
   );
@@ -345,10 +391,13 @@ function SimulationProvider<Data, Params, Input>({
   snapshot,
   backend,
   children,
+  registerVisibilityTarget,
 }: {
   snapshot: State<Data, Params>;
   backend: Backend<Data, Params, Input>;
   children?: React.ReactNode;
+  /** Forwarded onto EngineContext when pauseWhenHidden is active. */
+  registerVisibilityTarget?: (el: Element) => () => void;
 }) {
   const play = useStableCallback(() => backend.play());
   const pause = useStableCallback(() => backend.pause());
@@ -405,8 +454,9 @@ function SimulationProvider<Data, Params, Input>({
       getSnapshot: () => backend.getSnapshot() as State<unknown, unknown>,
       recordDrawTime: (tick, ms) => backend.recordDrawTime(tick, ms),
       getPerformance: () => backend.getPerformance(),
+      registerVisibilityTarget,
     }),
-    [backend]
+    [backend, registerVisibilityTarget]
   );
 
   return (

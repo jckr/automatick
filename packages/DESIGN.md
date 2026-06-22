@@ -177,6 +177,8 @@ type SimulationPropsCommon<Params> = {
   ticksPerFrame?: number;
   maxQueuedInputs?: number;
   autoplay?: boolean;
+  /** Opt-in viewport visibility gating. Off by default. See §5.1. */
+  pauseWhenHidden?: boolean;
   children?: React.ReactNode;
 };
 
@@ -243,6 +245,7 @@ The inline form is main-thread only — worker mode requires a module file the b
 | `maxQueuedInputs` | `number` | `1024` | Bound on the engine's input queue (drop-oldest). All three modes; in worker mode it rides in the init message. |
 | `snapshotIntervalMs` | `number` | `16` | Worker only. Minimum interval between snapshot messages to main thread. |
 | `autoplay` | `boolean` | `false` | If true, start playing immediately on mount. |
+| `pauseWhenHidden` | `boolean` | `false` | Opt-in viewport visibility gating: freeze the frame clock while scrolled offscreen, and defer the first autoplay until first visible. Main-thread + canvas only. See §5.1. |
 | `children` | `ReactNode` | — | Child components that consume simulation state via hooks. |
 
 **Lifecycle semantics:**
@@ -250,6 +253,61 @@ The inline form is main-thread only — worker mode requires a module file the b
 - When the `params` prop changes, the component calls `engine.setParams(nextParams)` — a live update, not a re-init.
 - To reset via params, call `resetWith()` from the `useSimulation` hook.
 - To force a full remount with new structure, change the component's `key`.
+
+### 5.1 `pauseWhenHidden` — opt-in visibility gating
+
+Autoplay sims keep ticking when scrolled out of view. On a page that mounts
+many demos (the docs gallery is the canonical case), every one below the fold
+burns CPU from mount. `pauseWhenHidden` addresses the *in-tab, scrolled-away*
+case specifically — background **tabs** are already handled for free, because
+browsers throttle `requestAnimationFrame` there.
+
+**Opt-in, never default.** Auto-pausing by default would be genuinely
+surprising: sims running toward equilibrium while the user reads the text above
+them, `maxTime`-bound runs, anything feeding a chart expected to have
+progressed. So the option is off unless asked for. The docs site enables it on
+its gallery examples — both the motivating case and the feature's test bed.
+
+**Gate the clock, not the state machine.** The implementation is deliberately
+**not** `pause()`/`play()`. The React adapter owns the rAF loop; while the
+observed element is hidden it simply stops calling `engine.handleAnimationFrame`:
+
+- Engine status stays whatever it was (typically `playing`) — so **no
+  was-playing intent flag is needed**. The naive "offscreen → `pause()`,
+  onscreen → `play()`" recipe forgets intent: a user who paused, scrolled away,
+  and came back would have the sim resumed against their wishes. Here there is
+  nothing to resume, because nothing was paused. User-paused sims are untouched.
+- Nobody observes a "playing-but-frozen" tick readout, because by construction
+  the content is offscreen when the clock is frozen.
+- The engine stays perfectly DOM-free. Visibility is *element* knowledge, so
+  the machinery lives at the adapter layer (`visibilityGate.ts`,
+  `useSimulationCanvas` registration), never in `engine.ts`.
+- **Deferred first autoplay** falls out naturally: with the option on, the
+  adapter holds the first `play()` until first intersection — reaching the
+  bigger half of the win (don't *start* below-the-fold demos until seen), which
+  an externally-wired `IntersectionObserver` can't, since `autoplay` has
+  already fired by the time it reports.
+
+**Placement.** The option is a `<Simulation>` prop because both the rAF loop
+and `autoplay`'s `play()` live there — one coordination point. The element to
+observe is the canvas, which registers itself through `EngineContext` when (and
+only when) the option is on. Multiple canvases under one `<Simulation>` (a main
+canvas plus a chart) all feed one gate, which is visible when *any* of them
+intersects — correct for the common "one card scrolls as a unit" case without a
+"designated element" knob.
+
+**Caveats recorded.**
+
+- *Worker mode needs real messages.* The worker drives its own `setTimeout`
+  loop; gating main-thread rAF does nothing for it. Worker mode would send
+  suspend/resume over the protocol — and *there* the was-playing intent
+  tracking genuinely returns, worker-side, next to the engine. Phase 2;
+  main-thread mode ships first. The prop is silently ignored in worker mode.
+- *`delayMs` accounting across a long hidden gap.* On resume, `nowMs -
+  lastUpdateMs` is large, so one tick fires immediately — acceptable.
+- *No `IntersectionObserver`* (SSR, jsdom, old engines): the gate degrades to
+  always-visible, so the clock never freezes and autoplay fires immediately —
+  `pauseWhenHidden` becomes a no-op rather than wedging a sim that can't tick.
 
 ---
 

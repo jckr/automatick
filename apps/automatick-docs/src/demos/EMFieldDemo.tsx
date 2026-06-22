@@ -220,7 +220,7 @@ const EM_GROUPS: DemoControlGroup[] = [
 
 export function EMFieldDemo() {
   return (
-    <Simulation sim={emFieldSim} delayMs={0} autoplay>
+    <Simulation sim={emFieldSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<EMFieldCanvas />}
         controls={<DemoControlPanel groups={EM_GROUPS} showStep />}

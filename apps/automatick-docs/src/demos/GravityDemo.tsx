@@ -83,7 +83,7 @@ const GRAVITY_GROUPS: DemoControlGroup[] = [
 
 export function GravityDemo() {
   return (
-    <Simulation sim={gravitySim} delayMs={0} autoplay>
+    <Simulation sim={gravitySim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<GravityCanvas />}
         controls={<DemoControlPanel groups={GRAVITY_GROUPS} showStep />}

@@ -196,7 +196,7 @@ export function TerrainDemo() {
   // Remount key: bumping it gives the sim a fresh recorded seed (new terrain).
   const [seedKey, setSeedKey] = React.useState(0);
   return (
-    <Simulation key={seedKey} sim={terrainSim} delayMs={0} autoplay>
+    <Simulation key={seedKey} sim={terrainSim} pauseWhenHidden delayMs={0} autoplay>
       <ResetOnTerrainChange>
         <DemoSplit
           preview={<TerrainCanvas />}

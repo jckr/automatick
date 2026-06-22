@@ -69,7 +69,7 @@ const SAND_GROUPS: DemoControlGroup[] = [
 
 export function SandpileDemo() {
   return (
-    <Simulation sim={sandpileSim} delayMs={0} autoplay>
+    <Simulation sim={sandpileSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<SandpileCanvas />}
         controls={<DemoControlPanel groups={SAND_GROUPS} showStep />}

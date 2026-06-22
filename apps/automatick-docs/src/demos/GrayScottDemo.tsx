@@ -101,7 +101,7 @@ const GRAY_SCOTT_GROUPS: DemoControlGroup[] = [
 
 export function GrayScottDemo() {
   return (
-    <Simulation sim={grayScottSim} delayMs={0} autoplay>
+    <Simulation sim={grayScottSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<GrayScottCanvas />}
         controls={<DemoControlPanel groups={GRAY_SCOTT_GROUPS} showStep />}

@@ -115,7 +115,7 @@ const DICE_GROUPS: DemoControlGroup[] = [
 
 export function DiceDemo() {
   return (
-    <Simulation sim={diceSim} maxTime={1000} delayMs={0}>
+    <Simulation sim={diceSim} pauseWhenHidden maxTime={1000} delayMs={0}>
       <DemoSplit
         preview={<DiceView />}
         controls={<DemoControlPanel groups={DICE_GROUPS} showStep />}

@@ -116,7 +116,7 @@ const PERC_GROUPS: DemoControlGroup[] = [
 
 export function PercolationDemo() {
   return (
-    <Simulation sim={percolationSim} maxTime={Infinity} delayMs={30}>
+    <Simulation sim={percolationSim} pauseWhenHidden maxTime={Infinity} delayMs={30}>
       <DemoSplit
         preview={<PercolationGrid />}
         controls={<DemoControlPanel groups={PERC_GROUPS} showStep />}

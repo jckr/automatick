@@ -94,7 +94,7 @@ const SEG_GROUPS: DemoControlGroup[] = [
 
 export function SegregationDemo() {
   return (
-    <Simulation sim={segregationSim} maxTime={500} delayMs={50}>
+    <Simulation sim={segregationSim} pauseWhenHidden maxTime={500} delayMs={50}>
       <DemoSplit
         preview={<SegregationCanvas />}
         controls={<DemoControlPanel groups={SEG_GROUPS} showStep />}

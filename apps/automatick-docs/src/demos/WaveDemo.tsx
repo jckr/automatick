@@ -105,7 +105,7 @@ const WAVE_GROUPS: DemoControlGroup[] = [
 
 export function WaveDemo() {
   return (
-    <Simulation sim={waveSim} delayMs={0} autoplay>
+    <Simulation sim={waveSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<WaveCanvas />}
         controls={<DemoControlPanel groups={WAVE_GROUPS} />}

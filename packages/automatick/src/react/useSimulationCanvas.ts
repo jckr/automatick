@@ -106,10 +106,20 @@ export function useSimulationCanvas<T = unknown, FallbackParams = unknown>(
     const drawFn: CanvasDrawFn<unknown, unknown> = (ctx, snap, view) =>
       (drawRef.current as CanvasDrawFn<unknown, unknown>)(ctx, snap, view);
 
-    if (width !== undefined && height !== undefined) {
-      return attachCanvas(engineCtx, canvas, drawFn, { width, height });
-    }
-    return attachCanvasLegacy(engineCtx, canvas, drawFn);
+    const detach =
+      width !== undefined && height !== undefined
+        ? attachCanvas(engineCtx, canvas, drawFn, { width, height })
+        : attachCanvasLegacy(engineCtx, canvas, drawFn);
+
+    // When the surrounding <Simulation> opted into pauseWhenHidden, hand it
+    // this canvas as the element whose visibility gates the frame clock. No-op
+    // otherwise (registerVisibilityTarget is absent).
+    const unregister = engineCtx.registerVisibilityTarget?.(canvas);
+
+    return () => {
+      detach();
+      unregister?.();
+    };
   }, [engineCtx, width, height]);
 
   return canvasRef;

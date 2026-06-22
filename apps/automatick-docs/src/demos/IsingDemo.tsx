@@ -102,7 +102,7 @@ const ISING_GROUPS: DemoControlGroup[] = [
 
 export function IsingDemo() {
   return (
-    <Simulation sim={isingSim} delayMs={0} autoplay>
+    <Simulation sim={isingSim} pauseWhenHidden delayMs={0} autoplay>
       <DemoSplit
         preview={<IsingCanvas />}
         controls={
