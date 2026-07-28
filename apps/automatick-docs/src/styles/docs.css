@@ -7,6 +7,12 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Reserve space for the scrollbar so centered layouts don't shift
+     horizontally when navigating between pages that do/don't scroll. */
+  scrollbar-gutter: stable;
+}
+
 html,
 body {
   margin: 0;
