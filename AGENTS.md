@@ -332,6 +332,16 @@ no-ops, so unrelated edits to `package.json` and workflow re-runs never
 double-publish. A manual **Run workflow** button is available as a safety
 valve.
 
-**One-time setup:** the workflow authenticates with an `NPM_TOKEN` repository
-secret — a granular npm automation token with publish rights to `automatick`.
-Add it under *Settings → Secrets and variables → Actions*.
+**One-time setup:** the workflow authenticates with npm
+[Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) — no
+`NPM_TOKEN` secret to manage or rotate, and provenance is generated
+automatically. On npmjs.com, open the `automatick` package → *Settings* →
+*Trusted Publisher*, choose **GitHub Actions**, and enter:
+
+- Organization / user: `jckr`
+- Repository: `automatick`
+- Workflow filename: `publish.yml`
+
+(Leave the environment field blank — the workflow doesn't use one.) The
+package must already exist on npm before a trusted publisher can be
+configured, which it does.

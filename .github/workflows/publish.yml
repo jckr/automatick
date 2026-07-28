@@ -5,6 +5,11 @@ name: Publish automatick
 # first and no-ops if it is already published, so re-runs (and unrelated edits
 # to package.json) never double-publish. A manual "Run workflow" button is
 # available as a safety valve.
+#
+# Auth is npm Trusted Publishing (OIDC) — no NPM_TOKEN secret. It requires a
+# one-time "Trusted Publisher" configured on the package at npmjs.com pointing
+# at this repo + workflow file. See https://docs.npmjs.com/trusted-publishers.
+# Provenance attestations are generated automatically under trusted publishing.
 
 on:
   push:
@@ -15,7 +20,7 @@ on:
 
 permissions:
   contents: write # create the release tag + GitHub Release
-  id-token: write # npm provenance via GitHub OIDC
+  id-token: write # npm Trusted Publishing (OIDC) + automatic provenance
 
 concurrency:
   group: publish-automatick
@@ -65,11 +70,14 @@ jobs:
         if: steps.check.outputs.publish == 'true'
         run: npm run build:packages
 
+      # Trusted Publishing (OIDC) requires npm >= 11.5.1; Node 22 ships npm 10.x.
+      - name: Upgrade npm for Trusted Publishing
+        if: steps.check.outputs.publish == 'true'
+        run: npm install -g npm@latest
+
       - name: Publish to npm
         if: steps.check.outputs.publish == 'true'
-        run: npm publish -w automatick --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish -w automatick --access public
 
       - name: Extract changelog notes
         if: steps.check.outputs.publish == 'true'
