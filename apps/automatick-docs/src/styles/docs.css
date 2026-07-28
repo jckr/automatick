@@ -196,6 +196,10 @@ a {
 .shell.shell-playground {
   grid-template-columns: 260px minmax(0, 1fr);
   max-width: 1800px;
+  /* Share the exact left edge of the centered 1320px docs shell so the
+     sidebar never shifts horizontally when navigating between variants. */
+  margin-left: max(0px, calc((100% - 1320px) / 2));
+  margin-right: auto;
 }
 
 /* ============================================================
