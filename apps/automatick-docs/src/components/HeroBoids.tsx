@@ -32,7 +32,7 @@ function HeroCanvas() {
 
   const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }) => {
     const styles = getComputedStyle(document.documentElement);
-    const accent = styles.getPropertyValue('--accent').trim() || '#D7451E';
+    const accent = styles.getPropertyValue('--accent').trim() || '#0055ff';
     const inkSoft = styles.getPropertyValue('--fg2').trim() || '#2A2E36';
     const dpr = window.devicePixelRatio || 1;
 

@@ -16,8 +16,8 @@ const CSS_SIZE = 600;
 function ActivatorsCanvas() {
   const canvasRef = useSimulationCanvas<typeof activatorsSim>(
     (ctx, { data, params }, view) => {
-      const ink = view.theme('--fg1', '#0E1116');
-      const bg = view.theme('--bg3', '#E6E0D0');
+      const ink = view.theme('--fg1', '#0a0a0a');
+      const bg = view.theme('--bg3', '#e5e5e5');
 
       view.clear();
       // Draw in sim coordinates (cells of CELL_PX) scaled to the canvas.

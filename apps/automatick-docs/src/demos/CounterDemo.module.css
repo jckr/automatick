@@ -8,7 +8,7 @@
 }
 
 .value {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-variation-settings: 'opsz' 72;
   font-size: 96px;
   font-weight: 500;

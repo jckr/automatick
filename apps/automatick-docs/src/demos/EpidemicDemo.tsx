@@ -15,9 +15,9 @@ import styles from './EpidemicDemo.module.css';
 
 const STATUS_COLORS: Record<string, string> = {
   healthy: '#3D6B4B',
-  sick: '#D7451E',
+  sick: '#0055ff',
   recovered: '#8A8A8A',
-  dead: '#0E1116',
+  dead: '#0a0a0a',
 };
 
 function EpidemicCanvas() {
@@ -29,7 +29,7 @@ function EpidemicCanvas() {
   const [size, setSize] = React.useState({ width: 332, height: 332 });
 
   const canvasRef = useSimulationCanvas<typeof epidemicSim>((ctx, { data, params }, view) => {
-    view.clear(view.theme('--bg3', '#E6E0D0'));
+    view.clear(view.theme('--bg3', '#e5e5e5'));
 
     data.agents.forEach((agent) => {
       ctx.fillStyle = STATUS_COLORS[agent.status] ?? '#999';

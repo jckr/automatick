@@ -15,7 +15,7 @@ import forceGraphSim, {
 } from '../sims/forceGraphSim';
 import styles from './ForceGraphDemo.module.css';
 
-const GROUP_COLORS = ['#D7451E', '#2B6E8F', '#3D6B4B', '#C98A1A', '#7A4FA0'];
+const GROUP_COLORS = ['#0055ff', '#2B6E8F', '#3D6B4B', '#C98A1A', '#7A4FA0'];
 
 function ForceGraphCanvas() {
   const canvasRef = useSimulationCanvas<typeof forceGraphSim>(

@@ -67,7 +67,7 @@ export function TimeSeries<T>({
     const w = canvas.width;
     const h = canvas.height;
     const styles = getComputedStyle(document.documentElement);
-    const bg = styles.getPropertyValue('--bg2').trim() || '#EFEADD';
+    const bg = styles.getPropertyValue('--bg2').trim() || '#f2f2f2';
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = bg;

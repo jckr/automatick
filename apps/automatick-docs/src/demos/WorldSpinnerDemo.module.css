@@ -8,5 +8,5 @@
 
 .canvas {
   display: block;
-  background: var(--bg2, #efeadd);
+  background: var(--bg2, var(--bg2));
 }

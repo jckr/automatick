@@ -44,7 +44,7 @@ function SegregationCanvas() {
 
 const SEG_SERIES: TimeSeriesEntry<SegData>[] = [
   {
-    color: '#D7451E',
+    color: '#0055ff',
     label: 'Happiness',
     accessor: (d) => d.happiness * 100,
   },

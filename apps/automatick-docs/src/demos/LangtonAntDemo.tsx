@@ -16,9 +16,9 @@ function LangtonCanvas() {
       const cellW = view.width / gw;
       const cellH = view.height / gh;
 
-      view.clear(view.theme('--bg2', '#EFEADD'));
+      view.clear(view.theme('--bg2', '#f2f2f2'));
 
-      ctx.fillStyle = view.theme('--fg1', '#0E1116');
+      ctx.fillStyle = view.theme('--fg1', '#0a0a0a');
       for (let y = 0; y < gh; y++) {
         for (let x = 0; x < gw; x++) {
           if (cells[y * gw + x]) {
@@ -27,7 +27,7 @@ function LangtonCanvas() {
         }
       }
 
-      ctx.fillStyle = view.theme('--accent', '#D7451E');
+      ctx.fillStyle = view.theme('--accent', '#0055ff');
       ctx.fillRect(antX * cellW, antY * cellH, cellW, cellH);
     },
     { width: CSS_SIZE, height: CSS_SIZE }

@@ -28,7 +28,7 @@ function ClothCanvas() {
 
   const canvasRef = useSimulationCanvas<typeof clothSim>((ctx, { data }, view) => {
     const ink = view.theme('--fg1', '#e6e6e6');
-    const pinColor = view.theme('--viz-1', '#D7451E');
+    const pinColor = view.theme('--viz-1', '#0055ff');
 
     view.clear(view.theme('--bg2', '#12161c'));
 

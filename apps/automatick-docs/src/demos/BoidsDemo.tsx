@@ -20,12 +20,12 @@ function BoidsCanvas() {
   const [size, setSize] = React.useState({ width: 332, height: 332 });
 
   const canvasRef = useSimulationCanvas<typeof boidsSim>((ctx, { data, params }, view) => {
-    const bg = view.theme('--bg3', '#E6E0D0');
-    const ink = view.theme('--fg1', '#0E1116');
+    const bg = view.theme('--bg3', '#e5e5e5');
+    const ink = view.theme('--fg1', '#0a0a0a');
     // Distinct dataviz colors per force, matching the legacy RGB intent:
     // separation = danger (vermillion), alignment = green (moss),
     // cohesion = blue (slate teal).
-    const sepColor = view.theme('--viz-1', '#D7451E');
+    const sepColor = view.theme('--viz-1', '#0055ff');
     const alignColor = view.theme('--viz-4', '#3D6B4B');
     const cohColor = view.theme('--viz-2', '#2B6E8F');
 

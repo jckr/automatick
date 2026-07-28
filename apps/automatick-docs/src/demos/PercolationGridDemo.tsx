@@ -44,7 +44,7 @@ function GridCanvas() {
 
   const canvasRef = useSimulationCanvas<typeof percolationGridSim>(
     (ctx, { data }, view) => {
-      const fg1 = view.theme('--fg1', '#0E1116');
+      const fg1 = view.theme('--fg1', '#0a0a0a');
       const fg3 = view.theme('--fg3', '#5B6070');
       const success = view.theme('--info', '#2B6E8F');
 

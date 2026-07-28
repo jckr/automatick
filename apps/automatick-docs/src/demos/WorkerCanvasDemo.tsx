@@ -21,8 +21,8 @@ function XorRingCanvas() {
 
   const canvasRef = useSimulationCanvas<typeof xorRingSim>(
     (ctx, { data, params, tick }, view) => {
-      const ink = view.theme('--fg1', '#0E1116');
-      const bg = view.theme('--bg2', '#EFEADD');
+      const ink = view.theme('--fg1', '#0a0a0a');
+      const bg = view.theme('--bg2', '#f2f2f2');
 
       if (tick === 0) {
         historyRef.current = [];

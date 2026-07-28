@@ -40,7 +40,7 @@ function Dots({ size }: { size: number }) {
   }, []);
   return (
     <points geometry={geom}>
-      <pointsMaterial size={size} color='#D7451E' sizeAttenuation />
+      <pointsMaterial size={size} color='#0055ff' sizeAttenuation />
     </points>
   );
 }
@@ -85,7 +85,7 @@ function Globe() {
     <group rotation={[0, data.angle, 0]}>
       <mesh>
         <sphereGeometry args={[SPHERE_RADIUS, 48, 48]} />
-        <meshStandardMaterial color='#0E1116' roughness={0.85} metalness={0.1} />
+        <meshStandardMaterial color='#0a0a0a' roughness={0.85} metalness={0.1} />
       </mesh>
       <Dots size={params.dotSize} />
       <AnchorMarkers />

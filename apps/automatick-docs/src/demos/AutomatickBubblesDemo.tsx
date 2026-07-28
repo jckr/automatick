@@ -115,9 +115,9 @@ export function AutomatickBubblesCanvas({
 
   const canvasRef = useSimulationCanvas<typeof automatickBubblesSim>(
     (ctx, { data, params }, view) => {
-      const bg = view.theme('--bg1', '#F7F3EA');
-      const ink = view.theme('--fg1', '#0E1116');
-      const accentColor = parseHex(view.theme('--accent', '#D7451E'), [215, 69, 30]);
+      const bg = view.theme('--bg1', '#ffffff');
+      const ink = view.theme('--fg1', '#0a0a0a');
+      const accentColor = parseHex(view.theme('--accent', '#0055ff'), [215, 69, 30]);
 
       // Trails: fade the previous frame toward bg instead of clearing.
       // Lower `trailFade` = longer-lived trails. Bubbles inside the

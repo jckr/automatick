@@ -30,9 +30,9 @@ export function AutomatickHeroCanvas({
 
   const canvasRef = useSimulationCanvas<typeof automatickHeroSim>(
     (ctx, { data, params }, view) => {
-      const bg = view.theme('--bg1', '#F7F3EA');
-      const linkColor = view.theme('--accent', '#D7451E');
-      const nodeColor = view.theme('--fg1', '#0E1116');
+      const bg = view.theme('--bg1', '#ffffff');
+      const linkColor = view.theme('--accent', '#0055ff');
+      const nodeColor = view.theme('--fg1', '#0a0a0a');
       const dotColor = view.theme('--fg3', '#5b6070');
 
       view.clear(bg);
