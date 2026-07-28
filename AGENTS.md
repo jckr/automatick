@@ -310,3 +310,38 @@ npm run dev -w apps/automatick-docs  # dev server for docs site
 npm test -w packages/automatick      # run library tests
 npm run build -w packages/automatick # build the library
 ```
+
+## Releasing the library to npm
+
+Publishing is automated by `.github/workflows/publish.yml`. To cut a release:
+
+1. Add a `## <version> — <date>` section to
+   `packages/automatick/CHANGELOG.md` describing what landed since the last
+   publish.
+2. Bump `version` in `packages/automatick/package.json` (run `npm install` so
+   `package-lock.json` follows), then commit both.
+3. Merge to `main`.
+
+That's it. On any push to `main` that touches
+`packages/automatick/package.json`, the workflow checks npm for the new
+version and — if it isn't published yet — runs the tests, builds the library,
+`npm publish`es it (with provenance), and creates a matching
+`automatick-v<version>` git tag and GitHub Release using the CHANGELOG section
+as the notes. The job is idempotent: if the version is already on npm it
+no-ops, so unrelated edits to `package.json` and workflow re-runs never
+double-publish. A manual **Run workflow** button is available as a safety
+valve.
+
+**One-time setup:** the workflow authenticates with npm
+[Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) — no
+`NPM_TOKEN` secret to manage or rotate, and provenance is generated
+automatically. On npmjs.com, open the `automatick` package → *Settings* →
+*Trusted Publisher*, choose **GitHub Actions**, and enter:
+
+- Organization / user: `jckr`
+- Repository: `automatick`
+- Workflow filename: `publish.yml`
+
+(Leave the environment field blank — the workflow doesn't use one.) The
+package must already exist on npm before a trusted publisher can be
+configured, which it does.
