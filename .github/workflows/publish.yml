@@ -1,0 +1,99 @@
+name: Publish automatick
+
+# Publishes packages/automatick to npm automatically whenever a version bump
+# lands on main. The job is idempotent: it checks npm for the current version
+# first and no-ops if it is already published, so re-runs (and unrelated edits
+# to package.json) never double-publish. A manual "Run workflow" button is
+# available as a safety valve.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/automatick/package.json
+  workflow_dispatch:
+
+permissions:
+  contents: write # create the release tag + GitHub Release
+  id-token: write # npm provenance via GitHub OIDC
+
+concurrency:
+  group: publish-automatick
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Read package name + version
+        id: pkg
+        run: |
+          NAME=$(node -p "require('./packages/automatick/package.json').name")
+          VERSION=$(node -p "require('./packages/automatick/package.json').version")
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=automatick-v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether this version is already on npm
+        id: check
+        run: |
+          if npm view "${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}" version >/dev/null 2>&1; then
+            echo "already published — nothing to do"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "not on npm — will publish"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.check.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Test
+        if: steps.check.outputs.publish == 'true'
+        run: npm test
+
+      - name: Build library
+        if: steps.check.outputs.publish == 'true'
+        run: npm run build:packages
+
+      - name: Publish to npm
+        if: steps.check.outputs.publish == 'true'
+        run: npm publish -w automatick --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Extract changelog notes
+        if: steps.check.outputs.publish == 'true'
+        id: notes
+        run: |
+          # Pull the section for this version out of the CHANGELOG
+          # (everything between "## <version>" and the next "## ").
+          NOTES=$(awk -v v="${{ steps.pkg.outputs.version }}" '
+            $0 ~ "^## " v "( |$)" { grab=1; next }
+            grab && /^## / { exit }
+            grab { print }
+          ' packages/automatick/CHANGELOG.md)
+          {
+            echo "body<<EOF"
+            if [ -n "$NOTES" ]; then echo "$NOTES"; else echo "See CHANGELOG.md."; fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create git tag + GitHub Release
+        if: steps.check.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.pkg.outputs.tag }}" \
+            --title "automatick ${{ steps.pkg.outputs.version }}" \
+            --notes "${{ steps.notes.outputs.body }}" \
+            --target "${{ github.sha }}"
