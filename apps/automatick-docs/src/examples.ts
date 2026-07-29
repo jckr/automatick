@@ -115,6 +115,69 @@ export const EXAMPLES: ExampleMeta[] = [
   { slug: 'terrain', label: 'Terrain' },
 ];
 
+/**
+ * Thematic grouping for the examples gallery ("Specimen Wall"). Order here is
+ * the display order of both the header legend and the wall itself. When adding
+ * a new example to EXAMPLES, add its slug to a category below — the gallery
+ * renders any uncategorized examples at the end so nothing is silently
+ * dropped, but they'll lack a section.
+ */
+export const EXAMPLE_CATEGORIES: { name: string; slugs: string[] }[] = [
+  {
+    name: 'Cellular Automata',
+    slugs: [
+      'dice',
+      'game-of-life',
+      'automata-1d',
+      'percolation',
+      'activators',
+      'langton-ant',
+      'segregation',
+      'gray-scott',
+      'sandpile',
+      'ising',
+      'material-ca',
+      'wave',
+    ],
+  },
+  {
+    name: 'Agents & Ecology',
+    slugs: [
+      'boids',
+      'predator-prey',
+      'crowd-compare',
+      'snake',
+      'ant-colony',
+      'traffic',
+      'settlement',
+      'physarum',
+      'sugarscape',
+      'opinion-dynamics',
+      'market',
+      'particle-life',
+    ],
+  },
+  {
+    name: 'Physics & Fluids',
+    slugs: [
+      'gravity',
+      'stable-fluids',
+      'sph-fluid',
+      'falling-sand',
+      'erosion',
+      'electric-field',
+      'spring-mass',
+      'cloth',
+      'rigid-body',
+      'double-pendulum',
+    ],
+  },
+  {
+    name: 'Fractals & Generative',
+    slugs: ['mazes', 'chaos-game', 'worker-canvas', 'fireworks', 'force-graph', 'l-systems', 'terrain'],
+  },
+];
+
 /** The route path for an example (e.g. `/examples/boids`). */
 export function examplePath(ex: ExampleMeta): string {
   return `/examples/${ex.slug}`;
