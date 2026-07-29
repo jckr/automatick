@@ -53,20 +53,45 @@ export const EXAMPLES: ExampleMeta[] = [
   { slug: 'automata-1d', label: '1D automata', warmupMs: 8000 },
   { slug: 'percolation', label: 'Percolation' },
   { slug: 'activators', label: 'Activators' },
-  { slug: 'langton-ant', label: "Langton's ant" },
+  // Zoom to the highway-building blob; full frame is mostly empty white.
+  {
+    slug: 'langton-ant',
+    label: "Langton's ant",
+    warmupMs: 6000,
+    focus: { x: 0.28, y: 0.28, width: 0.48, height: 0.48 },
+  },
   { slug: 'segregation', label: 'Segregation' },
-  { slug: 'gravity', label: 'N-body gravity' },
-  { slug: 'boids', label: 'Boids' },
+  // Bodies are tiny at full frame; let orbits develop, then zoom to the core.
+  {
+    slug: 'gravity',
+    label: 'N-body gravity',
+    warmupMs: 6000,
+    focus: { x: 0.25, y: 0.25, width: 0.5, height: 0.5 },
+  },
+  // Feature tile: let flocks form, then zoom in so the birds read at tile size.
+  {
+    slug: 'boids',
+    label: 'Boids',
+    warmupMs: 12000,
+    focus: { x: 0.3, y: 0.28, width: 0.42, height: 0.42 },
+  },
   { slug: 'predator-prey', label: 'Predator–Prey' },
   // Crop to the two corridors up top; the arrivals chart below starts empty.
   {
     slug: 'crowd-compare',
     label: 'Crowd: selfish vs coordinated',
-    focus: { x: 0, y: 0, width: 1, height: 0.52 },
+    focus: { x: 0.03, y: 0.21, width: 0.88, height: 0.27 },
   },
   // Snake grows as it eats; give it time to become a satisfying length.
-  { slug: 'snake', label: 'Snake', warmupMs: 8000 },
-  { slug: 'mazes', label: 'Mazes' },
+  // Snake lives in the lower half of the stage; crop to it.
+  {
+    slug: 'snake',
+    label: 'Snake',
+    warmupMs: 8000,
+    focus: { x: 0.05, y: 0.42, width: 0.9, height: 0.55 },
+  },
+  // Zoom so the thin corridors are legible at tile size.
+  { slug: 'mazes', label: 'Mazes', focus: { x: 0.08, y: 0.08, width: 0.55, height: 0.55 } },
   // Points accumulate into the Sierpinski attractor; needs a long warm-up.
   { slug: 'chaos-game', label: 'Chaos game', warmupMs: 12000 },
   // Accumulated rows fill the canvas top-down; wait for the ring to develop.
@@ -92,16 +117,33 @@ export const EXAMPLES: ExampleMeta[] = [
     warmupMs: 450,
     focus: { x: 0.22, y: 0.42, width: 0.6, height: 0.26 },
   },
-  { slug: 'wave', label: 'Wave propagation' },
+  // Ripples are strongest right after the drop; shoot early and zoom in.
+  {
+    slug: 'wave',
+    label: 'Wave propagation',
+    warmupMs: 1400,
+    focus: { x: 0.22, y: 0.22, width: 0.56, height: 0.56 },
+  },
   { slug: 'physarum', label: 'Slime mold' },
   { slug: 'sugarscape', label: 'Sugarscape' },
   // Opinions start scattered and pale; let them cluster into clear camps.
-  { slug: 'opinion-dynamics', label: 'Opinion dynamics', warmupMs: 9000 },
-  { slug: 'market', label: 'Market' },
+  // Diverging scale fades to near-white at consensus — shoot EARLY, while
+  // opinions are still polarized into vivid blue/red camps.
+  {
+    slug: 'opinion-dynamics',
+    label: 'Opinion dynamics',
+    warmupMs: 300,
+    focus: { x: 0.15, y: 0.12, width: 0.55, height: 0.55 },
+  },
+  // Crop to the price chart itself; full frame is mostly whitespace.
+  { slug: 'market', label: 'Market', warmupMs: 6000, focus: { x: 0.04, y: 0.07, width: 0.82, height: 0.5 } },
   { slug: 'particle-life', label: 'Particle life' },
-  { slug: 'fireworks', label: 'Fireworks' },
-  { slug: 'spring-mass', label: 'Spring-mass' },
-  { slug: 'cloth', label: 'Rope & cloth' },
+  // Time the shot to catch a full burst rather than the gap between launches.
+  { slug: 'fireworks', label: 'Fireworks', warmupMs: 3200, focus: { x: 0.15, y: 0.05, width: 0.7, height: 0.7 } },
+  // Crop to the lattice; full frame leaves it small and off-center.
+  { slug: 'spring-mass', label: 'Spring-mass', warmupMs: 4000, focus: { x: 0.42, y: 0.02, width: 0.36, height: 0.58 } },
+  // Crop to the hanging cloth; give it time to swing into a nice drape.
+  { slug: 'cloth', label: 'Rope & cloth', warmupMs: 4000, focus: { x: 0.45, y: 0, width: 0.55, height: 0.62 } },
   // Bodies fall and settle into a pile at the bottom; wait, then crop to it.
   {
     slug: 'rigid-body',
@@ -109,7 +151,13 @@ export const EXAMPLES: ExampleMeta[] = [
     warmupMs: 5000,
     focus: { x: 0, y: 0.42, width: 1, height: 0.58 },
   },
-  { slug: 'double-pendulum', label: 'Double pendulum' },
+  // Let the trace accumulate into a dense ribbon, then zoom to it.
+  {
+    slug: 'double-pendulum',
+    label: 'Double pendulum',
+    warmupMs: 16000,
+    focus: { x: 0.24, y: 0.18, width: 0.52, height: 0.52 },
+  },
   { slug: 'force-graph', label: 'Force-directed graph' },
   { slug: 'l-systems', label: 'L-systems' },
   { slug: 'terrain', label: 'Terrain' },
