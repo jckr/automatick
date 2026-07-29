@@ -44,3 +44,7 @@ exposeLocalhost = true
 localPort = 5179
 externalPort = 3002
 exposeLocalhost = true
+
+[[ports]]
+localPort = 23636
+externalPort = 3003

@@ -1,3 +1,4 @@
+import React from 'react';
 import './_group.css';
 import './_specimenwall.css';
 
@@ -45,6 +46,70 @@ const EXAMPLES: { slug: string; label: string; objectPosition?: string }[] = [
   { slug: 'terrain', label: 'Terrain' },
 ];
 
+const SECTIONS = [
+  {
+    name: 'Cellular Automata',
+    slugs: [
+      'dice',
+      'game-of-life',
+      'automata-1d',
+      'percolation',
+      'activators',
+      'langton-ant',
+      'segregation',
+      'gray-scott',
+      'sandpile',
+      'ising',
+      'material-ca',
+      'wave',
+    ],
+  },
+  {
+    name: 'Agents & Ecology',
+    slugs: [
+      'boids',
+      'predator-prey',
+      'crowd-compare',
+      'snake',
+      'ant-colony',
+      'traffic',
+      'settlement',
+      'physarum',
+      'sugarscape',
+      'opinion-dynamics',
+      'market',
+      'particle-life',
+    ],
+  },
+  {
+    name: 'Physics & Fluids',
+    slugs: [
+      'gravity',
+      'stable-fluids',
+      'sph-fluid',
+      'falling-sand',
+      'erosion',
+      'electric-field',
+      'spring-mass',
+      'cloth',
+      'rigid-body',
+      'double-pendulum',
+    ],
+  },
+  {
+    name: 'Fractals & Generative',
+    slugs: [
+      'mazes',
+      'chaos-game',
+      'worker-canvas',
+      'fireworks',
+      'force-graph',
+      'l-systems',
+      'terrain',
+    ],
+  },
+];
+
 const FEATURES = new Set([
   'boids',
   'gray-scott',
@@ -71,30 +136,37 @@ export function SpecimenWall() {
           </div>
         </header>
 
-        <div className='sw-grid'>
-          {EXAMPLES.map((ex, idx) => {
-            const isFeature = FEATURES.has(ex.slug);
-            const id = (idx + 1).toString().padStart(2, '0');
-            return (
-              <a
-                key={ex.slug}
-                className={`sw-cell ${isFeature ? 'sw-feature' : ''}`}
-                href='#'
-                onClick={(e) => e.preventDefault()}
-              >
-                <img
-                  src={thumb(ex.slug)}
-                  alt={ex.label}
-                  loading='lazy'
-                  style={{ objectPosition: ex.objectPosition || 'center' }}
-                />
-                <div className='sw-tag'>
-                  <span className='sw-tag-id'>No. {id}</span>
-                  <span className='sw-tag-label'>{ex.label}</span>
-                </div>
-              </a>
-            );
-          })}
+        <div className='sw-wall-wrapper'>
+          {SECTIONS.map((section) => (
+            <React.Fragment key={section.name}>
+              <div className='sw-section-row'>{section.name}</div>
+              <div className='sw-grid'>
+                {section.slugs.map((slug) => {
+                  const ex = EXAMPLES.find((e) => e.slug === slug);
+                  if (!ex) return null;
+                  const isFeature = FEATURES.has(ex.slug);
+                  return (
+                    <a
+                      key={ex.slug}
+                      className={`sw-cell ${isFeature ? 'sw-feature' : ''}`}
+                      href='#'
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <img
+                        src={thumb(ex.slug)}
+                        alt={ex.label}
+                        loading='lazy'
+                        style={{ objectPosition: ex.objectPosition || 'center' }}
+                      />
+                      <div className='sw-tag'>
+                        <span className='sw-tag-label'>{ex.label}</span>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </div>
