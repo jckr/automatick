@@ -127,13 +127,12 @@ export const EXAMPLES: ExampleMeta[] = [
   { slug: 'physarum', label: 'Slime mold' },
   { slug: 'sugarscape', label: 'Sugarscape' },
   // Opinions start scattered and pale; let them cluster into clear camps.
-  // Diverging scale fades to near-white at consensus — shoot EARLY, while
-  // opinions are still polarized into vivid blue/red camps.
+  // Zoom to the densest band of agents so the camps read at tile size.
   {
     slug: 'opinion-dynamics',
     label: 'Opinion dynamics',
-    warmupMs: 300,
-    focus: { x: 0.15, y: 0.12, width: 0.55, height: 0.55 },
+    warmupMs: 16000,
+    focus: { x: 0.12, y: 0.1, width: 0.4, height: 0.4 },
   },
   // Crop to the price chart itself; full frame is mostly whitespace.
   { slug: 'market', label: 'Market', warmupMs: 6000, focus: { x: 0.04, y: 0.07, width: 0.82, height: 0.5 } },
