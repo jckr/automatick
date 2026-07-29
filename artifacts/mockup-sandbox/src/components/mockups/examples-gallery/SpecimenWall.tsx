@@ -122,51 +122,75 @@ const FEATURES = new Set([
 const thumb = (slug: string) => `/__mockup/images/thumbnails/${slug}.png`;
 
 export function SpecimenWall() {
+  // Flatten the examples into a single ordered list based on sections
+  const flattenedExamples: Array<{
+    slug: string;
+    label: string;
+    objectPosition?: string;
+    categoryName: string;
+    isFirstInCategory: boolean;
+  }> = [];
+
+  SECTIONS.forEach((section) => {
+    section.slugs.forEach((slug, index) => {
+      const ex = EXAMPLES.find((e) => e.slug === slug);
+      if (ex) {
+        flattenedExamples.push({
+          ...ex,
+          categoryName: section.name,
+          isFirstInCategory: index === 0,
+        });
+      }
+    });
+  });
+
   return (
     <div className='ag-root'>
       <div className='ag-playground'>
         <header className='ag-header'>
           <div>
             <h1>Examples</h1>
+            <div className='sw-header-legend'>
+              {SECTIONS.map((section, idx) => (
+                <React.Fragment key={section.name}>
+                  <span>{section.name}</span>
+                  {idx < SECTIONS.length - 1 && <span className='sw-sep'>/</span>}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
           <div className='ag-meta'>
             <span>
-              {EXAMPLES.length} · <span className='ag-now'>specimens</span>
+              {flattenedExamples.length} · <span className='ag-now'>specimens</span>
             </span>
           </div>
         </header>
 
-        <div className='sw-wall-wrapper'>
-          {SECTIONS.map((section) => (
-            <React.Fragment key={section.name}>
-              <div className='sw-section-row'>{section.name}</div>
-              <div className='sw-grid'>
-                {section.slugs.map((slug) => {
-                  const ex = EXAMPLES.find((e) => e.slug === slug);
-                  if (!ex) return null;
-                  const isFeature = FEATURES.has(ex.slug);
-                  return (
-                    <a
-                      key={ex.slug}
-                      className={`sw-cell ${isFeature ? 'sw-feature' : ''}`}
-                      href='#'
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      <img
-                        src={thumb(ex.slug)}
-                        alt={ex.label}
-                        loading='lazy'
-                        style={{ objectPosition: ex.objectPosition || 'center' }}
-                      />
-                      <div className='sw-tag'>
-                        <span className='sw-tag-label'>{ex.label}</span>
-                      </div>
-                    </a>
-                  );
-                })}
-              </div>
-            </React.Fragment>
-          ))}
+        <div className='sw-grid'>
+          {flattenedExamples.map((ex) => {
+            const isFeature = FEATURES.has(ex.slug);
+            return (
+              <a
+                key={ex.slug}
+                className={`sw-cell ${isFeature ? 'sw-feature' : ''}`}
+                href='#'
+                onClick={(e) => e.preventDefault()}
+              >
+                <img
+                  src={thumb(ex.slug)}
+                  alt={ex.label}
+                  loading='lazy'
+                  style={{ objectPosition: ex.objectPosition || 'center' }}
+                />
+                <div className='sw-tag-group'>
+                  {ex.isFirstInCategory && (
+                    <div className='sw-tab sw-tab-category'>{ex.categoryName}</div>
+                  )}
+                  <div className='sw-tab sw-tab-label'>{ex.label}</div>
+                </div>
+              </a>
+            );
+          })}
         </div>
       </div>
     </div>
