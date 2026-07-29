@@ -51,9 +51,17 @@
   transition: background-color var(--dur-hover) var(--ease-standard);
 }
 
-.feature {
-  grid-column: span 2;
-  grid-row: span 2;
+/*
+ * Feature tiles span 2x2 only when the grid is guaranteed at least two
+ * columns (auto-fill of minmax(200px, 1fr) plus 1px gap/border collapses to a
+ * single column below ~430px); an unconditional span would force overflow on
+ * narrow phones.
+ */
+@media (min-width: 480px) {
+  .feature {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
 }
 
 .cell img {
