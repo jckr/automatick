@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import { fibonacciSpiralPalette } from '../theme/palette';
 import type { FibonacciData } from './fibonacciSim';
 
 export type FibonacciSpiralParams = { size: number };
@@ -19,7 +20,7 @@ export function drawFibonacciSpiral(
   args: { size: number; tick: number }
 ): void {
   const { size, tick } = args;
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = fibonacciSpiralPalette.bg;
   ctx.fillRect(0, 0, size, size);
   let x = 0;
   let y = 0;
@@ -27,9 +28,9 @@ export function drawFibonacciSpiral(
   for (let i = 0; i < tick; i++) {
     const d = D[i % 4 as 0 | 1 | 2 | 3];
     side = side / phi;
-    ctx.strokeStyle = '#ddd';
+    ctx.strokeStyle = fibonacciSpiralPalette.square;
     ctx.strokeRect(x, y, side, side);
-    ctx.strokeStyle = '#222';
+    ctx.strokeStyle = fibonacciSpiralPalette.arc;
 
     const radius = Math.max(0, side - 1);
     switch (d) {

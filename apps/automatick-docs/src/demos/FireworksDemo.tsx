@@ -9,12 +9,13 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import fireworksSim from '../sims/fireworksSim';
+import { fireworksPalette } from '../theme/palette';
 import styles from './FireworksDemo.module.css';
 
 const WIDTH = 600;
 const HEIGHT = 600;
 
-const BG = '#05060f';
+const BG = fireworksPalette.bg;
 
 function FireworksCanvas() {
   const { params, resetWith } = useSimulation<typeof fireworksSim>();
@@ -47,7 +48,11 @@ function FireworksCanvas() {
       ctx.globalCompositeOperation = 'lighter';
       data.particles.forEach((p) => {
         const light =
-          p.type === 'burst' ? 65 : p.type === 'spark' ? 70 : 50;
+          p.type === 'burst'
+            ? fireworksPalette.burstLight
+            : p.type === 'spark'
+              ? fireworksPalette.sparkLight
+              : fireworksPalette.trailLight;
         const alpha = Math.max(0, Math.min(1, p.life));
         const r =
           p.type === 'burst'
@@ -55,7 +60,7 @@ function FireworksCanvas() {
             : p.type === 'trail'
               ? p.size
               : p.size;
-        ctx.fillStyle = `hsla(${p.hue}, 100%, ${light}%, ${alpha})`;
+        ctx.fillStyle = `hsla(${p.hue}, ${fireworksPalette.saturation}%, ${light}%, ${alpha})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
         ctx.fill();

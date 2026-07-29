@@ -1,14 +1,15 @@
 /** Main-thread canvas drawing for the snake demo (legacy automatick behavior, fixed palette). */
 
+import { snakeCanvasPalette } from '../theme/palette';
 import { DOWN, LEFT, RIGHT, UP } from './snakeHelpers';
 
 const snakeToCellRatio = 0.8;
 
 const COLORS = {
-  primary: '#0b57d0',
-  secondary: '#5c6bc0',
-  accent: '#2e7d32',
-  gray: '#ccc'
+  primary: snakeCanvasPalette.primary,
+  secondary: snakeCanvasPalette.secondary,
+  accent: snakeCanvasPalette.accent,
+  gray: snakeCanvasPalette.gray
 };
 
 function fillCircle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
@@ -188,7 +189,7 @@ export function drawSnakeFrame(args: {
       const r = (cellSize * snakeToCellRatio) / 2;
       ctx.fillStyle = COLORS.primary;
       fillCircle(ctx, x, y, r);
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = snakeCanvasPalette.highlight;
       switch (direction) {
         case UP:
           fillCircle(ctx, x - 0.5 * r, y - 0.5 * r, 2);

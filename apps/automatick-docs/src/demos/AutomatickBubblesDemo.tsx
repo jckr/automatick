@@ -7,6 +7,7 @@ import { DemoControlPanel, type DemoControlGroup } from '../components/DemoContr
 import { DemoSplit } from '../components/DemoSplit';
 import automatickBubblesSim from '../sims/automatickBubblesSim';
 import { getLetterMask, isInsideMask, maskFontString } from '../sims/automatickHeroMask';
+import { bubblesPalette } from '../theme/palette';
 import styles from './AutomatickBubblesDemo.module.css';
 
 /**
@@ -39,10 +40,10 @@ const EDGE_BAND = 0.35;
  *  skipping red so it never competes with the accent vermilion. Saturation
  *  and lightness are fixed so the palette reads as a continuous chromatic
  *  band rather than a few discrete tints. */
-const HUE_DEG_MIN = 30; // orange
-const HUE_DEG_MAX = 200; // cyan-blue
-const PALETTE_S = 0.5;
-const PALETTE_L = 0.42;
+const HUE_DEG_MIN = bubblesPalette.hueMinDeg; // orange
+const HUE_DEG_MAX = bubblesPalette.hueMaxDeg; // cyan-blue
+const PALETTE_S = bubblesPalette.saturation;
+const PALETTE_L = bubblesPalette.lightness;
 
 function hslToRgb(h: number, s: number, l: number): ColorRGB {
   if (s === 0) {
@@ -115,9 +116,12 @@ export function AutomatickBubblesCanvas({
 
   const canvasRef = useSimulationCanvas<typeof automatickBubblesSim>(
     (ctx, { data, params }, view) => {
-      const bg = view.theme('--bg1', '#ffffff');
-      const ink = view.theme('--fg1', '#0a0a0a');
-      const accentColor = parseHex(view.theme('--accent', '#0055ff'), [215, 69, 30]);
+      const bg = view.theme('--bg1', bubblesPalette.bgFallback);
+      const ink = view.theme('--fg1', bubblesPalette.inkFallback);
+      const accentColor = parseHex(
+        view.theme('--accent', bubblesPalette.accentFallback),
+        bubblesPalette.accentRgbFallback
+      );
 
       // Trails: fade the previous frame toward bg instead of clearing.
       // Lower `trailFade` = longer-lived trails. Bubbles inside the

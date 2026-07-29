@@ -10,6 +10,7 @@ import { DemoSplit } from '../components/DemoSplit';
 import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import segregationSim, { draw } from '../sims/segregationSim';
 import type { SegData } from '../sims/segregationSim';
+import { segregationDemoPalette } from '../theme/palette';
 import styles from './SegregationDemo.module.css';
 
 const CSS_SIZE = 600;
@@ -44,7 +45,7 @@ function SegregationCanvas() {
 
 const SEG_SERIES: TimeSeriesEntry<SegData>[] = [
   {
-    color: '#0055ff',
+    color: segregationDemoPalette.happinessSeries,
     label: 'Happiness',
     accessor: (d) => d.happiness * 100,
   },

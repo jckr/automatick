@@ -8,6 +8,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import antColonySim from '../sims/antColonySim';
+import { antColonyPalette, antColonyBlit } from '../theme/palette';
 import styles from './AntColonyDemo.module.css';
 
 const WIDTH = 600;
@@ -29,21 +30,24 @@ function AntColonyCanvas() {
           const hasFood = data.food[i] > 0;
           const j = i * 4;
           if (hasFood) {
-            px[j] = 255;
-            px[j + 1] = 220;
-            px[j + 2] = 80;
-            px[j + 3] = 255;
+            px[j] = antColonyBlit.foodR;
+            px[j + 1] = antColonyBlit.foodG;
+            px[j + 2] = antColonyBlit.foodB;
+            px[j + 3] = antColonyBlit.foodA;
           } else {
-            px[j] = 10 + hpv * 80;
-            px[j + 1] = 10 + f * 200;
-            px[j + 2] = 20 + hpv * 200 + f * 40;
-            px[j + 3] = 255;
+            px[j] = antColonyBlit.baseR + hpv * antColonyBlit.homeRScale;
+            px[j + 1] = antColonyBlit.baseG + f * antColonyBlit.foodGScale;
+            px[j + 2] =
+              antColonyBlit.baseB +
+              hpv * antColonyBlit.homeBScale +
+              f * antColonyBlit.foodBScale;
+            px[j + 3] = antColonyBlit.alpha;
           }
         }
       });
 
       const cellPx = WIDTH / w;
-      ctx.fillStyle = '#ff4d6d';
+      ctx.fillStyle = antColonyPalette.home;
       ctx.beginPath();
       ctx.arc(HOME_X * cellPx, HOME_Y * cellPx, HOME_RADIUS * cellPx, 0, Math.PI * 2);
       ctx.fill();
@@ -52,7 +56,10 @@ function AntColonyCanvas() {
       for (let i = 0; i < n; i++) {
         const ax = data.antX[i] * cellPx;
         const ay = data.antY[i] * cellPx;
-        ctx.fillStyle = data.antCarrying[i] === 1 ? '#fff066' : '#ffffff';
+        ctx.fillStyle =
+          data.antCarrying[i] === 1
+            ? antColonyPalette.antCarrying
+            : antColonyPalette.antEmpty;
         ctx.fillRect(ax - 1, ay - 1, 2, 2);
       }
     },

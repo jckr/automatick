@@ -15,6 +15,7 @@ import {
   WATER_FROM_LEFT,
   WATER_FROM_RIGHT,
 } from '../sims/percolationSim';
+import { percolationGridPalette } from '../theme/palette';
 import styles from './PercolationGridDemo.module.css';
 
 const CELL_PX = 3;
@@ -23,15 +24,15 @@ const HEADER_H = 22;
 const FOOTER_H = 26;
 
 function cellColor(cell: number): string {
-  if (cell === ROCK) return '#777';
+  if (cell === ROCK) return percolationGridPalette.rock;
   if (
     cell === WATER_FROM_TOP ||
     cell === WATER_FROM_LEFT ||
     cell === WATER_FROM_RIGHT
   ) {
-    return '#38bdf8';
+    return percolationGridPalette.water;
   }
-  return '#f0ebe3';
+  return percolationGridPalette.open;
 }
 
 function GridCanvas() {
@@ -44,9 +45,12 @@ function GridCanvas() {
 
   const canvasRef = useSimulationCanvas<typeof percolationGridSim>(
     (ctx, { data }, view) => {
-      const fg1 = view.theme('--fg1', '#0a0a0a');
-      const fg3 = view.theme('--fg3', '#5B6070');
-      const success = view.theme('--info', '#2B6E8F');
+      const fg1 = view.theme('--fg1', percolationGridPalette.fg1Fallback);
+      const fg3 = view.theme('--fg3', percolationGridPalette.fg3Fallback);
+      const success = view.theme(
+        '--info',
+        percolationGridPalette.successFallback,
+      );
 
       view.clear();
 
@@ -65,7 +69,7 @@ function GridCanvas() {
           const baseX = c * (miniW + GAP);
           const baseY = HEADER_H + r * (miniH + GAP);
           const cell = data.cells[r][c];
-          ctx.fillStyle = '#f0ebe3';
+          ctx.fillStyle = percolationGridPalette.open;
           ctx.fillRect(baseX, baseY, miniW, miniH);
           const grid = cell.grid;
           for (let y = 0; y < grid.length; y++) {
@@ -73,7 +77,7 @@ function GridCanvas() {
             for (let x = 0; x < row.length; x++) {
               const v = row[x];
               const color = cellColor(v);
-              if (color === '#f0ebe3') continue;
+              if (color === percolationGridPalette.open) continue;
               ctx.fillStyle = color;
               ctx.fillRect(
                 baseX + x * CELL_PX,
@@ -85,7 +89,10 @@ function GridCanvas() {
           }
           // 1px outline tinted by result for finished runs.
           if (cell.result !== 'pending') {
-            ctx.strokeStyle = cell.result === 'success' ? success : 'rgba(0,0,0,0.15)';
+            ctx.strokeStyle =
+              cell.result === 'success'
+                ? success
+                : percolationGridPalette.failureOutline;
             ctx.lineWidth = 1;
             ctx.strokeRect(baseX + 0.5, baseY + 0.5, miniW - 1, miniH - 1);
           }
@@ -101,7 +108,7 @@ function GridCanvas() {
         const cx = ci * (miniW + GAP) + miniW / 2;
         const ratio = c.total ? c.result / c.total : 0;
         // background bar
-        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.fillStyle = percolationGridPalette.footerBar;
         ctx.fillRect(ci * (miniW + GAP), footerTop, miniW, 3);
         // filled bar
         ctx.fillStyle = success;

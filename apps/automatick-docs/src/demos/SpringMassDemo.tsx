@@ -9,6 +9,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import springMassSim from '../sims/springMassSim';
+import { springMassPalette } from '../theme/palette';
 import styles from './SpringMassDemo.module.css';
 
 const WIDTH = 600;
@@ -18,12 +19,12 @@ function strainColor(strain: number): string {
   // strain > 0 = stretched (warm/red), < 0 = compressed (cool/blue).
   const t = Math.max(-1, Math.min(1, strain * 6));
   if (t >= 0) {
-    const g = Math.round(160 - t * 120);
-    return `rgb(230, ${g}, ${Math.round(80 - t * 60)})`;
+    const g = Math.round(springMassPalette.stretchG0 - t * springMassPalette.stretchGDelta);
+    return `rgb(${springMassPalette.stretchR}, ${g}, ${Math.round(springMassPalette.stretchB0 - t * springMassPalette.stretchBDelta)})`;
   }
   const a = -t;
-  const r = Math.round(120 - a * 90);
-  return `rgb(${r}, ${Math.round(160 - a * 40)}, 230)`;
+  const r = Math.round(springMassPalette.compressR0 - a * springMassPalette.compressRDelta);
+  return `rgb(${r}, ${Math.round(springMassPalette.compressG0 - a * springMassPalette.compressGDelta)}, ${springMassPalette.compressB})`;
 }
 
 function SpringMassCanvas() {
@@ -67,10 +68,10 @@ function SpringMassCanvas() {
       for (let i = 0; i < nodes.length; i++) {
         const n = nodes[i];
         if (n.fixed) {
-          ctx.fillStyle = '#e0e0e0';
+          ctx.fillStyle = springMassPalette.fixedNode;
           ctx.fillRect(n.x - 4, n.y - 4, 8, 8);
         } else {
-          ctx.fillStyle = '#7ab8ff';
+          ctx.fillStyle = springMassPalette.freeNode;
           ctx.beginPath();
           ctx.arc(n.x, n.y, 3.5, 0, Math.PI * 2);
           ctx.fill();

@@ -9,6 +9,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import doublePendulumSim from '../sims/doublePendulumSim';
+import { doublePendulumPalette } from '../theme/palette';
 import styles from './DoublePendulumDemo.module.css';
 
 const WIDTH = 600;
@@ -39,9 +40,9 @@ function DoublePendulumCanvas() {
 
   const canvasRef = useSimulationCanvas<typeof doublePendulumSim>(
     (ctx, { data, params: p }, view) => {
-      const ink = view.theme('--fg1', '#e6e6e6');
+      const ink = view.theme('--fg1', doublePendulumPalette.inkFallback);
 
-      view.clear(view.theme('--bg2', '#12161c'));
+      view.clear(view.theme('--bg2', doublePendulumPalette.bgFallback));
 
       const { L1, L2, m1, m2 } = p;
       const r1 = 4 + Math.sqrt(m1) * 3;
@@ -63,8 +64,8 @@ function DoublePendulumCanvas() {
             const ay = PIVOT_Y + pen.trail[idxPrev * 2 + 1];
             const bx = PIVOT_X + pen.trail[idxCur * 2];
             const by = PIVOT_Y + pen.trail[idxCur * 2 + 1];
-            const alpha = (k / pen.trailCount) * 0.85;
-            ctx.strokeStyle = `hsla(${pen.hue}, 80%, 60%, ${alpha})`;
+            const alpha = (k / pen.trailCount) * doublePendulumPalette.trailMaxAlpha;
+            ctx.strokeStyle = `hsla(${pen.hue}, ${doublePendulumPalette.trailSat}%, ${doublePendulumPalette.trailLight}%, ${alpha})`;
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(ax, ay);
@@ -81,7 +82,7 @@ function DoublePendulumCanvas() {
 
         const armColor =
           data.pendulums.length > 1
-            ? `hsla(${pen.hue}, 30%, 70%, 0.85)`
+            ? `hsla(${pen.hue}, ${doublePendulumPalette.armSat}%, ${doublePendulumPalette.armLight}%, ${doublePendulumPalette.armAlpha})`
             : ink;
         ctx.strokeStyle = armColor;
         ctx.lineWidth = 2;
@@ -91,7 +92,7 @@ function DoublePendulumCanvas() {
         ctx.lineTo(x2, y2);
         ctx.stroke();
 
-        ctx.fillStyle = `hsl(${pen.hue}, 70%, 55%)`;
+        ctx.fillStyle = `hsl(${pen.hue}, ${doublePendulumPalette.bobSat}%, ${doublePendulumPalette.bobLight}%)`;
         ctx.beginPath();
         ctx.arc(x1, y1, r1, 0, Math.PI * 2);
         ctx.fill();

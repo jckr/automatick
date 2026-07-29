@@ -9,6 +9,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import rigidBodySim from '../sims/rigidBodySim';
+import { rigidBodyPalette } from '../theme/palette';
 import styles from './RigidBodyDemo.module.css';
 
 const WIDTH = 600;
@@ -27,19 +28,19 @@ function RigidBodyCanvas() {
   }, [params.count, resetWith]);
 
   const canvasRef = useSimulationCanvas<typeof rigidBodySim>((ctx, { data }, view) => {
-    const ink = view.theme('--fg1', '#e6e6e6');
+    const ink = view.theme('--fg1', rigidBodyPalette.inkFallback);
 
-    view.clear(view.theme('--bg2', '#12161c'));
+    view.clear(view.theme('--bg2', rigidBodyPalette.bgFallback));
 
     for (let i = 0; i < data.bodies.length; i++) {
       const b = data.bodies[i];
       const speed = Math.hypot(b.vx, b.vy);
       const light = Math.min(45 + speed * 4, 70);
-      ctx.fillStyle = `hsl(${b.hue}, 65%, ${light}%)`;
+      ctx.fillStyle = `hsl(${b.hue}, ${rigidBodyPalette.saturation}%, ${light}%)`;
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = `hsl(${b.hue}, 65%, 30%)`;
+      ctx.strokeStyle = `hsl(${b.hue}, ${rigidBodyPalette.saturation}%, ${rigidBodyPalette.outlineLight}%)`;
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }

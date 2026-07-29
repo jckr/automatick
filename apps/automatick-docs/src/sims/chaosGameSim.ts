@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import { chaosGameSimPalette } from '../theme/palette';
 
 export type ChaosParams = {
   height: number;
@@ -68,8 +69,8 @@ export default defineSim<ChaosData, ChaosParams>({
       x: random() * params.width,
       y: random() * params.height
     };
-    const background = `hsla(${Math.floor(random() * 360)}, 30%, 7%, 1)`;
-    const color = `hsla(${Math.floor(random() * 360)}, 77%, 45%, 1)`;
+    const background = `hsla(${Math.floor(random() * 360)}, ${chaosGameSimPalette.bgSat}%, ${chaosGameSimPalette.bgLight}%, ${chaosGameSimPalette.bgAlpha})`;
+    const color = `hsla(${Math.floor(random() * 360)}, ${chaosGameSimPalette.pointSat}%, ${chaosGameSimPalette.pointLight}%, ${chaosGameSimPalette.pointAlpha})`;
     return {
       attractors,
       background,

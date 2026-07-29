@@ -8,6 +8,8 @@
  * probabilities, but the bytes themselves never round-trip through the engine.
  */
 
+import { heroMaskPalette } from '../theme/palette';
+
 export type LetterMask = {
   width: number;
   height: number;
@@ -90,7 +92,7 @@ export function getLetterMask(
   const fontPx = Math.max(16, Math.floor(probe * Math.min(scaleByW, scaleByH)));
 
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = heroMaskPalette.maskFill;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
   ctx.font = maskFontString(fontPx);

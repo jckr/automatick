@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import { xorRingPalette } from '../theme/palette';
 
 export type XorRingParams = { cells: number; density: number };
 export type XorRingData = number[];
@@ -20,9 +21,9 @@ export function draw({
   if (canvas.width !== cells) canvas.width = cells;
   if (canvas.height !== h) canvas.height = h;
 
-  ctx.fillStyle = '#f6f6f6';
+  ctx.fillStyle = xorRingPalette.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#111';
+  ctx.fillStyle = xorRingPalette.cell;
   for (let i = 0; i < cells; i++) {
     if (snapshot.data[i]) ctx.fillRect(i, 0, 1, h);
   }

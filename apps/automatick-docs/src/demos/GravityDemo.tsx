@@ -8,21 +8,17 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import gravitySim from '../sims/gravitySim';
+import { gravityPalette } from '../theme/palette';
 import styles from './GravityDemo.module.css';
 
 const WIDTH = 600;
 const HEIGHT = 400;
 
-const GENERATION_PALETTE: Array<{ h: number; s: number; l: number }> = [
-  { h: 220, s: 80, l: 60 },
-  { h: 190, s: 85, l: 60 },
-  { h: 140, s: 70, l: 55 },
-  { h: 60, s: 90, l: 60 },
-  { h: 30, s: 95, l: 60 },
-  { h: 0, s: 85, l: 60 },
-  { h: 320, s: 80, l: 65 },
-  { h: 275, s: 75, l: 70 },
-];
+const GENERATION_PALETTE: ReadonlyArray<{
+  h: number;
+  s: number;
+  l: number;
+}> = gravityPalette.generations;
 
 function GravityCanvas() {
   const initializedRef = React.useRef(false);
@@ -30,14 +26,14 @@ function GravityCanvas() {
   const canvasRef = useSimulationCanvas<typeof gravitySim>(
     (ctx, { data }, view) => {
       if (!initializedRef.current) {
-        view.clear('#0a0a1a');
+        view.clear(gravityPalette.bg);
         initializedRef.current = true;
       }
-      view.fade(0.15, '#0a0a1a');
+      view.fade(0.15, gravityPalette.bg);
 
       data.particles.forEach((p) => {
         const c = GENERATION_PALETTE[p.generation % GENERATION_PALETTE.length];
-        ctx.fillStyle = `hsla(${c.h}, ${c.s}%, ${c.l}%, 0.3)`;
+        ctx.fillStyle = `hsla(${c.h}, ${c.s}%, ${c.l}%, ${gravityPalette.glowAlpha})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius * 2.5, 0, Math.PI * 2);
         ctx.fill();

@@ -13,9 +13,10 @@ import forceGraphSim, {
   FG_HEIGHT,
   type ForceGraphParams,
 } from '../sims/forceGraphSim';
+import { forceGraphPalette } from '../theme/palette';
 import styles from './ForceGraphDemo.module.css';
 
-const GROUP_COLORS = ['#0055ff', '#2B6E8F', '#3D6B4B', '#C98A1A', '#7A4FA0'];
+const GROUP_COLORS = forceGraphPalette.groupColors;
 
 function ForceGraphCanvas() {
   const canvasRef = useSimulationCanvas<typeof forceGraphSim>(
@@ -32,8 +33,8 @@ function ForceGraphCanvas() {
         if (!a || !b) continue;
         const sameGroup = a.group === b.group;
         ctx.strokeStyle = sameGroup
-          ? 'rgba(120,120,120,0.45)'
-          : 'rgba(120,120,120,0.15)';
+          ? forceGraphPalette.edgeSameGroup
+          : forceGraphPalette.edgeCrossGroup;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
@@ -48,7 +49,7 @@ function ForceGraphCanvas() {
         ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
         ctx.fill();
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.strokeStyle = forceGraphPalette.nodeOutline;
         ctx.stroke();
       }
     },

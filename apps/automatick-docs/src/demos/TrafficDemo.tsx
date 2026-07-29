@@ -12,29 +12,30 @@ import trafficSim, {
   TRAFFIC_ROAD_LENGTH,
   TRAFFIC_LANES,
 } from '../sims/trafficSim';
+import { trafficPalette } from '../theme/palette';
 import styles from './TrafficDemo.module.css';
 
 const CSS_WIDTH = 900;
 const CSS_HEIGHT = 200;
 const LANE_HEIGHT = 20;
 const OFFSCREEN_HEIGHT = TRAFFIC_LANES * LANE_HEIGHT;
-const EMPTY_RGB: readonly [number, number, number] = [26, 26, 32];
+const EMPTY_RGB: readonly [number, number, number] = trafficPalette.emptyRgb;
 
 const velocityColor = (v: number, vMax: number): [number, number, number] => {
   const t = vMax > 0 ? Math.min(v / vMax, 1) : 0;
   if (t < 0.5) {
     const k = t * 2;
     return [
-      Math.round(60 + (230 - 60) * k),
-      Math.round(120 + (210 - 120) * k),
-      Math.round(220 - (220 - 60) * k),
+      Math.round(trafficPalette.slowStartR + (trafficPalette.slowEndR - trafficPalette.slowStartR) * k),
+      Math.round(trafficPalette.slowStartG + (trafficPalette.slowEndG - trafficPalette.slowStartG) * k),
+      Math.round(trafficPalette.slowStartB - (trafficPalette.slowStartB - trafficPalette.slowEndB) * k),
     ];
   }
   const k = (t - 0.5) * 2;
   return [
-    Math.round(230 + (255 - 230) * k),
-    Math.round(210 - (210 - 70) * k),
-    Math.round(60 - 60 * k),
+    Math.round(trafficPalette.fastStartR + (trafficPalette.fastEndR - trafficPalette.fastStartR) * k),
+    Math.round(trafficPalette.fastStartG - (trafficPalette.fastStartG - trafficPalette.fastEndG) * k),
+    Math.round(trafficPalette.fastStartB - (trafficPalette.fastStartB - trafficPalette.fastEndB) * k),
   ];
 };
 
@@ -78,7 +79,7 @@ function TrafficCanvas() {
         }
       });
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.strokeStyle = trafficPalette.laneDivider;
       ctx.lineWidth = 1;
       ctx.setLineDash([8, 8]);
       for (let lane = 1; lane < TRAFFIC_LANES; lane++) {
