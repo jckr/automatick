@@ -110,6 +110,7 @@ export const EXAMPLES: ExampleMeta[] = [
     focus: { x: 0, y: 0.42, width: 1, height: 0.58 },
   },
   { slug: 'double-pendulum', label: 'Double pendulum' },
+  { slug: 'chaotic-pendulum', label: 'Chaotic pendulum', badge: 'new' },
   { slug: 'force-graph', label: 'Force-directed graph' },
   { slug: 'l-systems', label: 'L-systems' },
   { slug: 'terrain', label: 'Terrain' },

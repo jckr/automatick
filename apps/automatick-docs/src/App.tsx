@@ -168,6 +168,9 @@ const RigidBodyPage = React.lazy(() =>
 const DoublePendulumPage = React.lazy(() =>
   import('./pages/examples/DoublePendulumPage').then((m) => ({ default: m.DoublePendulumPage }))
 );
+const ChaoticPendulumPage = React.lazy(() =>
+  import('./pages/examples/ChaoticPendulumPage').then((m) => ({ default: m.ChaoticPendulumPage }))
+);
 const ForceGraphPage = React.lazy(() =>
   import('./pages/examples/ForceGraphPage').then((m) => ({ default: m.ForceGraphPage }))
 );
@@ -253,6 +256,7 @@ export function App() {
           <Route path='examples/cloth' element={<ClothPage />} />
           <Route path='examples/rigid-body' element={<RigidBodyPage />} />
           <Route path='examples/double-pendulum' element={<DoublePendulumPage />} />
+          <Route path='examples/chaotic-pendulum' element={<ChaoticPendulumPage />} />
           <Route path='examples/force-graph' element={<ForceGraphPage />} />
           <Route path='examples/l-systems' element={<LSystemPage />} />
           <Route path='examples/terrain' element={<TerrainPage />} />
