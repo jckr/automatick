@@ -39,9 +39,10 @@ function RigidBodyCanvas() {
 
     for (let i = 0; i < data.bodies.length; i++) {
       const b = data.bodies[i];
-      const speed = Math.hypot(b.vx, b.vy);
-      const light = Math.min(45 + speed * 4, 70);
-      ctx.fillStyle = `hsl(${b.hue}, 65%, ${light}%)`;
+      // Fixed lightness per body so colors stay stable. (Deriving lightness
+      // from speed made resting bodies flicker, since the overlap solver
+      // leaves tiny residual velocities that jitter frame-to-frame.)
+      ctx.fillStyle = `hsl(${b.hue}, 65%, 55%)`;
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
       ctx.fill();

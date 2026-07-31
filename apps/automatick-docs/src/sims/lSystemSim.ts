@@ -53,8 +53,10 @@ export const PRESETS: Record<LSystemPreset, PresetDef> = {
   },
 };
 
-// Cap so exponential growth can't blow up memory.
-const MAX_STRING_LENGTH = 200000;
+// Cap so exponential growth can't blow up memory. Generous enough that
+// slow-growing presets (dragon, sierpinski) can reach deep generations and
+// fast-growing ones (plant, koch) still get many iterations before stopping.
+const MAX_STRING_LENGTH = 1500000;
 
 function rewrite(input: string, rules: Record<string, string>): string {
   let out = '';

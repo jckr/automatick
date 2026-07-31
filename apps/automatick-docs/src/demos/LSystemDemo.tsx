@@ -222,7 +222,7 @@ const LSYSTEM_GROUPS: DemoControlGroup[] = [
         param: 'maxGenerations',
         label: 'Generations',
         min: 2,
-        max: 7,
+        max: 12,
         step: 1,
       },
     ],
