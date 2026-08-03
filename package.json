@@ -24,6 +24,9 @@
     "predev": "npm run build:packages",
     "dev": "npm run dev -w automatick-docs"
   },
+  "overrides": {
+    "shell-quote": "^1.10.0"
+  },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "eslint": "^9.0.0",
