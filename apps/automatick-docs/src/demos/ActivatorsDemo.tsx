@@ -8,6 +8,7 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import activatorsSim from '../sims/activatorsSim';
+import { themeFallback } from '../theme/palette';
 import styles from './ActivatorsDemo.module.css';
 
 const CELL_PX = 10;
@@ -16,8 +17,8 @@ const CSS_SIZE = 600;
 function ActivatorsCanvas() {
   const canvasRef = useSimulationCanvas<typeof activatorsSim>(
     (ctx, { data, params }, view) => {
-      const ink = view.theme('--fg1', '#0E1116');
-      const bg = view.theme('--bg3', '#E6E0D0');
+      const ink = view.theme('--fg1', themeFallback.fg1Light);
+      const bg = view.theme('--bg3', themeFallback.bg3Light);
 
       view.clear();
       // Draw in sim coordinates (cells of CELL_PX) scaled to the canvas.

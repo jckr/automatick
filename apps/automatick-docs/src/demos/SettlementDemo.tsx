@@ -9,20 +9,12 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import settlementSim, { GRID } from '../sims/settlementSim';
+import { settlementPalette, settlementBlit } from '../theme/palette';
 import styles from './SettlementDemo.module.css';
 
 const CSS_SIZE = 600;
 
-const SETTLEMENT_COLORS = [
-  '#e74c3c',
-  '#3498db',
-  '#2ecc71',
-  '#f39c12',
-  '#9b59b6',
-  '#1abc9c',
-  '#e67e22',
-  '#34495e',
-];
+const SETTLEMENT_COLORS = settlementPalette.settlementColors;
 
 function SettlementCanvas() {
   const canvasRef = useSimulationCanvas<typeof settlementSim>(
@@ -36,10 +28,10 @@ function SettlementCanvas() {
           const fill = cap > 0 ? r / cap : 0;
           const richness = cap > 0 ? Math.min(cap, 1) : 0;
           const j = i * 4;
-          px[j] = Math.floor(18 + (1 - fill) * richness * 40);
-          px[j + 1] = Math.floor(18 + fill * richness * 140);
-          px[j + 2] = Math.floor(12 + fill * richness * 20);
-          px[j + 3] = 255;
+          px[j] = Math.floor(settlementBlit.baseR + (1 - fill) * richness * settlementBlit.darkRScale);
+          px[j + 1] = Math.floor(settlementBlit.baseG + fill * richness * settlementBlit.greenGScale);
+          px[j + 2] = Math.floor(settlementBlit.baseB + fill * richness * settlementBlit.greenBScale);
+          px[j + 3] = settlementBlit.alpha;
         }
       });
 
@@ -50,7 +42,7 @@ function SettlementCanvas() {
           ctx.globalAlpha = 0.7;
           ctx.fillRect(agent.x * scale - 1.5, agent.y * scale - 1.5, 3, 3);
         } else {
-          ctx.fillStyle = '#e0d6c0';
+          ctx.fillStyle = settlementPalette.wanderer;
           ctx.globalAlpha = 0.9;
           ctx.beginPath();
           ctx.arc(agent.x * scale, agent.y * scale, 2.5, 0, Math.PI * 2);
@@ -79,7 +71,7 @@ function SettlementCanvas() {
           const other = data.settlements[sj];
           const dist = Math.sqrt((s.x - other.x) ** 2 + (s.y - other.y) ** 2);
           if (dist < 60) {
-            ctx.strokeStyle = '#d4a843';
+            ctx.strokeStyle = settlementPalette.tradeRoute;
             ctx.globalAlpha = 0.5;
             ctx.beginPath();
             ctx.moveTo(s.x * scale, s.y * scale);

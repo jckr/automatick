@@ -95,7 +95,9 @@ async function main(): Promise<void> {
   const failures: string[] = [];
   try {
     await waitForServer(`${base}/`);
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({
+      executablePath: process.env.CHROMIUM_PATH || undefined,
+    });
     const context = await browser.newContext({
       deviceScaleFactor: DEVICE_SCALE,
       viewport: { width: 1000, height: 820 },

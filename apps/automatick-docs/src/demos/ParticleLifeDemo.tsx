@@ -11,6 +11,7 @@ import { CanvasStage } from '../components/CanvasStage';
 import particleLifeSim, {
   type ParticleLifeParams,
 } from '../sims/particleLifeSim';
+import { particleLifePalette } from '../theme/palette';
 import styles from './ParticleLifeDemo.module.css';
 
 const WIDTH = 600;
@@ -33,17 +34,17 @@ function ParticleLifeCanvas() {
   const canvasRef = useSimulationCanvas<typeof particleLifeSim>(
     (ctx, { data }, view) => {
       if (!initializedRef.current) {
-        view.clear('#0a0a12');
+        view.clear(particleLifePalette.bg);
         initializedRef.current = true;
       }
       // Semi-transparent fill for subtle trails.
-      view.fade(0.18, '#0a0a12');
+      view.fade(0.18, particleLifePalette.bg);
 
       const scale = WIDTH / data.worldSize;
       const numTypes = data.numTypes;
       data.particles.forEach((p) => {
         const hue = (p.type / numTypes) * 360;
-        ctx.fillStyle = `hsl(${hue}, 85%, 60%)`;
+        ctx.fillStyle = `hsl(${hue}, ${particleLifePalette.saturation}%, ${particleLifePalette.lightness}%)`;
         ctx.beginPath();
         ctx.arc(p.x * scale, p.y * scale, 2.2, 0, Math.PI * 2);
         ctx.fill();

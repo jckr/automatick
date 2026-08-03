@@ -11,13 +11,14 @@ import { DemoSplit } from '../components/DemoSplit';
 import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import epidemicSim from '../sims/epidemicSim';
 import type { EpidemicData, EpidemicParams } from '../sims/epidemicSim';
+import { epidemicPalette } from '../theme/palette';
 import styles from './EpidemicDemo.module.css';
 
 const STATUS_COLORS: Record<string, string> = {
-  healthy: '#3D6B4B',
-  sick: '#D7451E',
-  recovered: '#8A8A8A',
-  dead: '#0E1116',
+  healthy: epidemicPalette.status.healthy,
+  sick: epidemicPalette.status.sick,
+  recovered: epidemicPalette.status.recovered,
+  dead: epidemicPalette.status.dead,
 };
 
 function EpidemicCanvas() {
@@ -29,10 +30,10 @@ function EpidemicCanvas() {
   const [size, setSize] = React.useState({ width: 332, height: 332 });
 
   const canvasRef = useSimulationCanvas<typeof epidemicSim>((ctx, { data, params }, view) => {
-    view.clear(view.theme('--bg3', '#E6E0D0'));
+    view.clear(view.theme('--bg3', epidemicPalette.bgFallback));
 
     data.agents.forEach((agent) => {
-      ctx.fillStyle = STATUS_COLORS[agent.status] ?? '#999';
+      ctx.fillStyle = STATUS_COLORS[agent.status] ?? epidemicPalette.unknown;
       ctx.beginPath();
       ctx.arc(agent.x, agent.y, params.r, 0, Math.PI * 2);
       ctx.fill();

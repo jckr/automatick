@@ -7,6 +7,7 @@ import { DemoControlPanel, type DemoControlGroup } from '../components/DemoContr
 import { DemoSplit } from '../components/DemoSplit';
 import automatickHeroSim from '../sims/automatickHeroSim';
 import { getLetterMask, maskFontString } from '../sims/automatickHeroMask';
+import { heroPalette } from '../theme/palette';
 import styles from './AutomatickHeroDemo.module.css';
 
 const STAGE_HEIGHT = 480;
@@ -30,10 +31,10 @@ export function AutomatickHeroCanvas({
 
   const canvasRef = useSimulationCanvas<typeof automatickHeroSim>(
     (ctx, { data, params }, view) => {
-      const bg = view.theme('--bg1', '#F7F3EA');
-      const linkColor = view.theme('--accent', '#D7451E');
-      const nodeColor = view.theme('--fg1', '#0E1116');
-      const dotColor = view.theme('--fg3', '#5b6070');
+      const bg = view.theme('--bg1', heroPalette.bgFallback);
+      const linkColor = view.theme('--accent', heroPalette.linkFallback);
+      const nodeColor = view.theme('--fg1', heroPalette.nodeFallback);
+      const dotColor = view.theme('--fg3', heroPalette.dotFallback);
 
       view.clear(bg);
 

@@ -9,6 +9,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import clothSim from '../sims/clothSim';
+import { clothPalette } from '../theme/palette';
 import styles from './ClothDemo.module.css';
 
 const WIDTH = 600;
@@ -27,10 +28,10 @@ function ClothCanvas() {
   }, [params.preset, resetWith]);
 
   const canvasRef = useSimulationCanvas<typeof clothSim>((ctx, { data }, view) => {
-    const ink = view.theme('--fg1', '#e6e6e6');
-    const pinColor = view.theme('--viz-1', '#D7451E');
+    const ink = view.theme('--fg1', clothPalette.inkFallback);
+    const pinColor = view.theme('--viz-1', clothPalette.pinFallback);
 
-    view.clear(view.theme('--bg2', '#12161c'));
+    view.clear(view.theme('--bg2', clothPalette.bgFallback));
 
     const { points, constraints } = data;
 
@@ -43,9 +44,9 @@ function ClothCanvas() {
       const dist = Math.hypot(pb.x - pa.x, pb.y - pa.y);
       const stretch = con.restLength > 0 ? dist / con.restLength : 1;
       const tension = Math.min(Math.max(stretch - 1, 0) * 2.5, 1);
-      const r = Math.round(120 + tension * 135);
-      const g = Math.round(120 - tension * 90);
-      const b = Math.round(130 - tension * 100);
+      const r = Math.round(clothPalette.relaxedR + tension * clothPalette.rStretchDelta);
+      const g = Math.round(clothPalette.relaxedG - tension * clothPalette.gStretchDelta);
+      const b = Math.round(clothPalette.relaxedB - tension * clothPalette.bStretchDelta);
       ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
       ctx.beginPath();
       ctx.moveTo(pa.x, pa.y);

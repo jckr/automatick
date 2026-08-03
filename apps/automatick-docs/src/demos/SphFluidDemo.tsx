@@ -8,6 +8,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import sphFluidSim from '../sims/sphFluidSim';
+import { sphFluidPalette } from '../theme/palette';
 import styles from './SphFluidDemo.module.css';
 
 const WIDTH = 600;
@@ -16,13 +17,13 @@ const HEIGHT = 400;
 function SphFluidCanvas() {
   const canvasRef = useSimulationCanvas<typeof sphFluidSim>(
     (ctx, { data }, view) => {
-      view.clear('#0a1020');
+      view.clear(sphFluidPalette.bg);
 
       const { x, y, vx, vy, count } = data;
       for (let i = 0; i < count; i++) {
         const speed = Math.hypot(vx[i], vy[i]);
         const t = Math.min(speed / 300, 1);
-        ctx.fillStyle = `hsl(${220 - t * 180}, 80%, ${50 + t * 30}%)`;
+        ctx.fillStyle = `hsl(${sphFluidPalette.hueBase - t * sphFluidPalette.hueSpan}, ${sphFluidPalette.saturation}%, ${sphFluidPalette.lightBase + t * sphFluidPalette.lightSpan}%)`;
         ctx.fillRect(x[i] - 2, y[i] - 2, 4, 4);
       }
     },

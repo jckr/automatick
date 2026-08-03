@@ -3,12 +3,13 @@ import { Simulation } from 'automatick/react/simulation';
 import { useSimulationCanvas } from 'automatick/react/canvas';
 import { StandardControls } from 'automatick/react/controls';
 import type { Data, Params } from '../sims/simpleModelWorkerSim';
+import { simpleModelPalette } from '../theme/palette';
 import styles from './SimpleModelWorkerDemo.module.css';
 
 const SIZE = 10;
 const CELL = 36;
 const TOTAL = SIZE * SIZE;
-const CELL_COLOR = 'rgba(215, 69, 30, 0.12)';
+const CELL_COLOR = simpleModelPalette.cellFill;
 
 import simUrl from '../sims/simpleModelWorkerSim.ts?worker-module';
 

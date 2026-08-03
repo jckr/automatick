@@ -9,6 +9,7 @@ import {
 } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import chaosGameSim from '../sims/chaosGameSim';
+import { chaosGameDemoPalette } from '../theme/palette';
 import styles from './ChaosGameDemo.module.css';
 
 const CSS_SIZE = 600;
@@ -71,7 +72,7 @@ function ChaosCanvas() {
       if (drawnCountRef.current === 0) {
         ctx.fillStyle = background;
         ctx.fillRect(0, 0, params.width, params.height);
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillStyle = chaosGameDemoPalette.attractorMarker;
         attractors.forEach((a) => {
           ctx.beginPath();
           ctx.arc(a.x, a.y, 3, 0, Math.PI * 2);

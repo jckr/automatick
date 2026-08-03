@@ -14,14 +14,15 @@ import percolationSim, {
   WATER_FROM_LEFT,
   WATER_FROM_RIGHT,
 } from '../sims/percolationSim';
+import { percolationPalette } from '../theme/palette';
 import styles from './PercolationDemo.module.css';
 
 const CSS_SIZE = 600;
 
-// #555 rock, #38bdf8 water, #f0ebe3 open.
-const ROCK_RGB: readonly [number, number, number] = [85, 85, 85];
-const WATER_RGB: readonly [number, number, number] = [56, 189, 248];
-const OPEN_RGB: readonly [number, number, number] = [240, 235, 227];
+const ROCK_RGB: readonly [number, number, number] = percolationPalette.rockRgb;
+const WATER_RGB: readonly [number, number, number] =
+  percolationPalette.waterRgb;
+const OPEN_RGB: readonly [number, number, number] = percolationPalette.openRgb;
 
 function cellRgb(cell: number): readonly [number, number, number] {
   if (cell === ROCK) return ROCK_RGB;

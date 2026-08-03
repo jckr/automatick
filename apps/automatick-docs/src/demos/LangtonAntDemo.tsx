@@ -5,6 +5,7 @@ import { DemoControlPanel } from '../components/DemoControlPanel';
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import langtonAntSim from '../sims/langtonAntSim';
+import { langtonAntPalette } from '../theme/palette';
 import styles from './LangtonAntDemo.module.css';
 
 const CSS_SIZE = 600;
@@ -16,9 +17,9 @@ function LangtonCanvas() {
       const cellW = view.width / gw;
       const cellH = view.height / gh;
 
-      view.clear(view.theme('--bg2', '#EFEADD'));
+      view.clear(view.theme('--bg2', langtonAntPalette.bgFallback));
 
-      ctx.fillStyle = view.theme('--fg1', '#0E1116');
+      ctx.fillStyle = view.theme('--fg1', langtonAntPalette.cellFallback);
       for (let y = 0; y < gh; y++) {
         for (let x = 0; x < gw; x++) {
           if (cells[y * gw + x]) {
@@ -27,7 +28,7 @@ function LangtonCanvas() {
         }
       }
 
-      ctx.fillStyle = view.theme('--accent', '#D7451E');
+      ctx.fillStyle = view.theme('--accent', langtonAntPalette.antFallback);
       ctx.fillRect(antX * cellW, antY * cellH, cellW, cellH);
     },
     { width: CSS_SIZE, height: CSS_SIZE }

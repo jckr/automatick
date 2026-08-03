@@ -1,0 +1,215 @@
+/* ============================================================
+   automatick design tokens
+   Light is the default. Add .dark to <html> for dark mode,
+   or rely on @media (prefers-color-scheme: dark).
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ---------- Color: raw swatches ---------- */
+  --paper: #ffffff; /* pure white, primary light canvas */
+  --paper-2: #f2f2f2; /* raised surface in light mode */
+  --paper-3: #e5e5e5; /* inset / code block in light mode */
+  --ink: #0a0a0a; /* deep near-black */
+  --ink-2: #141414; /* raised surface in dark mode */
+  --ink-3: #1f1f1f; /* inset / code block in dark mode */
+
+  --vermillion: #0055ff; /* signature electric blue accent */
+  --vermillion-hover: #0033cc;
+  --vermillion-soft: rgba(0, 85, 255, 0.12);
+
+  /* Categorical dataviz palette — ordered, six slots */
+  --viz-1: #0055ff; /* electric blue (series 1, primary) */
+  --viz-2: #ff0055; /* vivid red/pink */
+  --viz-3: #00cc44; /* vivid green */
+  --viz-4: #ffaa00; /* bright orange */
+  --viz-5: #9900ff; /* strong purple */
+  --viz-6: #00ccff; /* cyan (for "other") */
+
+  /* Sequential + diverging ramps (5-step) */
+  --seq-1: #e6f0ff;
+  --seq-2: #b3d1ff;
+  --seq-3: #66a3ff;
+  --seq-4: #1a75ff;
+  --seq-5: #0044ff;
+
+  --div-neg-2: #ff0055;
+  --div-neg-1: #ff6699;
+  --div-zero: #e5e5e5;
+  --div-pos-1: #66a3ff;
+  --div-pos-2: #0055ff;
+
+  /* Semantic status */
+  --success: #00cc44;
+  --warning: #ffaa00;
+  --danger: #ff0055;
+  --info: #0055ff;
+
+  /* ---------- Color: semantic (light mode) ---------- */
+  --bg1: var(--paper);
+  --bg2: var(--paper-2);
+  --bg3: var(--paper-3);
+
+  --fg1: var(--ink); /* primary text, headlines */
+  --fg2: #404040; /* body */
+  --fg3: #737373; /* muted: captions, meta */
+  --fg4: #757575; /* hint, placeholder */
+
+  --border: #d4d4d4;
+  --border-2: #a3a3a3;
+  --focus-ring: var(--vermillion);
+
+  --accent: var(--vermillion);
+  --accent-hover: var(--vermillion-hover);
+  --accent-soft: var(--vermillion-soft);
+
+  /* ---------- Type: families ---------- */
+  --font-serif: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---------- Type: scale ---------- */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-base: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 24px;
+  --fs-2xl: 32px;
+  --fs-3xl: 48px;
+  --fs-display: 64px;
+  --fs-hero: 80px;
+
+  --lh-tight: 1.1;
+  --lh-snug: 1.3;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.6;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+  --tracking-caps: 0.06em;
+
+  /* ---------- Spacing (4px base) ---------- */
+  --sp-0: 0px;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-24: 96px;
+
+  /* ---------- Radius ---------- */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+
+  /* ---------- Shadows ---------- */
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: none;
+
+  /* ---------- Motion ---------- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-linear: linear;
+  --dur-flip: 75ms;
+  --dur-hover: 150ms;
+  --dur-panel: 240ms;
+  --dur-page: 600ms;
+
+  /* ---------- Layout ---------- */
+  --measure: 68ch;
+  --docs-nav-w: 240px;
+  --docs-toc-w: 240px;
+  --docs-content-w: 720px;
+
+  /* Row spacing — fixed (no density toggle) */
+  --sp-row: 6px;
+  --content-py: 80px;
+}
+
+/* ============================================================
+   Dark mode
+   ============================================================ */
+:root.dark,
+:root[data-theme='dark'] {
+  --bg1: var(--ink);
+  --bg2: var(--ink-2);
+  --bg3: var(--ink-3);
+
+  --fg1: #ffffff;
+  --fg2: #b3b3b3;
+  --fg3: #808080;
+  --fg4: #8a8a8a;
+
+  --border: #333333;
+  --border-2: #4d4d4d;
+
+  --vermillion-soft: rgba(0, 85, 255, 0.2);
+  --accent-soft: var(--vermillion-soft);
+
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not(.light) {
+    --bg1: var(--ink);
+    --bg2: var(--ink-2);
+    --bg3: var(--ink-3);
+    --fg1: #ffffff;
+    --fg2: #b3b3b3;
+    --fg3: #808080;
+    --fg4: #8a8a8a;
+    --border: #333333;
+    --border-2: #4d4d4d;
+    --vermillion-soft: rgba(0, 85, 255, 0.2);
+    --accent-soft: var(--vermillion-soft);
+    --shadow-1: none;
+    --shadow-2: none;
+    --shadow-3: none;
+  }
+}
+
+/* ===== Extracted gallery styles (docs.css + module CSS equivalents) ===== */
+.ag-root {
+  min-height: 100vh;
+  background: var(--bg1);
+  color: var(--fg2);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+}
+.ag-playground { max-width: none; padding: 32px 40px 64px; }
+.ag-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.ag-header h1 {
+  font-family: var(--font-sans); font-weight: 600; font-size: 36px;
+  line-height: 1.1; letter-spacing: -0.015em; color: var(--fg1); margin: 8px 0 0;
+}
+.ag-meta {
+  font-family: var(--font-mono); font-size: 11px; color: var(--fg3);
+  text-transform: uppercase; letter-spacing: 0.08em; display: flex; gap: 16px;
+}
+.ag-meta .ag-now { color: var(--fg1); }
+.ag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.ag-vignette {
+  display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  border: 1px solid var(--border); border-radius: 0; overflow: hidden;
+  background: var(--bg2);
+  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+  cursor: pointer;
+}
+.ag-vignette:hover { border-color: var(--accent); transform: translateY(-2px); }
+.ag-thumb { aspect-ratio: 16 / 10; background: var(--bg1); position: relative; overflow: hidden; }
+.ag-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+.ag-caption { padding: 10px 12px; font-size: 14px; font-weight: 500; color: var(--fg1); }

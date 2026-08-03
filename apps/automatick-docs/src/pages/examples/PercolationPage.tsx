@@ -4,7 +4,7 @@ import { PercolationDemo } from '../../demos/PercolationDemo';
 import { PercolationGridDemo } from '../../demos/PercolationGridDemo';
 
 const intro: React.CSSProperties = {
-  fontFamily: 'var(--font-serif)',
+  fontFamily: 'var(--font-sans)',
   fontSize: 22,
   lineHeight: 1.35,
   color: 'var(--fg1)',

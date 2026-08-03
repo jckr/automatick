@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import { segregationSimPalette } from '../theme/palette';
 
 export type Cell = {
   community: number;
@@ -118,19 +119,19 @@ export function draw({
   const size = 0.8 * Math.min(sx, sy);
 
   ctx.clearRect(0, 0, width, height);
-  ctx.strokeStyle = '#000';
+  ctx.strokeStyle = segregationSimPalette.outline;
   ctx.lineWidth = 2;
   ctx.globalAlpha = 1;
 
   snapshot.data.grid.forEach((row, r) =>
     row.forEach((citizen, c) => {
       if (citizen.community === 0) {
-        ctx.fillStyle = '#33e';
+        ctx.fillStyle = segregationSimPalette.communityA;
         circle(ctx, { x: (c + 0.5) * sx, y: (r + 0.5) * sy, r: size / 2 });
         if (citizen.isHappy) ctx.fill();
         else ctx.stroke();
       } else {
-        ctx.fillStyle = '#a0c';
+        ctx.fillStyle = segregationSimPalette.communityB;
         const x = (c + 0.5) * sx - size / 2;
         const y = (r + 0.5) * sy - size / 2;
         if (citizen.isHappy) ctx.fillRect(x, y, size, size);
@@ -140,8 +141,8 @@ export function draw({
   );
 
   if (showmoves) {
-    ctx.strokeStyle = '#222';
-    ctx.fillStyle = '#222';
+    ctx.strokeStyle = segregationSimPalette.moveTrace;
+    ctx.fillStyle = segregationSimPalette.moveTrace;
     ctx.globalAlpha = 0.5;
     ctx.lineWidth = 1;
 

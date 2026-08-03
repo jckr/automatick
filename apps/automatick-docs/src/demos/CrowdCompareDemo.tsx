@@ -10,13 +10,14 @@ import { DemoSplit } from '../components/DemoSplit';
 import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import crowdCompareSim from '../sims/crowdCompareSim';
 import type { CrowdCompareData } from '../sims/crowdCompareSim';
+import { crowdComparePalette } from '../theme/palette';
 import styles from './CrowdCompareDemo.module.css';
 
 const PANEL = 300; // each world is drawn into a PANEL×PANEL square
-const GROUP_COLORS = ['#3b82f6', '#e8612c', '#22c55e', '#a855f7'];
-const OBSTACLE_FILL = '#39414f';
-const SELFISH_COLOR = '#d9534f';
-const COORD_COLOR = '#41a36a';
+const GROUP_COLORS = crowdComparePalette.groupColors;
+const OBSTACLE_FILL = crowdComparePalette.obstacleFill;
+const SELFISH_COLOR = crowdComparePalette.selfish;
+const COORD_COLOR = crowdComparePalette.coordinated;
 
 function drawWorld(
   ctx: CanvasRenderingContext2D,
@@ -45,13 +46,13 @@ function CrowdCompareCanvas() {
   const canvasRef = useSimulationCanvas<typeof crowdCompareSim>(
     (ctx, { data }, view) => {
       const scale = PANEL / data.width;
-      view.clear(view.theme('--bg3', '#1b1f27'));
+      view.clear(view.theme('--bg3', crowdComparePalette.bgFallback));
 
       drawWorld(ctx, data.selfish, data.obstacles, 0, scale);
       drawWorld(ctx, data.coordinated, data.obstacles, PANEL, scale);
 
       // Divider + labels.
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.strokeStyle = crowdComparePalette.divider;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(PANEL, 0);

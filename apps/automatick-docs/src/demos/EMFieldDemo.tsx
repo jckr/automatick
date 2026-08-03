@@ -9,19 +9,20 @@ import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import emFieldSim from '../sims/emFieldSim';
 import type { EMCharge } from '../sims/emFieldSim';
+import { emFieldPalette } from '../theme/palette';
 import styles from './EMFieldDemo.module.css';
 
 const CSS_SIZE = 600;
 
 // Diverging potential heatmap: dark mid, red for positive, blue for negative.
-const MID: [number, number, number] = [16, 18, 26];
-const POS: [number, number, number] = [228, 78, 58];
-const NEG: [number, number, number] = [62, 124, 232];
-const BG_HEX = '#10121a';
+const MID: readonly [number, number, number] = emFieldPalette.heatMid;
+const POS: readonly [number, number, number] = emFieldPalette.heatPos;
+const NEG: readonly [number, number, number] = emFieldPalette.heatNeg;
+const BG_HEX = emFieldPalette.bg;
 const POT_VIS = 2.6; // tanh scale for potential → color
 
-const POS_FILL = '#e74c3c';
-const NEG_FILL = '#3b82f6';
+const POS_FILL = emFieldPalette.posFill;
+const NEG_FILL = emFieldPalette.negFill;
 
 // Field-line tracing.
 const NLINES = 8;
@@ -97,7 +98,7 @@ function EMFieldCanvas() {
 
       // --- Layer 2: field lines from each positive charge ---
       if (params.showFieldLines) {
-        ctx.strokeStyle = 'rgba(222, 228, 240, 0.34)';
+        ctx.strokeStyle = emFieldPalette.fieldLine;
         ctx.lineWidth = 1;
         for (const c of charges) {
           if (c.charge <= 0) continue;
@@ -143,11 +144,11 @@ function EMFieldCanvas() {
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
         ctx.lineWidth = 1.5;
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.strokeStyle = emFieldPalette.chargeOutline;
         ctx.stroke();
 
         // +/− glyph.
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.strokeStyle = emFieldPalette.glyph;
         ctx.lineWidth = 1.6;
         ctx.beginPath();
         ctx.moveTo(cx - r * 0.45, cy);

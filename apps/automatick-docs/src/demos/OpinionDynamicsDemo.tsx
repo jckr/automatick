@@ -11,6 +11,7 @@ import { CanvasStage } from '../components/CanvasStage';
 import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import opinionDynamicsSim from '../sims/opinionDynamicsSim';
 import type { OpinionData } from '../sims/opinionDynamicsSim';
+import { opinionDynamicsPalette } from '../theme/palette';
 import styles from './OpinionDynamicsDemo.module.css';
 
 const CSS_SIZE = 600;
@@ -19,15 +20,27 @@ const CSS_SIZE = 600;
 function opinionColor(o: number): string {
   if (o < 0.5) {
     const t = o * 2;
-    const r = Math.floor(60 + t * 175);
-    const g = Math.floor(110 + t * 125);
-    const b = Math.floor(210 + t * 25);
+    const r = Math.floor(
+      opinionDynamicsPalette.lowR0 + t * opinionDynamicsPalette.lowRDelta,
+    );
+    const g = Math.floor(
+      opinionDynamicsPalette.lowG0 + t * opinionDynamicsPalette.lowGDelta,
+    );
+    const b = Math.floor(
+      opinionDynamicsPalette.lowB0 + t * opinionDynamicsPalette.lowBDelta,
+    );
     return `rgb(${r},${g},${b})`;
   }
   const t = (o - 0.5) * 2;
-  const r = Math.floor(235 - t * 4);
-  const g = Math.floor(235 - t * 175);
-  const b = Math.floor(235 - t * 175);
+  const r = Math.floor(
+    opinionDynamicsPalette.highR0 - t * opinionDynamicsPalette.highRDelta,
+  );
+  const g = Math.floor(
+    opinionDynamicsPalette.highG0 - t * opinionDynamicsPalette.highGDelta,
+  );
+  const b = Math.floor(
+    opinionDynamicsPalette.highB0 - t * opinionDynamicsPalette.highBDelta,
+  );
   return `rgb(${r},${g},${b})`;
 }
 
@@ -36,7 +49,7 @@ function OpinionCanvas() {
     (ctx, { data }, view) => {
       const scale = CSS_SIZE / data.worldSize;
 
-      view.clear(view.theme('--bg3', '#14181f'));
+      view.clear(view.theme('--bg3', opinionDynamicsPalette.bgFallback));
 
       for (const a of data.agents) {
         ctx.fillStyle = opinionColor(a.opinion);
@@ -62,11 +75,15 @@ function OpinionCanvas() {
 
 const SERIES: TimeSeriesEntry<OpinionData>[] = [
   {
-    color: '#9b59b6',
+    color: opinionDynamicsPalette.polarizationSeries,
     label: 'Polarization ×1000',
     accessor: (d) => d.polarization * 1000,
   },
-  { color: '#1abc9c', label: 'Clusters', accessor: (d) => d.clusters },
+  {
+    color: opinionDynamicsPalette.clustersSeries,
+    label: 'Clusters',
+    accessor: (d) => d.clusters,
+  },
 ];
 
 function OpinionStats() {

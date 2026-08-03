@@ -9,6 +9,7 @@ import {
 import { DemoSplit } from '../components/DemoSplit';
 import { CanvasStage } from '../components/CanvasStage';
 import lSystemSim, { PRESETS, type LSystemParams } from '../sims/lSystemSim';
+import { lSystemPalette } from '../theme/palette';
 import styles from './LSystemDemo.module.css';
 
 const WIDTH = 600;
@@ -125,16 +126,28 @@ function LSystemCanvas() {
         const t = maxDepth > 0 ? s.depth / maxDepth : 0;
         if (isPlant) {
           // Trunk = brown, tips = green.
-          const r = Math.round(110 - t * 60);
-          const g = Math.round(70 + t * 110);
-          const b = Math.round(40 + t * 30);
+          const r = Math.round(
+            lSystemPalette.plantR0 - t * lSystemPalette.plantRDelta,
+          );
+          const g = Math.round(
+            lSystemPalette.plantG0 + t * lSystemPalette.plantGDelta,
+          );
+          const b = Math.round(
+            lSystemPalette.plantB0 + t * lSystemPalette.plantBDelta,
+          );
           ctx.strokeStyle = `rgb(${r},${g},${b})`;
           ctx.lineWidth = Math.max(0.5, (1 - t) * 2.5);
         } else {
           // Fractal gradient by depth (blue → orange).
-          const r = Math.round(40 + t * 200);
-          const g = Math.round(100 + t * 60);
-          const b = Math.round(200 - t * 160);
+          const r = Math.round(
+            lSystemPalette.fractalR0 + t * lSystemPalette.fractalRDelta,
+          );
+          const g = Math.round(
+            lSystemPalette.fractalG0 + t * lSystemPalette.fractalGDelta,
+          );
+          const b = Math.round(
+            lSystemPalette.fractalB0 - t * lSystemPalette.fractalBDelta,
+          );
           ctx.strokeStyle = `rgb(${r},${g},${b})`;
           ctx.lineWidth = 1;
         }

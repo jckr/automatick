@@ -1,4 +1,4 @@
-modules = ["web", "nodejs-22"]
+modules = ["web", "nodejs-22", "python-base-3.13"]
 
 [nix]
 channel = "stable-25_05"
@@ -39,3 +39,12 @@ exposeLocalhost = true
 localPort = 5001
 externalPort = 3001
 exposeLocalhost = true
+
+[[ports]]
+localPort = 5179
+externalPort = 3002
+exposeLocalhost = true
+
+[[ports]]
+localPort = 23636
+externalPort = 3003

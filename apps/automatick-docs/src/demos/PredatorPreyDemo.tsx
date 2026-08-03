@@ -14,11 +14,12 @@ import predatorPreySim, {
   PREDATOR_RADIUS,
 } from '../sims/predatorPreySim';
 import type { PredatorPreyData } from '../sims/predatorPreySim';
+import { predatorPreyPalette } from '../theme/palette';
 import styles from './PredatorPreyDemo.module.css';
 
 const CSS_SIZE = 600;
-const PREY_COLOR = '#2ecc71';
-const PREDATOR_COLOR = '#e74c3c';
+const PREY_COLOR = predatorPreyPalette.prey;
+const PREDATOR_COLOR = predatorPreyPalette.predator;
 /** How many recent positions to keep per agent for its trail. */
 const TRAIL_LEN = 20;
 
@@ -34,7 +35,7 @@ function PredatorPreyCanvas() {
   const canvasRef = useSimulationCanvas<typeof predatorPreySim>(
     (ctx, { data, params, tick }, view) => {
       const scale = CSS_SIZE / params.worldWidth;
-      view.clear(view.theme('--bg3', '#14181f'));
+      view.clear(view.theme('--bg3', predatorPreyPalette.bgFallback));
 
       const trails = trailsRef.current;
       // Only extend trails when the tick actually advanced — the engine also

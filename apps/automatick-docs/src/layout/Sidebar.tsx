@@ -77,7 +77,7 @@ function CollapsibleGroup({ group }: { group: Group }) {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
       >
-        <span className='chev'>{'▶'}</span>
+        <span className='chev'>{'>'}</span>
         {group.label}
       </button>
       {open && group.items.map((it) => <NavItem key={it.to} {...it} />)}

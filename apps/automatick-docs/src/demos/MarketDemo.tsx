@@ -11,19 +11,20 @@ import { CanvasStage } from '../components/CanvasStage';
 import { TimeSeries, TimeSeriesEntry } from '../components/TimeSeries';
 import marketSim from '../sims/marketSim';
 import type { MarketData } from '../sims/marketSim';
+import { marketPalette } from '../theme/palette';
 import styles from './MarketDemo.module.css';
 
 const CSS_W = 600;
 const CSS_H = 600;
-const UP = '#2ecc71';
-const DOWN = '#e74c3c';
+const UP = marketPalette.up;
+const DOWN = marketPalette.down;
 
 function MarketCanvas() {
   const canvasRef = useSimulationCanvas<typeof marketSim>(
     (ctx, { data }, view) => {
-      const grid = view.theme('--border', '#2a2f3a');
+      const grid = view.theme('--border', marketPalette.gridFallback);
 
-      view.clear(view.theme('--bg3', '#14181f'));
+      view.clear(view.theme('--bg3', marketPalette.bgFallback));
 
       const history = data.priceHistory;
       const n = history.length;
@@ -100,9 +101,9 @@ function MarketCanvas() {
 }
 
 const SERIES: TimeSeriesEntry<MarketData>[] = [
-  { color: '#3498db', label: 'Price', accessor: (d) => d.price },
+  { color: marketPalette.priceSeries, label: 'Price', accessor: (d) => d.price },
   {
-    color: '#e67e22',
+    color: marketPalette.volatilitySeries,
     label: 'Volatility',
     accessor: (d) => d.volatility,
   },

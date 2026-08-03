@@ -11,6 +11,7 @@ import {
   PULSE_ANCHORS,
   latLonToXYZ,
 } from '../sims/worldSpinnerData';
+import { worldSpinnerPalette } from '../theme/palette';
 import styles from './WorldSpinnerDemo.module.css';
 
 const SPHERE_RADIUS = 1;
@@ -40,7 +41,7 @@ function Dots({ size }: { size: number }) {
   }, []);
   return (
     <points geometry={geom}>
-      <pointsMaterial size={size} color='#D7451E' sizeAttenuation />
+      <pointsMaterial size={size} color={worldSpinnerPalette.dots} sizeAttenuation />
     </points>
   );
 }
@@ -58,7 +59,7 @@ function Pulses() {
         return (
           <mesh key={`${p.anchor}-${p.bornTick}-${idx}`} position={[x, y, z]}>
             <sphereGeometry args={[scale, 12, 12]} />
-            <meshBasicMaterial color='#F2EEE4' transparent opacity={opacity} />
+            <meshBasicMaterial color={worldSpinnerPalette.marker} transparent opacity={opacity} />
           </mesh>
         );
       })}
@@ -72,7 +73,7 @@ function AnchorMarkers() {
       {ANCHOR_POSITIONS.map(([x, y, z], i) => (
         <mesh key={i} position={[x, y, z]}>
           <sphereGeometry args={[0.022, 12, 12]} />
-          <meshBasicMaterial color='#F2EEE4' />
+          <meshBasicMaterial color={worldSpinnerPalette.marker} />
         </mesh>
       ))}
     </>
@@ -85,7 +86,7 @@ function Globe() {
     <group rotation={[0, data.angle, 0]}>
       <mesh>
         <sphereGeometry args={[SPHERE_RADIUS, 48, 48]} />
-        <meshStandardMaterial color='#0E1116' roughness={0.85} metalness={0.1} />
+        <meshStandardMaterial color={worldSpinnerPalette.globe} roughness={0.85} metalness={0.1} />
       </mesh>
       <Dots size={params.dotSize} />
       <AnchorMarkers />

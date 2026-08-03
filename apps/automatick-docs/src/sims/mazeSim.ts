@@ -1,4 +1,5 @@
 import { defineSim } from 'automatick/sim';
+import { mazeSimPalette } from '../theme/palette';
 import { initDataCircle } from './mazeCircle';
 import { initDataHex } from './mazeHex';
 import { initDataSquare } from './mazeSquare';
@@ -41,8 +42,8 @@ export default defineSim<MazeData, MazeParams>({
     height: 332,
     grid: 'square',
     cellSize: 10,
-    wallColor: '#000',
-    pathColor: '#fff',
+    wallColor: mazeSimPalette.wall,
+    pathColor: mazeSimPalette.path,
     ticksPerAnimation: 20
   },
 
