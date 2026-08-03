@@ -16,6 +16,7 @@ export default tseslint.config(
       '.claude/**',
       'gatsby/**',
       'src/**',
+      'artifacts/**',
       'apps/automatick-docs/dist/**',
       'apps/automatick-docs/e2e/**',
       'packages/automatick/dist/**',

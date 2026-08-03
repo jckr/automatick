@@ -1,10 +1,12 @@
 name: Publish automatick
 
-# Publishes packages/automatick to npm automatically whenever a version bump
-# lands on main. The job is idempotent: it checks npm for the current version
-# first and no-ops if it is already published, so re-runs (and unrelated edits
-# to package.json) never double-publish. A manual "Run workflow" button is
-# available as a safety valve.
+# Publishes packages/automatick to npm and cuts a matching GitHub Release
+# whenever a version bump lands on main. Two independent, idempotent decisions:
+#   * publish  — true only if this version isn't on npm yet
+#   * release  — true only if the automatick@<version> tag doesn't exist yet
+# so re-runs, a manual dispatch, or unrelated package.json edits never
+# double-publish or clobber an existing release, and a half-finished run can be
+# completed by re-running it.
 #
 # Auth is npm Trusted Publishing (OIDC) — no NPM_TOKEN secret. It requires a
 # one-time "Trusted Publisher" configured on the package at npmjs.com pointing
@@ -29,6 +31,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15 # backstop so a wedged step can't hold a runner for hours
     steps:
       - uses: actions/checkout@v4
 
@@ -45,63 +48,76 @@ jobs:
           VERSION=$(node -p "require('./packages/automatick/package.json').version")
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=automatick-v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$NAME@$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Check whether this version is already on npm
-        id: check
+      - name: Decide what work is needed
+        id: plan
+        env:
+          NAME: ${{ steps.pkg.outputs.name }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+          TAG: ${{ steps.pkg.outputs.tag }}
         run: |
-          if npm view "${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}" version >/dev/null 2>&1; then
-            echo "already published — nothing to do"
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "$NAME@$VERSION is already on npm — skipping publish"
             echo "publish=false" >> "$GITHUB_OUTPUT"
           else
-            echo "not on npm — will publish"
             echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "tag $TAG already exists — skipping release"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install dependencies
-        if: steps.check.outputs.publish == 'true'
+        if: steps.plan.outputs.publish == 'true'
         run: npm ci
 
       - name: Test
-        if: steps.check.outputs.publish == 'true'
+        if: steps.plan.outputs.publish == 'true'
         run: npm test
 
       - name: Build library
-        if: steps.check.outputs.publish == 'true'
+        if: steps.plan.outputs.publish == 'true'
         run: npm run build:packages
 
       # Trusted Publishing (OIDC) requires npm >= 11.5.1; Node 22 ships npm 10.x.
       - name: Upgrade npm for Trusted Publishing
-        if: steps.check.outputs.publish == 'true'
+        if: steps.plan.outputs.publish == 'true'
         run: npm install -g npm@latest
 
       - name: Publish to npm
-        if: steps.check.outputs.publish == 'true'
+        if: steps.plan.outputs.publish == 'true'
         run: npm publish -w automatick --access public
 
       - name: Extract changelog notes
-        if: steps.check.outputs.publish == 'true'
-        id: notes
+        if: steps.plan.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.pkg.outputs.version }}
         run: |
-          # Pull the section for this version out of the CHANGELOG
-          # (everything between "## <version>" and the next "## ").
-          NOTES=$(awk -v v="${{ steps.pkg.outputs.version }}" '
+          # Pull the section for this version out of the CHANGELOG (everything
+          # between "## <version>" and the next "## ") into a file. Writing to a
+          # file — never interpolating the body into a later run script — keeps
+          # backticks/quotes in the notes from being parsed by the shell.
+          awk -v v="$VERSION" '
             $0 ~ "^## " v "( |$)" { grab=1; next }
             grab && /^## / { exit }
             grab { print }
-          ' packages/automatick/CHANGELOG.md)
-          {
-            echo "body<<EOF"
-            if [ -n "$NOTES" ]; then echo "$NOTES"; else echo "See CHANGELOG.md."; fi
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          ' packages/automatick/CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "See CHANGELOG.md." > release-notes.md
+          fi
 
       - name: Create git tag + GitHub Release
-        if: steps.check.outputs.publish == 'true'
+        if: steps.plan.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.pkg.outputs.tag }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+          SHA: ${{ github.sha }}
         run: |
-          gh release create "${{ steps.pkg.outputs.tag }}" \
-            --title "automatick ${{ steps.pkg.outputs.version }}" \
-            --notes "${{ steps.notes.outputs.body }}" \
-            --target "${{ github.sha }}"
+          gh release create "$TAG" \
+            --title "automatick $VERSION" \
+            --notes-file release-notes.md \
+            --target "$SHA"

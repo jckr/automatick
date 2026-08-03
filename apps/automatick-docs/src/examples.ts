@@ -157,6 +157,7 @@ export const EXAMPLES: ExampleMeta[] = [
     warmupMs: 16000,
     focus: { x: 0.24, y: 0.18, width: 0.52, height: 0.52 },
   },
+  { slug: 'chaotic-pendulum', label: 'Chaotic pendulum', badge: 'new' },
   { slug: 'force-graph', label: 'Force-directed graph' },
   { slug: 'l-systems', label: 'L-systems' },
   { slug: 'terrain', label: 'Terrain' },
@@ -217,6 +218,7 @@ export const EXAMPLE_CATEGORIES: { name: string; slugs: string[] }[] = [
       'cloth',
       'rigid-body',
       'double-pendulum',
+      'chaotic-pendulum',
     ],
   },
   {
